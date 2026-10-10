@@ -52,6 +52,12 @@ The user requested removal of `src/test` and the GameTest Gradle run configurati
 - Distinguish timed continuous work from atomic commits. Breaking may keep the repeating Epic Fight digging motion alive across progress ticks and must clear it on abort. Block placement, bucket use, hoe tilling, planting, and bone meal keep their delay animation-free, then emit exactly one normal NPC use swing or one dedicated non-repeating Epic Fight use animation only after the world mutation succeeds.
 - Optional compatibility must be a no-op when the external mod is absent and must not introduce external classes into generally loaded code.
 
+## Combat Evolution Execution Eligibility (Forge 1.20.1)
+
+- `compat.epicfight.advancedmobpatch.AdvancedMobPatch.canBeExecuted` is called through the optional Combat Evolution `ExecutionHandlerMixin`. It must not return unconditional support: require a live, unfinished `NEUTRALIZE` animation. Idle, ordinary hit stun, knockdown, and completed/interrupted neutralize animations do not qualify.
+- Server execution checks also require depleted stamina and `AdvancedStaminaStatus.BREAK`; recovery closes the execution window. The patch's stamina fields are server-only, so client prompts use the synchronized animation rather than reading those unsynchronized fields.
+- Keep this check free of Combat Evolution classes so Epic Fight compatibility still loads when Combat Evolution is absent. Mirror behavior changes in the Annoying Villagers Epic Fight addon's advanced patch.
+
 ## Persistence And Cooldowns
 
 - Persistent AI cooldowns are integer fields on `PlayerNpcEntity`, saved/loaded with the entity and decremented in the centralized cooldown tick path. Do not add ad hoc persistent-data deadline tags for cooldowns.
