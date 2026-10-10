@@ -21,6 +21,7 @@ import net.minecraft.world.entity.ai.goal.WrappedGoal;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.phys.Vec3;
 import yesman.epicfight.api.animation.AnimationManager.AnimationAccessor;
+import yesman.epicfight.api.animation.AnimationPlayer;
 import yesman.epicfight.api.animation.Animator;
 import yesman.epicfight.api.animation.LivingMotion;
 import yesman.epicfight.api.animation.LivingMotions;
@@ -637,7 +638,20 @@ public abstract class AdvancedMobPatch<T extends Mob> extends MobPatch<T> {
     }
 
     public boolean canBeExecuted(LivingEntityPatch<?> executorPatch) {
-        return true;
+        if (executorPatch == null || executorPatch == this || !this.getOriginal().isAlive() || this.getAnimator() == null) {
+            return false;
+        }
+
+        // Stamina is server-owned. The client uses the synchronized neutralize animation for its prompt.
+        if (!this.isLogicalClient() && (this.staminaStatus != AdvancedStaminaStatus.BREAK || this.stamina > 0.0F)) {
+            return false;
+        }
+
+        AnimationPlayer animationPlayer = this.getAnimator().getPlayerFor(null);
+        AssetAccessor<? extends StaticAnimation> neutralize = this.getHitAnimation(StunType.NEUTRALIZE);
+        return neutralize != null && neutralize != Animations.EMPTY_ANIMATION
+                && animationPlayer != null && !animationPlayer.isEmpty() && !animationPlayer.isEnd()
+                && animationPlayer.getRealAnimation() == neutralize;
     }
 
     private void tickLocalGuard() {
