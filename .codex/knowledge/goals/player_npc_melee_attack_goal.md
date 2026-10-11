@@ -12,6 +12,17 @@ sight and at most 3 blocks of entity-position distance. Cheap look/timer/jump ch
 tick; pursuit creates at most one bounded 0.15 path per admitted staggered 20–25-tick window,
 reusing a live path while its target stays nearby. No routine worker lease is needed.
 
+CombatMovementAi now shares pursuit with Epic Fight's AdvancedChasingGoal. Inside the
+3-block attack range, NPCs sometimes approach for 8-13 ticks, with 24-40 ticks between
+decisions and a body-width-based stopping distance. Outside range (or without line of
+sight), pursuit is unconditional and independent of attack cooldowns. Path creation remains
+budgeted, loaded-chunk bounded, and spaced by 20-25 ticks, including goal restarts.
+There are no extra velocity or sprint boosts. Epic Fight keeps its movement goal admitted
+through attack animations but stops navigation during movementLocked frames; it respects
+turningLocked and all existing utility, guard, stun, and healing combat locks. Its approach
+range now matches generated attacks (3 blocks). Installed Epic Fight 8049910 exposes both
+movementLocked() and turningLocked(); these are distinct from the broader inaction state.
+
 Normal swing delays are 8–16 server ticks. After a swing, a 30% roll can start 2–4 fast
 intervals of 3–6 ticks. The next-swing deadline survives preemption. Vanilla hurt immunity
 remains intact: rapid swings do not force damage through invulnerability frames.

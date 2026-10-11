@@ -74,7 +74,7 @@ public abstract class AdvancedMobPatch<T extends Mob> extends MobPatch<T> {
     private static final int DEFAULT_GUARD_RETRY_TICKS = 10;
     private static final double DEFAULT_GUARD_DISTANCE = 3.0D;
     private AdvancedCombatBehaviors<MobPatch<?>> combatBehaviors;
-    private int attackRadius = 1;
+    private int attackRadius = (int) GENERATED_ATTACK_RANGE;
     private double chasingSpeed = 1.25D;
     private int recoverTickCount;
     private int lastActionTime;

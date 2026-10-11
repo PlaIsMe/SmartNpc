@@ -30,6 +30,7 @@ import com.pla.smart_npc.entity.goal.CraftBasicGearGoal;
 import com.pla.smart_npc.entity.goal.CraftCropFoodGoal;
 import com.pla.smart_npc.entity.goal.CraftIronGearGoal;
 import com.pla.smart_npc.entity.goal.CraftShieldGoal;
+import com.pla.smart_npc.entity.goal.DangerousReactionGoal;
 import com.pla.smart_npc.entity.goal.DescendHighColumnGoal;
 import com.pla.smart_npc.entity.goal.DigDownForStoneGoal;
 import com.pla.smart_npc.entity.goal.EatHealingFoodGoal;
@@ -462,6 +463,15 @@ public class PlayerNpcEntity extends FakePlayer implements RangedAttackMob {
 
     public void setHealing(boolean healing) {
         this.entityData.set(HEALING, healing);
+        if (healing) {
+            // Eating owns the main hand, including recovery frames from the last hit.
+            this.swinging = false;
+            this.swingTime = 0;
+            this.attackAnim = 0.0F;
+            this.oAttackAnim = 0.0F;
+            this.entityData.set(MAIN_HAND_ATTACK_ANIMATION_TICKS, 0);
+            this.entityData.set(BETTER_COMBAT_ATTACK_ANIMATION_TICKS, 0);
+        }
     }
 
     @Override
@@ -2424,6 +2434,7 @@ public class PlayerNpcEntity extends FakePlayer implements RangedAttackMob {
     }
 
     private void registerVanillaCombatReplacementGoals() {
+        this.goalSelector.addGoal(0, new DangerousReactionGoal(this));
         this.goalSelector.addGoal(1, new LowHealthFleeGoal(this));
         this.goalSelector.addGoal(1, new EatHealingFoodGoal(this));
         this.goalSelector.addGoal(2, new ShieldGuardGoal(this));
@@ -2543,7 +2554,7 @@ public class PlayerNpcEntity extends FakePlayer implements RangedAttackMob {
 
     @Override
     public boolean doHurtTarget(@NotNull Entity target) {
-        if (this.hasInterest(PlayerNpcInterest.CAUTIOUS)) {
+        if (this.isHealing() || this.hasInterest(PlayerNpcInterest.CAUTIOUS)) {
             return false;
         }
         if (this.isTeamAlliedWith(target)) {
@@ -2964,6 +2975,9 @@ public class PlayerNpcEntity extends FakePlayer implements RangedAttackMob {
 
     @Override
     public void performRangedAttack(@NotNull LivingEntity pTarget, float pVelocity) {
+        if (this.isHealing()) {
+            return;
+        }
         if (this.isTeamAlliedWith(pTarget)) {
             this.setTarget(null);
             return;

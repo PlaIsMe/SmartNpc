@@ -30,7 +30,7 @@ public class PlayerNpcRangedBowAttackGoal extends RangedBowAttackGoal<PlayerNpcE
 
     @Override
     public void start() {
-        if (this.playerNpc.isClearingCombatObstruction()) {
+        if (this.playerNpc.isHealing() || this.playerNpc.isClearingCombatObstruction()) {
             return;
         }
         this.equipInventoryBowIfNeeded();
@@ -40,7 +40,7 @@ public class PlayerNpcRangedBowAttackGoal extends RangedBowAttackGoal<PlayerNpcE
 
     @Override
     public void tick() {
-        if (!this.playerNpc.isClearingCombatObstruction()) {
+        if (!this.playerNpc.isHealing() && !this.playerNpc.isClearingCombatObstruction()) {
             super.tick();
         }
     }

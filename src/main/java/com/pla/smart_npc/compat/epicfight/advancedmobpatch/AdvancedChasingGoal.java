@@ -4,11 +4,11 @@
  */
 package com.pla.smart_npc.compat.epicfight.advancedmobpatch;
 
+import com.pla.smart_npc.entity.ai.CombatMovementAi;
 import net.minecraft.world.entity.EntitySelector;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.Mob;
 import net.minecraft.world.entity.ai.goal.Goal;
-import net.minecraft.world.level.pathfinder.Path;
 import yesman.epicfight.world.capabilities.entitypatch.MobPatch;
 
 import java.util.EnumSet;
@@ -20,8 +20,7 @@ public final class AdvancedChasingGoal extends Goal {
     private final double attackRadius;
     private final double speedModifier;
     private final BooleanSupplier movementAllowed;
-    private Path path;
-    private int pathRecalculationTicks;
+    private final CombatMovementAi combatMovement;
 
     public AdvancedChasingGoal(
             MobPatch<? extends Mob> mobPatch,
@@ -34,17 +33,13 @@ public final class AdvancedChasingGoal extends Goal {
         this.attackRadius = Math.max(0.0D, attackRadius);
         this.speedModifier = Math.max(0.0D, speedModifier);
         this.movementAllowed = movementAllowed;
+        this.combatMovement = new CombatMovementAi(this.mob);
         this.setFlags(EnumSet.of(Flag.MOVE, Flag.LOOK));
     }
 
     @Override
     public boolean canUse() {
-        LivingEntity target = this.mob.getTarget();
-        if (!this.canChase(target)) {
-            return false;
-        }
-        this.path = this.mob.getNavigation().createPath(target, 0);
-        return this.path != null || this.mob.distanceToSqr(target) > this.getAttackReachSqr(target);
+        return this.canChase(this.mob.getTarget());
     }
 
     @Override
@@ -54,11 +49,7 @@ public final class AdvancedChasingGoal extends Goal {
 
     @Override
     public void start() {
-        if (this.path != null) {
-            this.mob.getNavigation().moveTo(this.path, this.speedModifier);
-        }
         this.mob.setAggressive(true);
-        this.pathRecalculationTicks = 0;
     }
 
     @Override
@@ -68,41 +59,38 @@ public final class AdvancedChasingGoal extends Goal {
             this.mob.setTarget(null);
         }
         this.mob.setAggressive(false);
-        this.mob.getNavigation().stop();
+        this.combatMovement.stop();
     }
 
     @Override
     public void tick() {
         LivingEntity target = this.mob.getTarget();
-        if (target == null) {
+        if (!this.canChase(target)) {
+            this.combatMovement.stop();
             return;
         }
 
-        this.mob.getLookControl().setLookAt(target, 30.0F, 30.0F);
-        double distanceSqr = this.mob.distanceToSqr(target);
-        if (distanceSqr <= this.attackRadius * this.attackRadius) {
-            this.mob.getNavigation().stop();
-            this.mobPatch.rotateTo(target, 30.0F, true);
-            return;
-        }
-
-        if (--this.pathRecalculationTicks <= 0 && this.mob.getSensing().hasLineOfSight(target)) {
-            this.pathRecalculationTicks = this.adjustedTickDelay(distanceSqr > 1024.0D ? 30 : distanceSqr > 256.0D ? 25 : 20);
-            if (!this.mob.getNavigation().moveTo(target, this.speedModifier)) {
-                this.pathRecalculationTicks += 15;
+        if (!this.mobPatch.getEntityState().turningLocked()) {
+            this.mob.getLookControl().setLookAt(target, 30.0F, 30.0F);
+            if (this.mob.distanceToSqr(target) <= this.attackRadius * this.attackRadius) {
+                this.mobPatch.rotateTo(target, 30.0F, true);
             }
         }
+        this.combatMovement.tick(target, this.attackRadius, this.speedModifier, !this.mobPatch.getEntityState().movementLocked());
+    }
+
+    @Override
+    public boolean requiresUpdateEveryTick() {
+        return true;
     }
 
     private boolean canChase(LivingEntity target) {
         return this.movementAllowed.getAsBoolean()
-                && !this.mobPatch.getEntityState().inaction()
                 && target != null
                 && target.isAlive()
+                && !target.isRemoved()
+                && !this.mob.isAlliedTo(target)
+                && !target.isAlliedTo(this.mob)
                 && EntitySelector.NO_CREATIVE_OR_SPECTATOR.test(target);
-    }
-
-    private double getAttackReachSqr(LivingEntity target) {
-        return this.mob.getBbWidth() * 2.0F * this.mob.getBbWidth() * 2.0F + target.getBbWidth();
     }
 }

@@ -22,7 +22,18 @@ Lets low-health Player NPCs with the `COWARD` characteristic quit combat and spr
 
 Clears the target, sets sprinting, pathfinds away from the threat, randomly jumps while fleeing, and marks AI state as `ai.player_npc.fleeing_low_health`.
 
-Flee movement uses speed `1.0D`. Keep flee/avoid speeds at `1.0D`; do not raise them to `1.25D+`.
+Flee navigation uses speed `0.79D` with sprinting enabled. In the current Forge 1.20.1
+movement code, `Mob.setSpeed()` sets both movement speed and forward input. With the NPC's
+base movement attribute `0.35` and vanilla sprint multiplier `1.3`, navigation speed `1.0`
+produces about 1.59 times a player's flat-ground sprint acceleration/speed. The flee-only
+multiplier approximates `sqrt(0.13) / (0.35 * 1.3)`, matching ordinary player sprinting on
+normal ground without changing shared NPC attributes or other goals. This is not exact
+player physics parity across potion effects, terrain, and airborne movement.
+
+Flee jumps use vanilla `JumpControl.jump()`. Do not call `PlayerNpcEntity.jump()` here:
+that helper adds another `0.28-0.48` forward impulse after vanilla already applies its
+`0.2` sprint-jump impulse, causing excessive speed on repeated jumps. Random jump cadence,
+support placement, sprint animation, and goal cleanup remain intact.
 
 The initial escape target follows vanilla `PanicGoal`/random-away shape. Unlike vanilla's single retained path, this custom goal may adjust away from the moving threat on its controlled cadence, so every initial/recalculated route uses `PathNavigationAi.createBoundedPath(..., 0.15F)`. Starting the goal initializes the repath timer after the first route; it must not immediately create a duplicate path on the following tick.
 

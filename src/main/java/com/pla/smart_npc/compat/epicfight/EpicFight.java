@@ -5,6 +5,7 @@ import com.pla.smart_npc.compat.epicfight.advancedmobpatch.AdvancedMobPatch;
 import com.pla.smart_npc.entity.PlayerNpcEntity;
 import com.pla.smart_npc.init.SmartNpcModEntities;
 import yesman.epicfight.api.animation.LivingMotions;
+import yesman.epicfight.api.animation.types.AttackAnimation;
 import yesman.epicfight.api.animation.types.StaticAnimation;
 import yesman.epicfight.api.asset.AssetAccessor;
 import yesman.epicfight.api.client.animation.ClientAnimator;
@@ -75,9 +76,9 @@ public final class EpicFight {
             return;
         }
         LivingEntityPatch<?> patch = getPatch(playerNpc);
+        stopAttackForEating(patch);
         AssetAccessor<? extends StaticAnimation> animation = eatingAnimation();
         if (patch != null && animation != null) {
-            cancelUtilityGuard(patch);
             patch.currentCompositeMotion = LivingMotions.EAT;
             patch.playAnimationSynchronized(animation, 0.0F);
         }
@@ -88,6 +89,7 @@ public final class EpicFight {
             return;
         }
         LivingEntityPatch<?> patch = getPatch(playerNpc);
+        stopAttackForEating(patch);
         AssetAccessor<? extends StaticAnimation> animation = eatingAnimation();
         if (patch == null || animation == null) {
             return;
@@ -116,6 +118,9 @@ public final class EpicFight {
         if (!patch.getOriginal().level().isClientSide()) {
             return;
         }
+        if (eating) {
+            stopAttackForEating(patch);
+        }
         AssetAccessor<? extends StaticAnimation> animation = eatingAnimation();
         if (animation == null || !(patch.getAnimator() instanceof ClientAnimator animator)) {
             return;
@@ -138,6 +143,24 @@ public final class EpicFight {
         var player = animator.getPlayerFor(animation);
         if (player == null || player.isEmpty() || !animation.equals(player.getRealAnimation())) {
             animator.playAnimation(animation, 0.0F);
+        }
+    }
+
+    private static void stopAttackForEating(LivingEntityPatch<?> patch) {
+        if (patch == null) {
+            return;
+        }
+        if (patch instanceof AdvancedMobPatch<?> advanced) {
+            advanced.cancelGuard();
+            if (advanced.getAdvancedCombatBehaviors() != null) {
+                advanced.getAdvancedCombatBehaviors().clearCurrentBehavior();
+            }
+        }
+        // EAT is a composite animation on the client: it does not replace a base-layer
+        // attack, including one whose goal was rebuilt after an equipment change.
+        var player = patch.getAnimator().getPlayerFor(null);
+        if (player != null && !player.isEmpty() && player.getRealAnimation().get() instanceof AttackAnimation) {
+            patch.stopPlaying(player.getRealAnimation());
         }
     }
 

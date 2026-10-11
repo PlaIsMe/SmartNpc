@@ -23,6 +23,22 @@ Consumes one food item from the inventory, shows it in the main hand, plays eati
 
 The Epic Fight attack/chase goals yield their LOOK/MOVE controls to eating and cancel the
 interrupted combat animation. Patch guard/attack eligibility also rejects healing/item use.
+The eating bridge additionally clears queued combat behavior and cancels any actual current
+`AttackAnimation` on the server and client while healing. The client EAT animation uses a
+composite layer, so starting it alone does not stop a surviving base-layer attack. This
+cancellation is independent of whether the EAT asset is available and does not cancel stun
+or death animations. Target distance never releases the healing lock: only the eating goal
+owns movement during eating, and `stop()` restores its saved main-hand item before clearing
+healing. Do not replace this saved item unconditionally with the cached weapon, which may
+be stale or disarmed.
+
+Vanilla melee already checks healing at goal admission, continuation, tick, and its damage
+helper. `PlayerNpcEntity.doHurtTarget()` and `performRangedAttack()` also reject healing at
+execution time, covering Epic Fight animation damage callbacks and delayed ranged calls.
+Bow start/tick cannot replace food or advance an attack while healing. Starting healing
+clears vanilla/Better Combat attack timers and swing state; the vanilla renderer suppresses
+any remaining client swing while the synchronized healing flag is set.
+
 `start()` synchronizes the separately registered `EpicFightCloneAnimations.EAT_MAINHAND`
 StaticAnimation and its own `smart_npc:biped/living/eat_mainhand` asset and composite metadata.
 Do not use native BIPED_EAT or MirrorAnimation for this mob. The animation loops with fixed-head
@@ -38,15 +54,27 @@ Calls go directly to `compat.epicfight.EpicFight` behind an
 
 Regular food directly sets health to current health plus exactly 4 HP, capped at max health, and does not add absorption. Golden apples still use their stronger direct heal/effect behavior.
 
-While eating, the NPC keeps moving but does not sprint. If it has a combat target, it either backs away or keeps chasing:
+Eating delegates danger selection and retreat movement to a retained `DangerousReactionAi`.
+Primed TNT and igniting/swelling creepers take priority over the healing combat threat.
+For health-related retreat, the helper selects a valid combat target or recent attacker;
+CAUTIOUS NPCs can also use their existing bounded threat lookup. The old weaker-target
+chase branch is removed: eating NPCs keep retreating from their valid threat until food use
+finishes, rather than holding still at the ordinary ten-block danger margin or chasing while
+attacks are locked. This is shared vanilla/Epic Fight navigation behavior.
 
-- It backs away from close or stronger threats.
-- It keeps chasing when the target is weaker and already moving away or outside close melee distance.
-- Combat eating movement uses a slower `0.65D` speed.
-- Non-combat eating wander uses `0.55D`.
-- CAUTIOUS NPCs select a nearby threat only on the existing movement planning cadence and always
-  retreat while eating; they never select the eating chase branch.
+Both enemy and explosive healing retreat use sprinting at `0.79D`, matching the corrected
+low-health flee speed without extra velocity impulses. With no threat,
+noncombat wandering remains at `0.55D`. The eating goal keeps MOVE/LOOK and ownership
+of the food/hand and healing lock throughout these reactions; it still completes its
+32-tick consumption rather than handing the item to another goal.
 
-Initial eating movement creates one scoped `0.15F` path, then recalculates no more often than every 20 server ticks. Only the timer, sounds, and immediate safety checks run every tick. Starting initializes the path cadence after the initial path, avoiding a duplicate path on the first active tick. Healing remains an unwrapped safety goal.
+Threat scans use the helper's staggered 10-tick explosive safety cadence, and bounded
+escape path planning is limited to at most two attempts per 20 ticks. It prefers grounded
+four-block escape destinations directly away or to either side, then a random fallback.
+Candidate order advances after failures so blocked early directions cannot starve the rest;
+a safe unfinished route can resume after a navigation interruption without a new path search. Only retained
+threat validation, use timer, sounds and movement/look updates run every tick. Noncombat
+wander paths remain limited to one per 20 ticks. Stop clears retreat navigation and
+restores sprint/hand state before releasing healing. Healing remains an unwrapped safety goal.
 
 Stopping after food was equipped calls `PlayerNpcEntity.setGapCooldown()`, which uses the entity's tick-down `gapCooldown` API. `PlayerNpcEntity.tick()` decrements that field every server tick.
