@@ -44,14 +44,14 @@ Use movement speed `1.0D` as the maximum requested path/navigation speed for Pla
 Known examples:
 
 - `RecoverWeaponInCombatGoal` is registered on Player NPC at `1.0D`.
-- vanilla `MeleeAttackGoal` is registered on Player NPC at `1.0D`.
+- `PlayerNpcMeleeAttackGoal` requests combat pursuit at up to `1.0D`.
 - `PlayerNpcRangedBowAttackGoal` is registered on Player NPC at `1.0D`.
-- `LowHealthFleeGoal.RUN_SPEED = 1.0D`
+- `LowHealthFleeGoal.RUN_SPEED = 0.79D` while sprinting (avoids compounding mob forward input).
 - `RespondToNpcAlertGoal.AVOID_SPEED = 1.0D`
 
 Do not raise Player NPC run, flee, avoid, chase, recover, or combat navigation to `1.25D+`.
 
-Eating is separate: `EatHealingFoodGoal` must not sprint while eating, and uses slower player-like movement while backing away or chasing.
+Eating uses the shared `DangerousReactionAi`: ordinary healing retreat and imminent explosive avoidance both use corrected sprinting (`0.79D`). A valid healing threat keeps retreat active through eating rather than stopping at the ordinary safe-distance margin. Healing retreat no longer chases weaker enemies. `DangerousReactionGoal` handles explosives outside eating and yields once safely away; eating retains its own MOVE/LOOK and food lifecycle.
 
 ## Epic Fight Combat And Utility Arbitration
 

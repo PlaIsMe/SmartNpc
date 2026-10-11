@@ -2,10 +2,8 @@ package com.pla.smart_npc.entity.goal;
 
 import com.pla.smart_npc.clazz.PlayerNpcInterest;
 import com.pla.smart_npc.entity.PlayerNpcEntity;
-import com.pla.smart_npc.entity.ai.PathNavigationAi;
+import com.pla.smart_npc.entity.ai.CombatMovementAi;
 import com.pla.smart_npc.entity.ai.VanillaMeleeAttackAi;
-import com.pla.smart_npc.util.PlayerNpcAiWorkBudget;
-import net.minecraft.core.BlockPos;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.effect.MobEffects;
 import net.minecraft.world.entity.LivingEntity;
@@ -17,16 +15,16 @@ import java.util.EnumSet;
 /** One vanilla attack owner: bounded pursuit, varied swing cadence, and physical jump crits. */
 public final class PlayerNpcMeleeAttackGoal extends Goal {
     private final PlayerNpcEntity npc;
-    private int nextPathTick;
+    private final CombatMovementAi combatMovement;
     private int nextAttackTick;
     private int burstSwings;
-    private BlockPos lastPathTarget;
     private LivingEntity criticalTarget;
     private int criticalJumpTick;
     private boolean wasSprinting;
 
     public PlayerNpcMeleeAttackGoal(PlayerNpcEntity npc) {
         this.npc = npc;
+        this.combatMovement = new CombatMovementAi(npc);
         this.setFlags(EnumSet.of(Flag.MOVE, Flag.LOOK, Flag.JUMP));
     }
 
@@ -64,8 +62,7 @@ public final class PlayerNpcMeleeAttackGoal extends Goal {
         this.cancelCriticalJump();
         this.burstSwings = 0;
         this.npc.setAggressive(false);
-        this.npc.getNavigation().stop();
-        this.lastPathTarget = null;
+        this.combatMovement.stop();
         this.npc.setCurrentAiState(PlayerNpcEntity.AI_IDLE);
         this.npc.setCurrentAiDetail("");
         // Preserve the attack deadline across utility preemption, preventing free extra swings.
@@ -80,7 +77,7 @@ public final class PlayerNpcMeleeAttackGoal extends Goal {
         this.npc.getLookControl().setLookAt(target, 30.0F, 30.0F);
         boolean inReach = this.npc.distanceToSqr(target) <= 9.0D
                 && this.npc.getSensing().hasLineOfSight(target);
-        this.updatePursuit(target, inReach);
+        this.combatMovement.tick(target, 3.0D, 1.0D, true);
 
         if (this.criticalTarget != null) {
             if (target == this.criticalTarget && inReach && this.canCritNow()) {
@@ -153,27 +150,4 @@ public final class PlayerNpcMeleeAttackGoal extends Goal {
                 critical ? "critical hit" : fastFistAttack ? "fast unarmed swings" : "melee attacking");
     }
 
-    private void updatePursuit(LivingEntity target, boolean inReach) {
-        if (inReach) {
-            this.npc.getNavigation().stop();
-            return;
-        }
-        if (this.npc.tickCount < this.nextPathTick) {
-            return;
-        }
-        this.nextPathTick = this.npc.tickCount + 20 + this.npc.getRandom().nextInt(6);
-        BlockPos targetPos = target.blockPosition();
-        if (!this.npc.getNavigation().isDone() && this.lastPathTarget != null
-                && this.lastPathTarget.distSqr(targetPos) <= 4.0D) {
-            return;
-        }
-        if (!PlayerNpcAiWorkBudget.tryAcquireNavigationPathStart(this.npc)) {
-            return;
-        }
-        var path = PathNavigationAi.createBoundedPath(this.npc, targetPos, 0.15F);
-        this.lastPathTarget = targetPos.immutable();
-        if (path != null) {
-            this.npc.getNavigation().moveTo(path, 1.0D);
-        }
-    }
 }

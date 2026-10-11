@@ -1,31 +1,13 @@
 # PlayerNpcMeleeAttackGoal
 
-Registered at priority 6 only when Epic Fight is absent, below priority-5 obstruction breaking.
-Admission and the damage helper also
-reject Epic Fight. This replaces the generic vanilla MeleeAttackGoal and owns MOVE/LOOK/JUMP;
-the separate RandomCombatJumpGoal is retained only for Epic Fight so it cannot interrupt a
-vanilla critical jump. Cautious NPCs still refuse combat. Healing and higher-priority survival,
-shield, ranged, escape, and item-use goals preempt this goal normally.
+This goal is registered at priority 6 and owns MOVE, LOOK, and JUMP. Cautious NPCs refuse combat. Healing, item use, sleep, obstruction clearing, ranged combat, and higher-priority safety goals prevent or preempt it.
 
-Target must be alive, non-allied, and not a creative/spectator player. Swings require line of
-sight and at most 3 blocks of entity-position distance. Cheap look/timer/jump checks run each
-tick; pursuit creates at most one bounded 0.15 path per admitted staggered 20–25-tick window,
-reusing a live path while its target stays nearby. No routine worker lease is needed.
+Targets must be alive, non-allied, and not creative/spectator players. Attacks require line of sight and at most three blocks of entity-position distance. `PlayerNpcEntity.doHurtTarget()` independently rejects healing so a delayed damage call cannot land during food use.
 
-Normal swing delays are 8–16 server ticks. After a swing, a 30% roll can start 2–4 fast
-intervals of 3–6 ticks. The next-swing deadline survives preemption. Vanilla hurt immunity
-remains intact: rapid swings do not force damage through invulnerability frames.
+`CombatMovementAi` owns paced pursuit. Outside attack range or without line of sight, it keeps pursuing independently of attack cooldowns. Inside attack range, it has a 70% chance every 24-40 ticks to take a brief 8-13-tick forward step, stopping at a body-width-based separation. This prevents the NPC from repeatedly swinging at the edge of range and waiting for the opponent to approach. It adds no velocity or sprint boost. New bounded paths are budgeted and spaced by 20-25 ticks; a retained route may resume after a movement interruption.
 
-An eligible grounded attack has a 20% chance to attempt a critical jump. JumpControl supplies
-the physical jump; the selected target is retained for at most 20 ticks. The critical requires
-actual descent, positive fall distance, range, and line of sight, with no water/lava, climbing,
-blindness, or levitation. Landing early, losing the target, or timeout cancels the attempt.
+Normal swing delays are 8-16 server ticks. After a swing, a 30% roll can start 2-4 fast unarmed intervals of 3-6 ticks. The next-swing deadline survives preemption, and vanilla hurt immunity remains intact.
 
-VanillaMeleeAttackAi applies a temporary 1.5x ATTACK_DAMAGE modifier only around doHurtTarget,
-removing it in finally. Armor, enchantments, weapon durability, and normal hurt handling remain
-in place. Successful critical damage emits CRIT particles and the vanilla critical sound.
-A raised ShieldItem is disabled before critical damage: real players use disableShield(true)
-(100 ticks), Player NPCs receive at least 100 shieldGuardCooldown ticks, and other shield users
-have their active use interrupted. This disables blocking; it does not destroy the shield item.
-ShieldGuardGoal honors externally applied cooldown during continuation/tick and preserves it
-on stop, preventing immediate re-raising after a critical.
+Eligible grounded attacks have a 20% chance to attempt a critical jump. The hit waits for actual descent and positive fall distance, with normal range, sight, fluid, climbing, blindness, and levitation checks. `VanillaMeleeAttackAi` temporarily applies the 1.5x attack-damage modifier only around the damage call and removes it in `finally`. A successful critical emits the vanilla effects and can disable an actively raised shield.
+
+Epic Fight is disabled in the Minecraft 26.1.2 checkout. Better Combat integration remains visual; server reach and damage use this goal.

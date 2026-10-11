@@ -135,7 +135,7 @@ public class FakePlayerRenderer<T extends FakePlayer>
             npcState.hideHead = SmartNpcInspectorOverlay.shouldRenderInspectatorCameraTargetBody(entity);
         }
         if (entity instanceof PlayerNpcEntity playerNpc) {
-            if (BetterCombatClientCompat.hasActiveAttackAnimation(playerNpc)) {
+            if (playerNpc.isHealing() || BetterCombatClientCompat.hasActiveAttackAnimation(playerNpc)) {
                 state.attackTime = 0.0F;
             } else if (state.attackTime <= 0.0F && playerNpc.getMainHandAttackAnimationTicks() > 0) {
                 float duration = playerNpc.getMainHandAttackAnimationDuration();

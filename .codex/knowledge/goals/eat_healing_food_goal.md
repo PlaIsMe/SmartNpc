@@ -1,52 +1,24 @@
 # EatHealingFoodGoal
 
-## Source
+## Source and registration
 
 - `src/main/java/com/pla/smart_npc/entity/goal/EatHealingFoodGoal.java`
-- Registered from `PlayerNpcEntity.registerVanillaCombatReplacementGoals()`.
+- Registered from `PlayerNpcEntity.registerVanillaCombatReplacementGoals()` at priority `1`.
 
-## Purpose
+## Activation and ownership
 
-Lets Player NPCs swap healing food into the main hand, play eating behavior, heal or regenerate, then restore their previous held item.
+The server-side goal starts below 70% health when healing food is available and `gapCooldown` is zero. It owns MOVE and LOOK and is not interruptible during its 32-tick eating cycle. It removes one selected food item from inventory, saves the current main hand, equips the food through the guarded AI setter, starts item use, and sets the synchronized healing flag.
 
-## Activation
+While healing, automatic equipment upgrades and combat weapon recovery respect the reserved main hand. Melee admission and continuation reject healing, `PlayerNpcEntity.doHurtTarget()` rejects delayed melee damage, bow start/tick cannot replace the food, and `performRangedAttack()` rejects delayed shots. Starting healing also clears vanilla and Better Combat attack timers and swing state. The 26.1 render-state path suppresses any remaining attack swing while the healing flag is set.
 
-- Server side only.
-- NPC health must be below 70%.
-- NPC must not already be healing.
-- `PlayerNpcEntity.getGapCooldown()` must be `0`.
-- Requires a valid healing food item in the Player NPC inventory.
+Epic Fight is disabled in this checkout. Eating uses normal item-use rendering and the active vanilla/Better Combat compatibility path.
 
-## Behavior
+## Movement and danger response
 
-Consumes one food item from the inventory, shows it in the main hand, plays eating sounds and item use, applies the food result after 32 server ticks, then restores the old main-hand item through the guarded AI setter. Epic Fight uses one looping EAT_MAINHAND composite animation, stopped on completion or abort; repeated attack swings are not sent. The goal is not interruptible during its short eat timer. While this goal is active, `PlayerNpcEntity.equipBetterGearFromInventory()` does not auto-swap the main hand, so food is not replaced by a weapon or tool before the heal is applied. Vanilla `completeUsingItem` defers consumption while healing so the goal remains the sole owner of food consumption and effects. Missing/replaced food, no-AI, riding, or death aborts; stop is idempotent and drops only inventory remainders.
+The goal retains MOVE/LOOK while eating and delegates threat selection and retreat routing to `DangerousReactionAi`. Primed TNT and ignited/swelling creepers take priority. Otherwise it retreats from the current combat target or recent attacker; CAUTIOUS NPCs may select their nearby threat through the existing bounded scan. The NPC keeps the combat target locked but cannot attack until eating finishes.
 
-The Epic Fight attack/chase goals yield their LOOK/MOVE controls to eating and cancel the
-interrupted combat animation. Patch guard/attack eligibility also rejects healing/item use.
-`start()` synchronizes the separately registered `EpicFightCloneAnimations.EAT_MAINHAND`
-StaticAnimation and its own `smart_npc:biped/living/eat_mainhand` asset and composite metadata.
-Do not use native BIPED_EAT or MirrorAnimation for this mob. The animation loops with fixed-head
-rotation and an upper-body mask. Healing is synchronized entity data, owned by the eating goal;
-client motion uses that state and the held edible item rather than depending on vanilla use-item
-packet timing. Server upkeep and `EpicFight.updateClientEatingAnimation` inspect the actual
-standalone animation player and restart only a missing/interrupted loop. The client repairs the
-composite EAT binding after equipment living-motion resets, in which ClientAnimator's
-separate composite map is not included in `getLivingAnimations()`. Item-use end stops the actual
-standalone animation locally; a healthy loop or its link transition is never restarted each tick.
-Calls go directly to `compat.epicfight.EpicFight` behind an
-`epicfight` `ModList` guard. Without Epic Fight, vanilla item-use rendering remains active.
+Threat retreat sprints at `0.79D`. Path planning attempts at most two bounded routes per 20 ticks, prefers grounded four-block steps away from danger, and can resume a retained safe route after navigation interruption. When no threat exists, the NPC chooses a bounded random movement destination at `0.55D` rather than standing still.
 
-Regular food directly sets health to current health plus exactly 4 HP, capped at max health, and does not add absorption. Golden apples still use their stronger direct heal/effect behavior.
+## Completion and cleanup
 
-While eating, the NPC keeps moving but does not sprint. If it has a combat target, it either backs away or keeps chasing:
-
-- It backs away from close or stronger threats.
-- It keeps chasing when the target is weaker and already moving away or outside close melee distance.
-- Combat eating movement uses a slower `0.65D` speed.
-- Non-combat eating wander uses `0.55D`.
-- CAUTIOUS NPCs select a nearby threat only on the existing movement planning cadence and always
-  retreat while eating; they never select the eating chase branch.
-
-Initial eating movement creates one scoped `0.15F` path, then recalculates no more often than every 20 server ticks. Only the timer, sounds, and immediate safety checks run every tick. Starting initializes the path cadence after the initial path, avoiding a duplicate path on the first active tick. Healing remains an unwrapped safety goal.
-
-Stopping after food was equipped calls `PlayerNpcEntity.setGapCooldown()`, which uses the entity's tick-down `gapCooldown` API. `PlayerNpcEntity.tick()` decrements that field every server tick.
+Regular food restores exactly 4 health, capped at maximum health. Golden and enchanted golden apples keep their explicit stronger healing and effect branches. On success or interruption, the goal stops item use and retreat navigation, restores its saved main-hand stack, restores the prior sprint state, clears healing, and applies the entity's tick-down food cooldown. Unfinished food is returned to inventory or dropped only as an insertion remainder.

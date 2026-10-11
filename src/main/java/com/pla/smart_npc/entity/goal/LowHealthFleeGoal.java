@@ -35,7 +35,9 @@ public class LowHealthFleeGoal extends Goal {
     private static final float STOP_HEALTH_RATIO = 0.65F;
     private static final double START_FLEE_DISTANCE_SQR = 18.0D * 18.0D;
     private static final double STOP_FLEE_DISTANCE_SQR = 26.0D * 26.0D;
-    private static final double RUN_SPEED = 1.0D;
+    // Mob.setSpeed also sets forward input, so sprinting at 1.0 compounds the 0.35
+    // movement attribute. sqrt(0.13) / (0.35 * 1.3) ~= 0.79 matches player sprinting.
+    private static final double RUN_SPEED = 0.79D;
     private static final int MIN_FLEE_TICKS = 70;
     private static final int MAX_FLEE_TICKS = 130;
     private static final int PATH_RECALCULATE_TICKS = 20;
@@ -252,7 +254,9 @@ public class LowHealthFleeGoal extends Goal {
                 this.jumpSupportTicks = 0;
                 this.lookDownAt(feet);
             }
-            this.playerNpc.jump();
+            // The custom jump helper adds another forward shove on top of the
+            // vanilla sprint-jump impulse, making repeated flee jumps too fast.
+            this.playerNpc.getJumpControl().jump();
         }
         this.jumpCooldownTicks = this.nextJumpCooldown();
     }

@@ -1,14 +1,7 @@
 package com.pla.smart_npc.entity.goal;
 
-import com.pla.smart_npc.util.SmartNpcItemUtil;
-
-import net.minecraft.core.component.DataComponents;
-
-import net.minecraft.tags.ItemTags;
-
 import com.pla.smart_npc.entity.PlayerNpcEntity;
-import com.pla.smart_npc.clazz.PlayerNpcInterest;
-import com.pla.smart_npc.entity.ai.CautiousThreatAi;
+import com.pla.smart_npc.entity.ai.DangerousReactionAi;
 import com.pla.smart_npc.entity.ai.PathNavigationAi;
 import com.pla.smart_npc.util.InventoryUtils;
 import net.minecraft.core.BlockPos;
@@ -18,18 +11,11 @@ import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.effect.MobEffects;
-import net.minecraft.world.entity.EquipmentSlot;
-import net.minecraft.world.entity.LivingEntity;
-import net.minecraft.world.entity.ai.attributes.Attributes;
+import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.ai.goal.Goal;
 import net.minecraft.world.entity.ai.util.DefaultRandomPos;
-import net.minecraft.world.item.AxeItem;
-import net.minecraft.world.item.BowItem;
-import net.minecraft.world.item.CrossbowItem;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
-import net.minecraft.world.item.ProjectileWeaponItem;
-import net.minecraft.world.item.TridentItem;
 import net.minecraft.world.level.pathfinder.Path;
 import net.minecraft.world.phys.Vec3;
 
@@ -38,15 +24,13 @@ import java.util.EnumSet;
 public class EatHealingFoodGoal extends Goal {
     private static final int EAT_TICKS = 32;
     private static final int PATH_RECALCULATE_TICKS = 20;
-    private static final double EATING_COMBAT_SPEED = 0.65D;
+    private static final double EATING_RETREAT_SPEED = 0.79D;
     private static final double EATING_WANDER_SPEED = 0.55D;
-    private static final double CLOSE_COMBAT_DISTANCE_SQR = 5.0D * 5.0D;
-    private static final double CHASE_DISTANCE_SQR = 7.0D * 7.0D;
-    private static final double CHASE_POWER_MARGIN = 4.0D;
     private static final float REGULAR_FOOD_HEAL_AMOUNT = 4.0F;
     private static final float PATH_NODE_MULTIPLIER = 0.15F;
 
     private final PlayerNpcEntity playerNpc;
+    private final DangerousReactionAi dangerousReactionAi;
     private ItemStack foodStack = ItemStack.EMPTY;
     private ItemStack previousMainHand = ItemStack.EMPTY;
     private int eatTicks;
@@ -57,6 +41,7 @@ public class EatHealingFoodGoal extends Goal {
 
     public EatHealingFoodGoal(PlayerNpcEntity playerNpc) {
         this.playerNpc = playerNpc;
+        this.dangerousReactionAi = new DangerousReactionAi(playerNpc);
         this.setFlags(EnumSet.of(Flag.MOVE, Flag.LOOK));
     }
 
@@ -67,7 +52,7 @@ public class EatHealingFoodGoal extends Goal {
 
     @Override
     public boolean requiresUpdateEveryTick() {
-        // Only the use timer/sounds advance per tick; movement planning is throttled.
+        // Item use and retained-threat reactions tick cheaply; scans and paths are throttled.
         return true;
     }
 
@@ -118,7 +103,7 @@ public class EatHealingFoodGoal extends Goal {
         this.foodStack.setCount(1);
         this.usingTemporaryFood = true;
         this.finishedEating = false;
-        this.pathRecalculateTicks = PATH_RECALCULATE_TICKS;
+        this.pathRecalculateTicks = 0;
         this.wasSprinting = this.playerNpc.isSprinting();
         this.playerNpc.setHealing(true);
         this.playerNpc.setSprinting(false);
@@ -155,11 +140,13 @@ public class EatHealingFoodGoal extends Goal {
         this.previousMainHand = ItemStack.EMPTY;
         this.usingTemporaryFood = false;
         this.finishedEating = false;
+        this.dangerousReactionAi.stop();
         this.playerNpc.setSprinting(this.wasSprinting);
         this.wasSprinting = false;
         this.playerNpc.getNavigation().stop();
         this.playerNpc.setHealing(false);
         this.playerNpc.setCurrentAiState(PlayerNpcEntity.AI_IDLE);
+        this.playerNpc.setCurrentAiDetail("");
 
         if (shouldApplyCooldown) {
             this.playerNpc.setGapCooldown();
@@ -181,10 +168,7 @@ public class EatHealingFoodGoal extends Goal {
             this.playerNpc.level().playSound(null, this.playerNpc.blockPosition(), SoundEvents.GENERIC_EAT.value(), SoundSource.HOSTILE, 0.8F, 1.0F);
         }
 
-        if (this.pathRecalculateTicks-- <= 0) {
-            this.updateEatingMovement();
-            this.pathRecalculateTicks = PATH_RECALCULATE_TICKS;
-        }
+        this.updateEatingMovement();
 
         this.eatTicks--;
         if (this.eatTicks > 0) {
@@ -232,127 +216,27 @@ public class EatHealingFoodGoal extends Goal {
     }
 
     private void updateEatingMovement() {
-        LivingEntity threat = this.playerNpc.getTarget();
-        if (this.playerNpc.hasInterest(PlayerNpcInterest.CAUTIOUS)) {
-            threat = CautiousThreatAi.findNearestThreat(this.playerNpc, 14.0D);
+        Entity threat = this.dangerousReactionAi.findThreat(true);
+        if (threat != null) {
+            this.dangerousReactionAi.tickRetreat(threat, EATING_RETREAT_SPEED, true);
+            this.pathRecalculateTicks = PATH_RECALCULATE_TICKS;
+            return;
         }
-        boolean hasThreat = threat != null && threat.isAlive();
-        boolean chasing = hasThreat && this.shouldChaseWhileEating(threat);
-        Vec3 movePos;
-        if (chasing) {
-            movePos = threat.position();
-        } else if (hasThreat) {
-            movePos = this.findFleePos(threat);
-        } else {
-            movePos = DefaultRandomPos.getPos(this.playerNpc, 8, 4);
+        this.dangerousReactionAi.tickRetreat(null, EATING_RETREAT_SPEED, false);
+        if (this.pathRecalculateTicks-- > 0) {
+            return;
         }
-
+        this.pathRecalculateTicks = PATH_RECALCULATE_TICKS;
+        this.playerNpc.setSprinting(false);
+        Vec3 movePos = DefaultRandomPos.getPos(this.playerNpc, 8, 4);
         if (movePos == null) {
             return;
         }
-
-        this.playerNpc.setSprinting(false);
-        Path path = PathNavigationAi.createBoundedPath(
-                this.playerNpc,
-                BlockPos.containing(movePos.x, movePos.y, movePos.z),
-                PATH_NODE_MULTIPLIER
-        );
+        Path path = PathNavigationAi.createBoundedPath(this.playerNpc, BlockPos.containing(movePos), PATH_NODE_MULTIPLIER);
         if (path != null && path.getNodeCount() > 0) {
-            this.playerNpc.getNavigation().moveTo(
-                    path,
-                    hasThreat ? EATING_COMBAT_SPEED : EATING_WANDER_SPEED
-            );
+            this.playerNpc.getNavigation().moveTo(path, EATING_WANDER_SPEED);
         }
-
-        if (hasThreat) {
-            this.playerNpc.getLookControl().setLookAt(threat, 60.0F, 60.0F);
-        } else {
-            this.playerNpc.getLookControl().setLookAt(movePos.x, movePos.y, movePos.z, 45.0F, 45.0F);
-        }
-    }
-
-    private boolean shouldChaseWhileEating(LivingEntity threat) {
-        if (this.playerNpc.hasInterest(PlayerNpcInterest.CAUTIOUS)) {
-            return false;
-        }
-        double distanceSqr = this.playerNpc.distanceToSqr(threat);
-        if (distanceSqr <= CLOSE_COMBAT_DISTANCE_SQR) {
-            return false;
-        }
-
-        double playerNpcPower = this.combatPower(this.playerNpc) + this.getHealAmount(this.foodStack) * 0.45D;
-        double threatPower = this.combatPower(threat);
-        if (playerNpcPower < threatPower + CHASE_POWER_MARGIN) {
-            return false;
-        }
-
-        return distanceSqr >= CHASE_DISTANCE_SQR || this.isThreatMovingAway(threat);
-    }
-
-    private boolean isThreatMovingAway(LivingEntity threat) {
-        Vec3 movement = threat.getDeltaMovement();
-        Vec3 fromNpcToThreat = threat.position().subtract(this.playerNpc.position());
-        if (movement.lengthSqr() < 1.0E-4D || fromNpcToThreat.lengthSqr() < 1.0E-4D) {
-            return false;
-        }
-
-        return movement.normalize().dot(fromNpcToThreat.normalize()) > 0.15D;
-    }
-
-    private double combatPower(LivingEntity entity) {
-        double score = entity.getHealth() * 0.45D;
-        score += entity.getArmorValue() * 0.9D;
-        if (entity.getAttribute(Attributes.ATTACK_DAMAGE) != null) {
-            score += entity.getAttributeValue(Attributes.ATTACK_DAMAGE) * 1.3D;
-        }
-
-        score += this.itemPower(entity.getMainHandItem()) * 1.4D;
-        score += this.itemPower(entity.getOffhandItem()) * 0.6D;
-        for (EquipmentSlot slot : EquipmentSlot.values()) {
-            if (slot.isArmor()) {
-                score += this.itemPower(entity.getItemBySlot(slot));
-            }
-        }
-        return score;
-    }
-
-    private double itemPower(ItemStack stack) {
-        if (stack.isEmpty()) {
-            return 0.0D;
-        }
-
-        double score = 0.0D;
-        if (stack.is(ItemTags.SWORDS) || stack.getItem() instanceof AxeItem) {
-            score += SmartNpcItemUtil.attackDamage(stack);
-        } else if (stack.has(DataComponents.TOOL)) {
-            score += 3.0D;
-        } else if (stack.getItem() instanceof TridentItem) {
-            score += 8.0D;
-        } else if (stack.getItem() instanceof BowItem || stack.getItem() instanceof CrossbowItem || stack.getItem() instanceof ProjectileWeaponItem) {
-            score += 5.0D;
-        }
-
-        if (SmartNpcItemUtil.isArmor(stack)) {
-            score += SmartNpcItemUtil.armor(stack) * 1.2D;
-            score += SmartNpcItemUtil.toughness(stack);
-        }
-        if (stack.isEnchanted()) {
-            score += 2.0D;
-        }
-        return score;
-    }
-
-    private Vec3 findFleePos(LivingEntity threat) {
-        Vec3 pos = DefaultRandomPos.getPosAway(this.playerNpc, 14, 6, threat.position());
-        if (pos != null) {
-            return pos;
-        }
-
-        Vec3 away = this.playerNpc.position().subtract(threat.position());
-        if (away.lengthSqr() < 1.0E-4D) {
-            away = Vec3.directionFromRotation(0.0F, this.playerNpc.getYRot());
-        }
-        return this.playerNpc.position().add(away.normalize().scale(10.0D));
+        this.playerNpc.getLookControl().setLookAt(movePos.x, movePos.y, movePos.z, 45.0F, 45.0F);
     }
 
     private void giveOrDrop(ItemStack stack) {
