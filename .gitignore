@@ -5,3 +5,7 @@ run
 bin
 libs
 reference
+.vscode
+AGENTS.md
+CONTENT_FEATURES.md
+INDEX.md
