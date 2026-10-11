@@ -16,6 +16,7 @@
   "ai.player_npc.idle": "空闲",
   "ai.player_npc.retaliating": "反击",
   "ai.player_npc.fleeing_low_health": "逃跑",
+  "ai.player_npc.dangerous_reaction": "躲避迫近的危险",
   "ai.player_npc.eating": "进食",
   "ai.player_npc.ranged_bow": "弓箭战斗",
   "ai.player_npc.melee_attacking": "近战攻击",

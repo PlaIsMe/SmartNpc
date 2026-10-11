@@ -130,7 +130,7 @@ public class FakePlayerRenderer<T extends FakePlayer> extends HumanoidMobRendere
     @Override
     protected float getAttackAnim(@NotNull T entity, float partialTick) {
         if (entity instanceof PlayerNpcEntity playerNpc
-                && BetterCombatClientCompat.hasActiveAttackAnimation(playerNpc)) {
+                && (playerNpc.isHealing() || BetterCombatClientCompat.hasActiveAttackAnimation(playerNpc))) {
             return 0.0F;
         }
 

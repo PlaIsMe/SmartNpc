@@ -38,6 +38,7 @@
   "ai.player_npc.staying_busy": "Staying busy",
   "ai.player_npc.retaliating": "Retaliating",
   "ai.player_npc.fleeing_low_health": "Fleeing",
+  "ai.player_npc.dangerous_reaction": "Avoiding imminent danger",
   "ai.player_npc.eating": "Eating",
   "ai.player_npc.ranged_bow": "Bow combat",
   "ai.player_npc.melee_attacking": "Melee attacking",
