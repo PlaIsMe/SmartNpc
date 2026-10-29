@@ -2,8 +2,9 @@ package com.pla.smart_npc.entity.goal;
 
 import com.pla.smart_npc.clazz.PlayerNpcInterest;
 import com.pla.smart_npc.entity.PlayerNpcEntity;
-import com.pla.smart_npc.util.ChatUtil;
 import com.pla.smart_npc.util.PlayerNpcTeamUpManager;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.InteractionHand;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.ai.goal.Goal;
 import net.minecraft.world.phys.Vec3;
@@ -11,26 +12,30 @@ import net.minecraft.world.phys.Vec3;
 import javax.annotation.Nullable;
 import java.util.EnumSet;
 
-/** A bounded, non-worker social invitation that visibly waits for an exact acceptance. */
+/** A bounded, non-worker invitation accepted through reciprocal crouching. */
 public final class TeamUpGoal extends Goal {
     private static final int INVITATION_CHECK_INTERVAL_TICKS = 20 * 5;
-    private static final int MIN_WAIT_TICKS = 20 * 20;
-    private static final int MAX_WAIT_TICKS = 20 * 30;
     private static final int RETRY_COOLDOWN_TICKS = 20 * 30;
+    private static final int NPC_REPLY_PHASE_TICKS = 4;
 
     private final PlayerNpcEntity playerNpc;
     private final CanUseThrottle canUseThrottle = new CanUseThrottle(INVITATION_CHECK_INTERVAL_TICKS);
     @Nullable
     private LivingEntity inviteTarget;
-    private Gesture gesture = Gesture.LOOK_AROUND;
     private int waitTicks;
-    private int npcResponseTick;
     private int gestureTicks;
+    private int offerTicks;
+    private int offerCrouches;
+    private int swingTick;
+    private int jumpTick;
     private boolean invitationStarted;
+    private boolean lastResponseCrouching;
+    private int responsePresses;
+    private boolean responseReady;
 
     public TeamUpGoal(PlayerNpcEntity playerNpc) {
         this.playerNpc = playerNpc;
-        this.setFlags(EnumSet.of(Flag.MOVE, Flag.LOOK));
+        this.setFlags(EnumSet.of(Flag.MOVE, Flag.LOOK, Flag.JUMP));
     }
 
     @Override
@@ -62,43 +67,73 @@ public final class TeamUpGoal extends Goal {
         if (this.inviteTarget == null) {
             return;
         }
-        this.waitTicks = this.playerNpc.getRandom().nextInt(MIN_WAIT_TICKS, MAX_WAIT_TICKS + 1);
-        this.npcResponseTick = 40 + this.playerNpc.getRandom().nextInt(61);
-        this.gesture = Gesture.values()[this.playerNpc.getRandom().nextInt(Gesture.values().length)];
+        this.offerTicks = 40 + this.playerNpc.getRandom().nextInt(21);
+        this.offerCrouches = 5 + this.playerNpc.getRandom().nextInt(6);
+        this.waitTicks = this.offerTicks + 40 + this.playerNpc.getRandom().nextInt(21);
+        this.swingTick = this.playerNpc.getRandom().nextFloat() < 0.35F ? 8 + this.playerNpc.getRandom().nextInt(this.offerTicks - 16) : -1;
+        this.jumpTick = this.playerNpc.getRandom().nextFloat() < 0.20F ? this.offerTicks / 2 : -1;
         this.gestureTicks = 0;
-        this.invitationStarted = true;
+        this.responsePresses = 0;
+        this.responseReady = false;
+        this.lastResponseCrouching = this.inviteTarget.isShiftKeyDown();
+        this.invitationStarted = PlayerNpcTeamUpManager.beginInvitation(this.playerNpc, this.inviteTarget,
+                this.playerNpc.getServer().getTickCount() + this.waitTicks);
+        if (!this.invitationStarted) {
+            this.waitTicks = 0;
+            return;
+        }
         this.playerNpc.getNavigation().stop();
+        this.playerNpc.setShiftKeyDown(true);
         this.playerNpc.setCurrentAiState("ai.player_npc.awaiting_teamup_reply");
         this.updateDetail();
-        PlayerNpcTeamUpManager.beginInvitation(
-                this.playerNpc,
-                this.inviteTarget,
-                this.playerNpc.getServer().getTickCount() + this.waitTicks
-        );
-        ChatUtil.teamUpGreeting(this.playerNpc, this.inviteTarget);
     }
 
     @Override
     public void tick() {
-        if (this.inviteTarget == null) {
+        if (this.inviteTarget == null || !PlayerNpcTeamUpManager.canContinueInvitation(this.playerNpc, this.inviteTarget)) {
+            this.waitTicks = 0;
             return;
         }
         this.waitTicks--;
         this.gestureTicks++;
         this.playerNpc.getNavigation().stop();
         this.playerNpc.getLookControl().setLookAt(this.inviteTarget, 35.0F, 35.0F);
-        this.performGesture();
-
-        if (this.inviteTarget instanceof PlayerNpcEntity npcTarget
-                && this.gestureTicks >= this.npcResponseTick
-                && PlayerNpcTeamUpManager.acceptNpcResponse(this.playerNpc, npcTarget)) {
-            this.waitTicks = 0;
+        boolean offering = this.gestureTicks < this.offerTicks;
+        int phase = this.gestureTicks * (this.offerCrouches * 2) / this.offerTicks;
+        this.playerNpc.setShiftKeyDown(offering && phase % 2 == 0);
+        if (this.gestureTicks == this.swingTick) {
+            // Gesture only: never call attack, use, interact or damage APIs.
+            this.playerNpc.swing(InteractionHand.MAIN_HAND, true);
+        }
+        if (this.gestureTicks == this.jumpTick && this.playerNpc.onGround()
+                && this.playerNpc.distanceToSqr(this.inviteTarget) <= 4.0D
+                && !this.playerNpc.isInWater() && !this.playerNpc.isInLava()) {
+            this.playerNpc.getJumpControl().jump();
+        }
+        if (this.gestureTicks == this.offerTicks) {
+            this.updateDetail();
+        }
+        if (this.inviteTarget instanceof PlayerNpcEntity npcTarget) {
+            npcTarget.getNavigation().stop();
+            npcTarget.getLookControl().setLookAt(this.playerNpc, 35.0F, 35.0F);
+            int responseTick = this.gestureTicks - this.offerTicks - 4;
+            npcTarget.setShiftKeyDown(responseTick >= 0 && responseTick < NPC_REPLY_PHASE_TICKS * 4
+                    && (responseTick / NPC_REPLY_PHASE_TICKS) % 2 == 0);
+        }
+        this.observeResponseGesture();
+        if (!offering && this.responseReady) {
+            boolean accepted = this.inviteTarget instanceof PlayerNpcEntity npcTarget
+                    ? PlayerNpcTeamUpManager.acceptNpcResponse(this.playerNpc, npcTarget)
+                    : this.inviteTarget instanceof ServerPlayer player
+                    && PlayerNpcTeamUpManager.acceptPlayerGesture(this.playerNpc, player);
+            if (accepted) {
+                this.waitTicks = 0;
+            }
         }
     }
 
     @Override
     public void stop() {
-        this.playerNpc.setShiftKeyDown(false);
         PlayerNpcTeamUpManager.cancelInvitation(this.playerNpc, this.inviteTarget);
         if (!this.playerNpc.isTeamFollower()) {
             this.playerNpc.setCurrentAiState(PlayerNpcEntity.AI_IDLE);
@@ -115,45 +150,42 @@ public final class TeamUpGoal extends Goal {
 
     @Override
     public boolean requiresUpdateEveryTick() {
+        // Only exact-target safety, look and gesture edges run here; acquisition keeps its
+        // five-second throttle and never creates paths or broad scans from the running goal.
         return true;
     }
 
-    private void performGesture() {
-        switch (this.gesture) {
-            case SNEAK -> this.playerNpc.setShiftKeyDown(this.gestureTicks >= 20 && this.gestureTicks < 40);
-            case REPEATED_SNEAK -> this.playerNpc.setShiftKeyDown((this.gestureTicks / 12) % 2 == 0);
-            case JUMP -> {
-                if (this.gestureTicks == 25 && this.playerNpc.onGround()) {
-                    this.playerNpc.getJumpControl().jump();
-                }
+    private void observeResponseGesture() {
+        boolean crouching = this.inviteTarget.isShiftKeyDown();
+        Vec3 towardInviter = this.playerNpc.getEyePosition().subtract(this.inviteTarget.getEyePosition());
+        Vec3 view = this.inviteTarget instanceof PlayerNpcEntity npcTarget
+                ? Vec3.directionFromRotation(npcTarget.getXRot(), npcTarget.getYHeadRot())
+                : this.inviteTarget.getViewVector(1.0F);
+        boolean facing = towardInviter.lengthSqr() < 0.01D
+                || view.dot(towardInviter.normalize()) >= 0.5D;
+        if (!facing) {
+            this.responsePresses = 0;
+            this.responseReady = false;
+        }
+        if (crouching != this.lastResponseCrouching) {
+            this.lastResponseCrouching = crouching;
+            if (crouching && facing) {
+                // One sampled rising edge per server tick is sufficient. The former four-tick
+                // debounce rejected the very quick reciprocal tapping the inviter demonstrates.
+                this.responsePresses++;
             }
-            case REPEATED_JUMP -> {
-                if (this.gestureTicks % 35 == 0 && this.playerNpc.onGround()) {
-                    this.playerNpc.getJumpControl().jump();
-                }
-            }
-            case LOOK_AROUND -> {
-                if (this.gestureTicks % 35 == 0) {
-                    Vec3 position = this.playerNpc.position();
-                    double x = position.x + this.playerNpc.getRandom().nextDouble() * 12.0D - 6.0D;
-                    double z = position.z + this.playerNpc.getRandom().nextDouble() * 12.0D - 6.0D;
-                    this.playerNpc.getLookControl().setLookAt(x, position.y + 1.5D, z, 25.0F, 25.0F);
-                }
-            }
+            // Human replies may arrive during the offer. Remember them until the complete
+            // offer finishes; NPC replies finish visibly before ownership changes clear crouch.
+            this.responseReady = facing && this.responsePresses >= 2
+                    && (!(this.inviteTarget instanceof PlayerNpcEntity) || !crouching);
         }
     }
 
     private void updateDetail() {
         if (this.inviteTarget != null) {
-            this.playerNpc.setCurrentAiDetail("waiting for " + this.inviteTarget.getDisplayName().getString());
+            this.playerNpc.setCurrentAiDetail((this.gestureTicks < this.offerTicks ? "inviting " : "waiting for crouch reply from ")
+                    + this.inviteTarget.getDisplayName().getString());
         }
     }
 
-    private enum Gesture {
-        SNEAK,
-        REPEATED_SNEAK,
-        JUMP,
-        REPEATED_JUMP,
-        LOOK_AROUND
-    }
 }

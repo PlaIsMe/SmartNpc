@@ -2,6 +2,7 @@ package com.pla.smart_npc.util;
 
 import com.mojang.authlib.GameProfile;
 import com.mojang.authlib.properties.PropertyMap;
+import com.mojang.brigadier.arguments.StringArgumentType;
 import com.pla.smart_npc.SmartNpc;
 import com.pla.smart_npc.config.SmartNpcConfig;
 import com.pla.smart_npc.entity.PlayerNpcEntity;
@@ -547,6 +548,10 @@ public final class PlayerNpcForceTickManager {
             SuggestionsBuilder builder
     ) {
         return SharedSuggestionProvider.suggest(availableNpcNames(server), builder);
+    }
+
+    public static CompletableFuture<com.mojang.brigadier.suggestion.Suggestions> suggestNpcNames(MinecraftServer server, SuggestionsBuilder builder, boolean quoteNames) {
+        return SharedSuggestionProvider.suggest(availableNpcNames(server).stream().map(name -> quoteNames ? StringArgumentType.escapeIfRequired(name) : name), builder);
     }
 
     public static Optional<PlayerNpcEntity> findNextForInspectator(

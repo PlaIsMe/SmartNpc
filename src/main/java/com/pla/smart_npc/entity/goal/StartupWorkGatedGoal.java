@@ -6,6 +6,7 @@ import com.pla.smart_npc.util.PlayerNpcPerformanceMonitor;
 import com.pla.smart_npc.util.PlayerNpcTeamUpManager;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.world.entity.ai.goal.Goal;
+import net.minecraft.world.level.pathfinder.Path;
 
 /**
  * Defers routine work while an integrated/dedicated server is still restoring its world.
@@ -24,6 +25,9 @@ public final class StartupWorkGatedGoal extends Goal {
     private final Goal delegate;
     private final int releaseServerTick;
     private final int predicateSlice;
+    private boolean socialPaused;
+    private Path socialPausedPath;
+    private double socialPausedSpeed;
 
     public StartupWorkGatedGoal(PlayerNpcEntity playerNpc, Goal delegate, int registrationIndex) {
         this.playerNpc = playerNpc;
@@ -45,6 +49,9 @@ public final class StartupWorkGatedGoal extends Goal {
 
     @Override
     public boolean canUse() {
+        if (this.playerNpc.getSocialNoticeAi().isActive()) {
+            return false;
+        }
         if ((PlayerNpcTeamUpManager.shouldSuspendRoutineWork(this.playerNpc)
                 || this.playerNpc.isTeamUpRequestPending())
                 || !this.isStartupGraceComplete()
@@ -78,6 +85,13 @@ public final class StartupWorkGatedGoal extends Goal {
                 || !PlayerNpcAiWorkBudget.canContinueWork(this.playerNpc)) {
             return false;
         }
+        if (this.shouldPauseForNotice()) {
+            // Navigation has been suspended; do not mistake that for a completed/failed route.
+            // Actual safety owners remain unwrapped and can preempt this retained goal normally.
+            return this.playerNpc.isAlive() && !this.playerNpc.isNoAi() && this.playerNpc.getTarget() == null
+                    && !this.playerNpc.isHealing() && !this.playerNpc.isSleeping();
+        }
+        this.resumeSocialWork();
         long timing = PlayerNpcPerformanceMonitor.beginAuxiliaryTiming();
         try {
             return this.delegate.canContinueToUse();
@@ -113,6 +127,9 @@ public final class StartupWorkGatedGoal extends Goal {
 
     @Override
     public void stop() {
+        this.socialPaused = false;
+        this.socialPausedPath = null;
+        this.playerNpc.setSocialNoticePausesWork(false);
         long timing = PlayerNpcPerformanceMonitor.beginAuxiliaryTiming();
         try {
             this.delegate.stop();
@@ -130,6 +147,18 @@ public final class StartupWorkGatedGoal extends Goal {
                 || this.playerNpc.isTeamUpRequestPending()) {
             return;
         }
+        if (this.shouldPauseForNotice()) {
+            if (!this.socialPaused) {
+                this.socialPaused = true;
+                this.socialPausedPath = this.playerNpc.getNavigation().getPath();
+                this.socialPausedSpeed = Math.max(0.1D, Math.min(1.0D, this.playerNpc.getMoveControl().getSpeedModifier()));
+            }
+            this.playerNpc.getNavigation().stop();
+            this.playerNpc.getMoveControl().setWantedPosition(this.playerNpc.getX(), this.playerNpc.getY(), this.playerNpc.getZ(), 0.0D);
+            this.playerNpc.getSocialNoticeAi().pauseWorkAnimation();
+            return;
+        }
+        this.resumeSocialWork();
         long timing = PlayerNpcPerformanceMonitor.beginAuxiliaryTiming();
         try {
             this.delegate.tick();
@@ -149,5 +178,27 @@ public final class StartupWorkGatedGoal extends Goal {
                 this.delegate.getClass().getSimpleName() + "." + operation,
                 timing
         );
+    }
+
+    private boolean shouldPauseForNotice() {
+        Goal goal = this.delegate;
+        while (goal instanceof InterestGatedGoal interest) {
+            goal = interest.getDelegateGoal();
+        }
+        return this.playerNpc.getSocialNoticeAi().isActive() && this.playerNpc.canSociallyNotice()
+                && !(goal instanceof PlayerNpcFishingGoal) && !(goal instanceof ExploreAroundGoal);
+    }
+
+    private void resumeSocialWork() {
+        if (!this.socialPaused) {
+            return;
+        }
+        this.socialPaused = false;
+        this.playerNpc.setSocialNoticePausesWork(false);
+        if (this.socialPausedPath != null && !this.socialPausedPath.isDone()
+                && this.playerNpc.getTarget() == null && !this.playerNpc.isHealing()) {
+            this.playerNpc.getNavigation().moveTo(this.socialPausedPath, this.socialPausedSpeed);
+        }
+        this.socialPausedPath = null;
     }
 }

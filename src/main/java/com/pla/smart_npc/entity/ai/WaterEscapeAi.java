@@ -46,16 +46,15 @@ public final class WaterEscapeAi {
     private static final int DRY_EXIT_FALLBACK_VERTICAL_UP = 2;
     private static final int DRY_EXIT_FALLBACK_RANDOM_POOL = 8;
     private static final int DESTINATION_RECOVERY_SCAN_INTERVAL_TICKS = 20;
-    private static final int MAX_DESTINATION_SWIM_TICKS = 20 * 20;
-    private static final int MAX_DESTINATION_EPISODE_TICKS = 20 * 20;
+    private static final int MAX_DESTINATION_SWIM_TICKS = 20 * 120;
+    private static final int MIN_DESTINATION_EPISODE_TICKS = 20 * 20;
+    private static final int MAX_DESTINATION_EPISODE_TICKS = 20 * 120;
     private static final int DESTINATION_UNCHANGED_POSITION_TICKS = 20 * 8;
     private static final int FAILED_DESTINATION_QUARANTINE_TICKS = 20 * 30;
     private static final int DESTINATION_DRY_CONFIRM_TICKS = 5;
     private static final int DESTINATION_STALL_TICKS = 20 * 2;
     private static final int MAX_DESTINATION_STALL_EPISODES = 3;
     private static final double DESTINATION_PROGRESS_EPSILON_SQR = 0.04D;
-    private static final double DESTINATION_SWIM_ACCELERATION = 0.035D;
-    private static final double DESTINATION_SWIM_MAX_HORIZONTAL_SPEED = 0.16D;
 
     private final PlayerNpcEntity playerNpc;
     private final PlacingBlockAi placingBlockAi;
@@ -77,6 +76,7 @@ public final class WaterEscapeAi {
     private int destinationStallEpisodes;
     private int nextDestinationRecoveryScanTick;
     private int destinationEpisodeStartTick = -1;
+    private int destinationEpisodeBudgetTicks = MIN_DESTINATION_EPISODE_TICKS;
     private int destinationLastMovementTick = -1;
     private int destinationDryConfirmTicks;
     private double destinationProgressX;
@@ -128,7 +128,7 @@ public final class WaterEscapeAi {
             } else {
                 this.destinationDryConfirmTicks = 0;
             }
-            if (this.playerNpc.tickCount - this.destinationEpisodeStartTick >= MAX_DESTINATION_EPISODE_TICKS) {
+            if (this.playerNpc.tickCount - this.destinationEpisodeStartTick >= this.destinationEpisodeBudgetTicks) {
                 this.failOrStopPreferredDestination();
                 return TickResult.FAILED;
             }
@@ -172,7 +172,7 @@ public final class WaterEscapeAi {
         }
         if (requestedDestination != null
                 && this.destinationEpisodeStartTick >= 0
-                && this.playerNpc.tickCount - this.destinationEpisodeStartTick >= MAX_DESTINATION_EPISODE_TICKS) {
+                && this.playerNpc.tickCount - this.destinationEpisodeStartTick >= this.destinationEpisodeBudgetTicks) {
             this.failOrStopPreferredDestination();
             return TickResult.FAILED;
         }
@@ -198,6 +198,7 @@ public final class WaterEscapeAi {
     }
 
     public void stop() {
+        this.playerNpc.getWaterTravelAi().release(this);
         this.waterPos = null;
         this.standPlacePos = null;
         this.dryExitPos = null;
@@ -214,6 +215,7 @@ public final class WaterEscapeAi {
         this.destinationStallEpisodes = 0;
         this.nextDestinationRecoveryScanTick = 0;
         this.destinationEpisodeStartTick = -1;
+        this.destinationEpisodeBudgetTicks = MIN_DESTINATION_EPISODE_TICKS;
         this.destinationLastMovementTick = -1;
         this.destinationDryConfirmTicks = 0;
         this.bestDestinationDistanceSqr = Double.MAX_VALUE;
@@ -245,6 +247,7 @@ public final class WaterEscapeAi {
         // while a usable footing block can get the NPC out of the water.
         WaterStandTarget standTarget = this.findWaterStandTarget(serverLevel, false);
         if (standTarget != null) {
+            this.playerNpc.getWaterTravelAi().release(this);
             this.waterPos = standTarget.waterPos();
             this.standPlacePos = standTarget.placePos();
             this.dryExitPos = null;
@@ -338,9 +341,7 @@ public final class WaterEscapeAi {
 
     private void steerTowardDestination(double speed) {
         this.playerNpc.getNavigation().stop();
-        if (this.playerNpc.level() instanceof ServerLevel serverLevel) {
-            this.jumpUpFromWater(serverLevel);
-        }
+        this.playerNpc.getWaterTravelAi().request(this, this.preferredDestination, speed, false);
         double wantedY = Math.max(
                 this.playerNpc.getY() + 0.5D,
                 Math.min(this.preferredDestination.getY(), this.playerNpc.getY() + 1.0D)
@@ -370,6 +371,7 @@ public final class WaterEscapeAi {
 
         WaterStandTarget standTarget = this.findDestinationStandTarget(serverLevel, feet);
         if (standTarget != null) {
+            this.playerNpc.getWaterTravelAi().release(this);
             this.waterPos = standTarget.waterPos();
             this.standPlacePos = standTarget.placePos();
             this.dryExitPos = null;
@@ -398,6 +400,11 @@ public final class WaterEscapeAi {
         this.swimmingToDestination = true;
         if (newEpisode || this.destinationEpisodeStartTick < 0) {
             this.destinationEpisodeStartTick = this.playerNpc.tickCount;
+            // Budget once from the original crossing distance, including time to breathe.
+            // Recovery transitions never refresh this absolute deadline.
+            double crossingDistance = Math.sqrt(horizontalDistanceToCenterSqr(this.playerNpc.position(), destination));
+            this.destinationEpisodeBudgetTicks = (int) Math.min(MAX_DESTINATION_EPISODE_TICKS,
+                    Math.max(MIN_DESTINATION_EPISODE_TICKS, 200.0D + crossingDistance * 20.0D));
             this.destinationLastMovementTick = this.playerNpc.tickCount;
             this.destinationProgressX = this.playerNpc.getX();
             this.destinationProgressZ = this.playerNpc.getZ();
@@ -415,6 +422,7 @@ public final class WaterEscapeAi {
     }
 
     private void beginDryExit(BlockPos feet, BlockPos dryExit) {
+        this.playerNpc.getWaterTravelAi().release(this);
         this.waterPos = feet.immutable();
         this.dryExitPos = dryExit.immutable();
         this.standPlacePos = null;
@@ -704,8 +712,8 @@ public final class WaterEscapeAi {
         }
 
         double safeSpeed = Math.min(1.0D, Math.max(0.1D, speed));
-        double acceleration = DESTINATION_SWIM_ACCELERATION * safeSpeed;
-        double maxSpeed = DESTINATION_SWIM_MAX_HORIZONTAL_SPEED * safeSpeed;
+        double acceleration = this.playerNpc.getWaterTravelAi().swimAcceleration() * safeSpeed;
+        double maxSpeed = this.playerNpc.getWaterTravelAi().swimSpeedCap() * safeSpeed;
         Vec3 motion = this.playerNpc.getDeltaMovement();
         double nextX = motion.x + dx / length * acceleration;
         double nextZ = motion.z + dz / length * acceleration;
@@ -983,7 +991,7 @@ public final class WaterEscapeAi {
             String destination = this.preferredDestination == null
                     ? "work target"
                     : "work target @ " + posText(this.preferredDestination);
-            this.detail = "water escape: swimming toward " + destination + " from @ " + posText(this.waterPos);
+            this.detail = "water escape: " + this.playerNpc.getWaterTravelAi().phase() + " toward " + destination + " from @ " + posText(this.waterPos);
             return;
         }
 

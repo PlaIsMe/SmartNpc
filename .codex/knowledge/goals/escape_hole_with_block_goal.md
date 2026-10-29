@@ -1,5 +1,13 @@
 # EscapeHoleWithBlockGoal
 
+Generic trap discovery yields to actual running `GatheringGoal` delegates, including DigDown
+behind the startup and interest wrappers. DigDown's successful stone/ore/cave handoff now also
+reserves the local excavation for up to 60 server ticks after it stops, preventing priority-one
+escape from filling the new step before the next mining goal acquires its work slice. This
+nonpersistent reservation is owned by the DigDown instance shared at goal registration; it
+expires, ends after movement beyond three blocks, and yields immediately to combat/healing or
+explicit upward recovery. Failure/abort stops do not reserve a site.
+
 Terraform support-fill requests use an exact requested feet height throughout forced-route
 admission, pillar planning, and completion. Ordinary forced-route one-block arrival tolerance is
 not valid for this handoff: it can leave the builder inside the support work level and repeatedly

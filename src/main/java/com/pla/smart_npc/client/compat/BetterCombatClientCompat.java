@@ -1,5 +1,7 @@
 package com.pla.smart_npc.client.compat;
 
+import net.minecraft.core.component.DataComponents;
+
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.pla.smart_npc.SmartNpc;
 import com.pla.smart_npc.compat.BetterCombatCompat;
@@ -63,7 +65,8 @@ public final class BetterCombatClientCompat {
      * both systems do not fight over the same model parts.
      */
     public static boolean hasActiveAttackAnimation(PlayerNpcEntity playerNpc) {
-        if (!BetterCombatCompat.isLoaded() || disabled || playerNpc.getBetterCombatAttackAnimationTicks() <= 0) {
+        if (!BetterCombatCompat.isLoaded() || disabled || playerNpc.getBetterCombatAttackAnimationTicks() <= 0
+                || playerNpc.isUsingItem() && playerNpc.getUseItem().has(DataComponents.BLOCKS_ATTACKS)) {
             return false;
         }
         try {
@@ -163,7 +166,8 @@ public final class BetterCombatClientCompat {
             HumanoidArm renderedArm,
             float partialTick
     ) {
-        if (!BetterCombatCompat.isLoaded() || disabled) {
+        if (!BetterCombatCompat.isLoaded() || disabled
+                || playerNpc.isUsingItem() && playerNpc.getUseItem().has(DataComponents.BLOCKS_ATTACKS)) {
             return false;
         }
 

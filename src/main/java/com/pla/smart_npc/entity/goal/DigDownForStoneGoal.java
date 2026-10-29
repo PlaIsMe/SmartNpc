@@ -69,6 +69,7 @@ public class DigDownForStoneGoal extends Goal implements GatheringGoal {
     private static final int CLEAR_OBSTRUCTION_TICKS = 24;
     private static final double CLEAR_OBSTRUCTION_DISTANCE_SQR = 5.0D * 5.0D;
     private static final int IDLE_DIAGNOSTIC_TICKS = 20 * 20;
+    private static final int MINING_HANDOFF_TICKS = 20 * 3;
     private final PlayerNpcEntity playerNpc;
     private final double speed;
     private final ToolAi toolAi;
@@ -106,6 +107,8 @@ public class DigDownForStoneGoal extends Goal implements GatheringGoal {
     private boolean finished;
     private boolean continueEligibilityAllowed = true;
     private String stopReason = "";
+    private BlockPos miningHandoffOrigin;
+    private long miningHandoffUntil;
 
     public DigDownForStoneGoal(PlayerNpcEntity playerNpc, double speed) {
         this.playerNpc = playerNpc;
@@ -277,6 +280,7 @@ public class DigDownForStoneGoal extends Goal implements GatheringGoal {
 
     @Override
     public void start() {
+        this.clearMiningHandoff();
         this.goalTicks = 0;
         this.repathTicks = 0;
         this.digSiteWalkTicks = 0;
@@ -422,6 +426,17 @@ public class DigDownForStoneGoal extends Goal implements GatheringGoal {
 
     @Override
     public void stop() {
+        this.clearMiningHandoff();
+        if (this.foundGatherStoneTarget && this.digOrigin != null
+                && this.playerNpc.blockPosition().distSqr(this.digOrigin) <= LOCAL_STEP_DISTANCE_SQR
+                && this.playerNpc.getTarget() == null && !this.playerNpc.isHealing()
+                && this.playerNpc.getUpwardEscapeTarget() == null) {
+            // GoalSelector stops finished goals before admitting their replacements. Keep the
+            // intentional excavation intact for a bounded selector/admission handoff to stone,
+            // ore, or cave work; otherwise priority-one recovery can refill the new access step.
+            this.miningHandoffOrigin = this.playerNpc.blockPosition().immutable();
+            this.miningHandoffUntil = this.playerNpc.level().getGameTime() + MINING_HANDOFF_TICKS;
+        }
         this.playerNpc.clearBlockBreakProgress(this.targetPos);
         this.clearBlockAi.stop();
         this.breakingBlockAi.stop();
@@ -469,6 +484,26 @@ public class DigDownForStoneGoal extends Goal implements GatheringGoal {
         this.finished = false;
         this.continueEligibilityAllowed = true;
         this.stopReason = "";
+    }
+
+    public boolean isMiningHandoffPending() {
+        if (this.miningHandoffOrigin == null) {
+            return false;
+        }
+        if (this.playerNpc.level().getGameTime() >= this.miningHandoffUntil
+                || this.playerNpc.blockPosition().distSqr(this.miningHandoffOrigin) > LOCAL_STEP_DISTANCE_SQR
+                || !this.playerNpc.isAlive() || this.playerNpc.isNoAi() || this.playerNpc.isPassenger()
+                || this.playerNpc.isHealing() || this.playerNpc.getTarget() != null
+                || this.playerNpc.getUpwardEscapeTarget() != null) {
+            this.clearMiningHandoff();
+            return false;
+        }
+        return true;
+    }
+
+    private void clearMiningHandoff() {
+        this.miningHandoffOrigin = null;
+        this.miningHandoffUntil = 0L;
     }
 
     private void finish(String reason) {

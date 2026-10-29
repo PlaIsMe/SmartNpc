@@ -16,12 +16,12 @@ Feature flag:
 
 Core owner:
 - `src/main/java/com/pla/smart_npc/util/PlayerNpcForceTickManager.java`
-- It is a Forge event subscriber and owns the tracked loaded Player NPC registry, force-tick chunk tickets, tab-list fake players, command lookup, and tracked inspectator cycling.
+- It is a NeoForge event subscriber and owns the tracked loaded Player NPC registry, force-tick chunk tickets, tab-list fake players, command lookup, and tracked inspectator cycling.
 
 Chunk tickets:
 - Each selected alive `PlayerNpcEntity` has one moving distance-2 region-ticket anchor at its current chunk. Mode `1` selects all known NPCs; automatic mode selects the adaptive worker-first subset. The ticket's normal distance propagation supplies a loaded fringe around the center; do not add a 3x3 grid of independent force-tick anchors. Nine anchors per NPC multiply entity-ticking chunks and scale poorly when many NPCs are spread across the world.
-- Tickets use `ServerChunkCache.addRegionTicket(..., forceTicks=false)` and are removed with the matching `removeRegionTicket(..., forceTicks=false)`. The boolean is part of Forge ticket identity, so add/remove values must always match.
-- Distance 2 creates ticket level 31 (`ENTITY_TICKING`) at the NPC center. This keeps the Player NPC entity AI alive; block entities and scheduled block/fluid ticks follow the ordinary block-ticking status. Forge's separate `forceTicks=true` registry bypasses the real-player proximity gate in `ServerChunkCache.tickChunks`, adding natural spawning and `tickChunk` random ticks at every remote center. Do not enable it for Player NPC anchors. Consequently, crops and other random-tick blocks do not advance solely from an NPC ticket, matching vanilla `/forceload`; they still advance when a real player's simulation range covers the chunk.
+- Tickets use `ServerChunkCache.addRegionTicket(..., forceTicks=false)` and are removed with the matching `removeRegionTicket(..., forceTicks=false)`. The boolean is part of NeoForge ticket identity, so add/remove values must always match.
+- Distance 2 creates ticket level 31 (`ENTITY_TICKING`) at the NPC center. This keeps the Player NPC entity AI alive; block entities and scheduled block/fluid ticks follow the ordinary block-ticking status. NeoForge's separate `forceTicks=true` registry bypasses the real-player proximity gate in `ServerChunkCache.tickChunks`, adding natural spawning and `tickChunk` random ticks at every remote center. Do not enable it for Player NPC anchors. Consequently, crops and other random-tick blocks do not advance solely from an NPC ticket, matching vanilla `/forceload`; they still advance when a real player's simulation range covers the chunk.
 - The ticket type is `smart_npc:player_npc_force_tick`; ticket values include the NPC UUID and chunk long so overlapping NPCs release independently.
 - Old chunks are released whenever a selected NPC changes chunk/dimension, is deselected, dies, the server stops, or the config is turned off. An ordinary unload keeps the NPC's persisted identity and last center available for later automatic selection.
 
@@ -35,7 +35,7 @@ Restart persistence:
 
 Tab list:
 - Tracked NPCs are added to the multiplayer tab list only while `forceTickManage` is enabled.
-- The manager sends 1.20.1 `ClientboundPlayerInfoUpdatePacket.createPlayerInitializing(...)` for a Forge fake player whose UUID matches the NPC entity UUID.
+- The manager sends 26.1.2 `ClientboundPlayerInfoUpdatePacket.createPlayerInitializing(...)` for a NeoForge fake player whose UUID matches the NPC entity UUID.
 - A joining viewer receives all currently resolved managed NPC rows in one initializing packet rather than one packet and one reconciliation pass per NPC.
 - `PlayerEvent.TabListNameFormat` gives managed fake players a `[NPC] ` prefix before the NPC display name.
 - Fake tab players are put in spectator mode and use a late-sorting synthetic profile name so vanilla tab sorting keeps normal real players above NPC rows.
@@ -46,6 +46,9 @@ Teleport command:
 - Suggestions come from currently tracked alive NPC display names.
 - Name matching strips an optional `[NPC] ` prefix and compares case-insensitively.
 - If multiple tracked NPCs share the same name, the command chooses a random match.
+- `/smart_npc tp <name> <destination>` moves that named NPC to one selected entity, including across dimensions. Examples: `/smart_npc tp MrBeast @s`, `/smart_npc tp MrBeast @p`, `/smart_npc tp MrBeast @e[type=minecraft:armor_stand,limit=1,sort=nearest]`. A destination selector must resolve to exactly one entity, as in vanilla teleport.
+- Both forms require operator permission level 2 and enabled force-tick management. The one-argument form still moves the executing player to the NPC. Names containing spaces must now be quoted, e.g. `/smart_npc tp "Example NPC" @s`; teleport suggestions quote names as needed while resource-command suggestions retain their greedy-name syntax.
+- NPC teleport honors NeoForge's teleport-command event, stops navigation, clears momentum/fall distance, and refreshes force tracking on the destination instance after a dimension transfer. It does not change the NPC's job/home/team.
 
 Inspectator cycling:
 - Client left/right in inspectator mode sends `PlayerNpcInspectatorCyclePacket`.

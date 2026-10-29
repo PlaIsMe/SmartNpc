@@ -200,6 +200,11 @@ public class PickupNearbyItemGoal extends Goal implements GatheringGoal {
 
     @Override
     public void start() {
+        if (this.targetItem != null && !this.playerNpc.getItemApproachAi().canAttempt(this.targetItem)) {
+            this.targetItem = null;
+            this.playerNpc.getNavigation().stop();
+            return;
+        }
         if (this.playerNpc.isItemPickupSuppressed()) {
             this.playerNpc.getNavigation().stop();
             return;
@@ -219,6 +224,7 @@ public class PickupNearbyItemGoal extends Goal implements GatheringGoal {
             return;
         }
         this.workerSlotPaused = false;
+        this.playerNpc.getItemApproachAi().begin(this.targetItem);
         pickupTicks = 0;
         repathTicks = 0;
         failedPathTicks = 0;
@@ -355,6 +361,11 @@ public class PickupNearbyItemGoal extends Goal implements GatheringGoal {
             return;
         }
         boolean gaveUp = pickupTicks >= MAX_PICKUP_TICKS || failedPathTicks >= MAX_FAILED_PATH_TICKS;
+        if (gaveUp) {
+            this.playerNpc.getItemApproachAi().failed(this.targetItem);
+        } else {
+            this.playerNpc.getItemApproachAi().interrupted(this.targetItem);
+        }
         if (gaveUp) {
             giveUpCooldownTicks = FAILED_PICKUP_COOLDOWN_TICKS + playerNpc.getRandom().nextInt(20 * 4);
             if (targetItem != null) {
@@ -525,6 +536,7 @@ public class PickupNearbyItemGoal extends Goal implements GatheringGoal {
                 && !item.hasPickUpDelay()
                 && !item.getItem().isEmpty()
                 && !PlayerNpcTrashUtil.isDiscarded(item.getItem())
+                && this.playerNpc.getItemApproachAi().canAttempt(item)
                 && (failedItemId == null
                 || playerNpc.tickCount >= failedItemAvoidUntilTick
                 || !failedItemId.equals(item.getUUID()))

@@ -1,5 +1,7 @@
 package com.pla.smart_npc.entity.goal;
 
+import net.minecraft.core.component.DataComponents;
+
 import com.pla.smart_npc.entity.PlayerNpcEntity;
 import com.pla.smart_npc.entity.ai.PathNavigationAi;
 import com.pla.smart_npc.util.InventoryUtils;
@@ -11,7 +13,6 @@ import net.minecraft.world.item.BowItem;
 import net.minecraft.world.item.CrossbowItem;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.ProjectileWeaponItem;
-import net.minecraft.world.item.ShieldItem;
 import net.minecraft.world.level.pathfinder.Path;
 
 import java.util.EnumSet;
@@ -97,7 +98,7 @@ public class ShieldGuardGoal extends Goal {
 
     @Override
     public void tick() {
-        if (this.playerNpc.getShieldGuardCooldown() > 0) {
+        if (this.playerNpc.getShieldGuardCooldown() > 0 || !this.isHoldingShield()) {
             return;
         }
         this.guardTicks--;
@@ -113,8 +114,11 @@ public class ShieldGuardGoal extends Goal {
         this.playerNpc.stopUsingItem();
         if (this.usingTemporaryShield) {
             ItemStack shield = this.playerNpc.getOffhandItem().copy();
-            if (!shield.isEmpty() && shield.getItem() instanceof ShieldItem && !InventoryUtils.addItem(this.playerNpc, shield)) {
-                this.playerNpc.spawnAtLocation(shield);
+            if (!shield.isEmpty() && shield.has(DataComponents.BLOCKS_ATTACKS)) {
+                ItemStack remainder = InventoryUtils.addItemAndReturnRemainder(this.playerNpc, shield);
+                if (!remainder.isEmpty()) {
+                    this.playerNpc.spawnAtLocation(remainder);
+                }
             }
             this.playerNpc.setItemInHand(InteractionHand.OFF_HAND, this.previousOffhand.copy());
         }
@@ -157,20 +161,20 @@ public class ShieldGuardGoal extends Goal {
     }
 
     private boolean hasShield() {
-        return this.playerNpc.getOffhandItem().getItem() instanceof ShieldItem
-                || InventoryUtils.hasItem(this.playerNpc, stack -> stack.getItem() instanceof ShieldItem);
+        return this.isHoldingShield()
+                || InventoryUtils.hasItem(this.playerNpc, stack -> stack.has(DataComponents.BLOCKS_ATTACKS));
     }
 
     private boolean isHoldingShield() {
-        return this.playerNpc.getOffhandItem().getItem() instanceof ShieldItem;
+        return this.playerNpc.getOffhandItem().has(DataComponents.BLOCKS_ATTACKS);
     }
 
     private boolean equipShieldIfNeeded() {
-        if (this.playerNpc.getOffhandItem().getItem() instanceof ShieldItem) {
+        if (this.isHoldingShield()) {
             return true;
         }
 
-        ItemStack shield = this.playerNpc.consumeInventoryItem(stack -> stack.getItem() instanceof ShieldItem, 1).orElse(ItemStack.EMPTY);
+        ItemStack shield = this.playerNpc.consumeInventoryItem(stack -> stack.has(DataComponents.BLOCKS_ATTACKS), 1).orElse(ItemStack.EMPTY);
         if (shield.isEmpty()) {
             return false;
         }

@@ -1,6 +1,9 @@
 package com.pla.smart_npc.client.renderer;
 
+import net.minecraft.core.component.DataComponents;
+
 import com.mojang.blaze3d.vertex.PoseStack;
+import com.mojang.math.Axis;
 import com.pla.smart_npc.clazz.FakePlayer;
 import com.pla.smart_npc.client.compat.BetterCombatClientCompat;
 import com.pla.smart_npc.client.gui.SmartNpcInspectorOverlay;
@@ -101,7 +104,7 @@ public class FakePlayerRenderer<T extends FakePlayer>
         if (stack.getItem() instanceof BowItem && entity.isAggressive()) {
             return HumanoidModel.ArmPose.BOW_AND_ARROW;
         }
-        if (stack.getItem() instanceof ShieldItem && entity.isUsingItem() && entity.getUsedItemHand() == hand) {
+        if (stack.has(DataComponents.BLOCKS_ATTACKS) && entity.isUsingItem() && entity.getUsedItemHand() == hand) {
             return HumanoidModel.ArmPose.BLOCK;
         }
         if (hand == InteractionHand.MAIN_HAND && isMainHandAttackAnimating(entity)) {
@@ -135,7 +138,9 @@ public class FakePlayerRenderer<T extends FakePlayer>
             npcState.hideHead = SmartNpcInspectorOverlay.shouldRenderInspectatorCameraTargetBody(entity);
         }
         if (entity instanceof PlayerNpcEntity playerNpc) {
-            if (playerNpc.isHealing() || BetterCombatClientCompat.hasActiveAttackAnimation(playerNpc)) {
+            if (playerNpc.isSocialNoticePausingWork() || playerNpc.isHealing()
+                    || entity.isUsingItem() && entity.getUseItem().has(DataComponents.BLOCKS_ATTACKS)
+                    || BetterCombatClientCompat.hasActiveAttackAnimation(playerNpc)) {
                 state.attackTime = 0.0F;
             } else if (state.attackTime <= 0.0F && playerNpc.getMainHandAttackAnimationTicks() > 0) {
                 float duration = playerNpc.getMainHandAttackAnimationDuration();

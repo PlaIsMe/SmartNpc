@@ -3,6 +3,7 @@ package com.pla.smart_npc.entity.ai;
 import com.pla.smart_npc.entity.PlayerNpcEntity;
 import com.pla.smart_npc.util.PlayerNpcAiWorkBudget;
 import net.minecraft.core.BlockPos;
+import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.Mob;
 import net.minecraft.world.level.pathfinder.Path;
@@ -26,6 +27,9 @@ public final class CombatMovementAi {
             return;
         }
         if (!movementAllowed) {
+            if (this.mob instanceof PlayerNpcEntity npc) {
+                npc.getWaterTravelAi().release(this);
+            }
             this.mob.getNavigation().stop();
             this.stepUntilTick = 0;
             return;
@@ -34,6 +38,12 @@ public final class CombatMovementAi {
         double distanceSqr = this.mob.distanceToSqr(target);
         double separation = (this.mob.getBbWidth() + target.getBbWidth()) * 0.5D + 0.25D;
         boolean inReach = distanceSqr <= attackRange * attackRange && this.mob.getSensing().hasLineOfSight(target);
+        if (this.mob instanceof PlayerNpcEntity npc && this.mob.level() instanceof ServerLevel
+                && this.mob.isInWater() && !inReach) {
+            npc.getWaterTravelAi().request(this, target.blockPosition(), speed, true);
+        } else if (this.mob instanceof PlayerNpcEntity npc) {
+            npc.getWaterTravelAi().release(this);
+        }
         if (inReach && distanceSqr <= separation * separation) {
             this.stop();
             return;
@@ -91,6 +101,9 @@ public final class CombatMovementAi {
     }
 
     public void stop() {
+        if (this.mob instanceof PlayerNpcEntity npc) {
+            npc.getWaterTravelAi().release(this);
+        }
         this.mob.getNavigation().stop();
         this.lastPathTarget = null;
         this.retainedPath = null;

@@ -20,6 +20,11 @@ import com.pla.smart_npc.entity.ai.PathNavigationAi;
 import com.pla.smart_npc.entity.ai.PathStuckFallbackAi;
 import com.pla.smart_npc.entity.ai.ResourceAi;
 import com.pla.smart_npc.entity.ai.ToolAi;
+import com.pla.smart_npc.entity.ai.WaterTravelAi;
+import com.pla.smart_npc.entity.ai.ItemApproachAi;
+import com.pla.smart_npc.entity.ai.SocialNoticeAi;
+import com.pla.smart_npc.entity.goal.PlayerNpcFloatGoal;
+import com.pla.smart_npc.entity.goal.NoticeNearbyPlayerGoal;
 import com.pla.smart_npc.entity.goal.AiBudgetWaitingStrollGoal;
 import com.pla.smart_npc.entity.goal.BeingAtHomeGoal;
 import com.pla.smart_npc.entity.goal.BurnNearbyItemGoal;
@@ -112,7 +117,6 @@ import net.minecraft.sounds.SoundEvent;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.tags.BlockTags;
-import net.minecraft.tags.DamageTypeTags;
 import net.minecraft.tags.FluidTags;
 import net.minecraft.util.Mth;
 import net.minecraft.util.RandomSource;
@@ -145,6 +149,7 @@ import net.minecraft.world.level.pathfinder.Path;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
 import net.minecraft.core.registries.BuiltInRegistries;
+import net.neoforged.fml.ModList;
 import org.jetbrains.annotations.NotNull;
 
 import javax.annotation.Nullable;
@@ -165,6 +170,7 @@ import java.util.function.Predicate;
 
 public class PlayerNpcEntity extends FakePlayer implements RangedAttackMob {
     private static final EntityDataAccessor<Integer> MAIN_HAND_ATTACK_ANIMATION_TICKS = SynchedEntityData.defineId(PlayerNpcEntity.class, EntityDataSerializers.INT);
+    private static final EntityDataAccessor<Boolean> SOCIAL_NOTICE_PAUSES_WORK = SynchedEntityData.defineId(PlayerNpcEntity.class, EntityDataSerializers.BOOLEAN);
     private static final EntityDataAccessor<Boolean> HEALING = SynchedEntityData.defineId(PlayerNpcEntity.class, EntityDataSerializers.BOOLEAN);
     private static final EntityDataAccessor<Integer> BETTER_COMBAT_ATTACK_ANIMATION_TICKS = SynchedEntityData.defineId(PlayerNpcEntity.class, EntityDataSerializers.INT);
     private static final EntityDataAccessor<Integer> BETTER_COMBAT_ATTACK_SEQUENCE = SynchedEntityData.defineId(PlayerNpcEntity.class, EntityDataSerializers.INT);
@@ -390,6 +396,9 @@ public class PlayerNpcEntity extends FakePlayer implements RangedAttackMob {
     @Nullable
     private BlockPos explorationClimbSafeStandTarget;
     private int explorationClimbStuckTicks = 0;
+    private final WaterTravelAi waterTravelAi = new WaterTravelAi(this);
+    private final ItemApproachAi itemApproachAi = new ItemApproachAi(this);
+    private final SocialNoticeAi socialNoticeAi = new SocialNoticeAi(this);
     private final ToolAi explorationClimbToolAi = new ToolAi(this);
     private final BreakingBlockAi explorationClimbBreakingBlockAi = new BreakingBlockAi(this, this.explorationClimbToolAi);
     private final ClearBlockAi explorationClimbClearBlockAi = new ClearBlockAi(this, this.explorationClimbBreakingBlockAi);
@@ -1749,6 +1758,7 @@ public class PlayerNpcEntity extends FakePlayer implements RangedAttackMob {
     protected void defineSynchedData(SynchedEntityData.Builder builder) {
         super.defineSynchedData(builder);
         builder.define(MAIN_HAND_ATTACK_ANIMATION_TICKS, 0);
+        builder.define(SOCIAL_NOTICE_PAUSES_WORK, false);
         builder.define(HEALING, false);
         builder.define(BETTER_COMBAT_ATTACK_ANIMATION_TICKS, 0);
         builder.define(BETTER_COMBAT_ATTACK_SEQUENCE, 0);
@@ -2162,15 +2172,17 @@ public class PlayerNpcEntity extends FakePlayer implements RangedAttackMob {
         GatherLogsGoal gatherLogsGoal = new GatherLogsGoal(this, 1.0D);
         GatherMissingBuildMaterialGoal gatherMissingBuildMaterialGoal = new GatherMissingBuildMaterialGoal(this, 1.0D);
         TerraformBuildSiteGoal terraformBuildSiteGoal = new TerraformBuildSiteGoal(this, 1.0D);
-        // Floating only owns JUMP, so the active work goal keeps its MOVE target while swimming.
+        DigDownForStoneGoal digDownForStoneGoal = new DigDownForStoneGoal(this, 1.0D);
+        // Cooperative buoyancy leaves MOVE/JUMP with the active work or combat goal.
         // Destination-aware water recovery is ticked by the work goal instead of globally
         // redirecting the NPC to an unrelated nearby bank.
-        this.goalSelector.addGoal(0, new FloatGoal(this));
+        this.goalSelector.addGoal(0, new PlayerNpcFloatGoal(this));
+        this.goalSelector.addGoal(0, new NoticeNearbyPlayerGoal(this));
         this.goalSelector.addGoal(0, new WaterFallGoal(this));
         this.goalSelector.addGoal(0, new EscapeWallGoal(this));
         this.registerVanillaCombatReplacementGoals();
-        this.goalSelector.addGoal(1, new EscapeHoleWithBlockGoal(this));
-        this.goalSelector.addGoal(1, new DescendHighColumnGoal(this, terraformBuildSiteGoal));
+        this.goalSelector.addGoal(1, new EscapeHoleWithBlockGoal(this, digDownForStoneGoal));
+        this.goalSelector.addGoal(1, new DescendHighColumnGoal(this, terraformBuildSiteGoal, digDownForStoneGoal));
         this.goalSelector.addGoal(1, new CallForHelpGoal(this));
         this.goalSelector.addGoal(1, this.gated(new CautiousAvoidThreatGoal(this), PlayerNpcInterest.CAUTIOUS));
         this.addWorkGoal(2, this.gated(new SleepAtHomeGoal(this), PlayerNpcInterest.BUILDING));
@@ -2214,7 +2226,7 @@ public class PlayerNpcEntity extends FakePlayer implements RangedAttackMob {
         this.addWorkGoal(6, this.gated(gatherLogsGoal, PlayerNpcInterest.BUILDING, PlayerNpcInterest.MINING, PlayerNpcInterest.FISHING, PlayerNpcInterest.FARMING, PlayerNpcInterest.EXPLORING));
         this.addWorkGoal(6, this.gated(new GatherStoneGoal(this, 1.0D), PlayerNpcInterest.BUILDING, PlayerNpcInterest.MINING, PlayerNpcInterest.FISHING, PlayerNpcInterest.FARMING, PlayerNpcInterest.EXPLORING));
         this.addWorkGoal(6, this.gated(new ExploreCaveOreGoal(this, 1.0D), PlayerNpcInterest.MINING));
-        this.addWorkGoal(6, this.gated(new DigDownForStoneGoal(this, 1.0D), PlayerNpcInterest.BUILDING, PlayerNpcInterest.MINING, PlayerNpcInterest.FISHING, PlayerNpcInterest.FARMING, PlayerNpcInterest.EXPLORING));
+        this.addWorkGoal(6, this.gated(digDownForStoneGoal, PlayerNpcInterest.BUILDING, PlayerNpcInterest.MINING, PlayerNpcInterest.FISHING, PlayerNpcInterest.FARMING, PlayerNpcInterest.EXPLORING));
         this.addWorkGoal(6, gatherMissingBuildMaterialGoal);
         this.addWorkGoal(7, this.gated(new MiningCaveStrollGoal(this, 1.0D), PlayerNpcInterest.MINING));
         this.addWorkGoal(7, this.gated(new FarmStrollGoal(this, 1.0D), PlayerNpcInterest.FARMING));
@@ -2489,9 +2501,6 @@ public class PlayerNpcEntity extends FakePlayer implements RangedAttackMob {
         if (this.isTeamAlliedWith(damageSource.getEntity())) {
             return false;
         }
-        if (this.tryBlockDamageWithShield(damageSource, f)) {
-            return false;
-        }
 
         boolean hurt = super.hurtServer(serverLevel, damageSource, f);
         if (hurt && !this.hasInterest(PlayerNpcInterest.CAUTIOUS)
@@ -2508,34 +2517,52 @@ public class PlayerNpcEntity extends FakePlayer implements RangedAttackMob {
         return hurt;
     }
 
-    private boolean tryBlockDamageWithShield(DamageSource damageSource, float amount) {
-        if (amount <= 0.0F
-                || this.level().isClientSide()
-                || damageSource.is(DamageTypeTags.BYPASSES_SHIELD)
-                || !this.isUsingItem()
-                || this.getUsedItemHand() != InteractionHand.OFF_HAND
-                || !(this.getOffhandItem().getItem() instanceof ShieldItem)) {
-            return false;
-        }
-
-        Vec3 sourcePosition = damageSource.getSourcePosition();
-        if (sourcePosition == null || !this.isDamageSourceInFront(sourcePosition)) {
-            return false;
-        }
-
-        int durabilityDamage = Math.max(1, (int) Math.ceil(amount));
-        this.hurtItemInHand(InteractionHand.OFF_HAND, durabilityDamage);
-        this.swing(InteractionHand.OFF_HAND, true);
-        this.level().playSound(null, this.blockPosition(), SoundEvents.SHIELD_BLOCK.value(), SoundSource.HOSTILE, 1.0F, 0.8F + this.getRandom().nextFloat() * 0.4F);
-        return true;
+    @Override
+    public boolean isBlocking() {
+        return this.shieldGuardCooldown <= 0 && super.isBlocking();
     }
 
-    private boolean isDamageSourceInFront(Vec3 sourcePosition) {
-        Vec3 toSource = sourcePosition.subtract(this.position());
-        if (toSource.lengthSqr() < 1.0E-4D) {
-            return true;
+    @Override
+    public float applyItemBlocking(ServerLevel level, DamageSource source, float damage) {
+        ItemStack blockingWith = this.getItemBlockingWith();
+        InteractionHand blockingHand = this.getUsedItemHand();
+        float blocked = super.applyItemBlocking(level, source, damage);
+        // 26.1.2 only damages blocking items for Player; NPCs need the same component rule.
+        if (blocked > 0.0F && blockingWith != null) {
+            var blocksAttacks = blockingWith.get(DataComponents.BLOCKS_ATTACKS);
+            if (blocksAttacks != null) {
+                int itemDamage = blocksAttacks.itemDamage().apply(blocked);
+                if (itemDamage > 0) {
+                    boolean cachedOffhand = blockingHand == InteractionHand.OFF_HAND
+                            && ItemStack.isSameItemSameComponents(this.offWeaponItem, blockingWith);
+                    blockingWith.hurtAndBreak(itemDamage, this, blockingHand);
+                    if (cachedOffhand) {
+                        this.setOffWeaponItem(blockingWith);
+                    }
+                    if (blockingWith.isEmpty()) {
+                        this.setItemInHand(blockingHand, ItemStack.EMPTY);
+                        this.stopUsingItem();
+                        this.playSound(SoundEvents.SHIELD_BREAK.value(), 0.8F,
+                                0.8F + this.getRandom().nextFloat() * 0.4F);
+                    }
+                }
+            }
         }
-        return toSource.normalize().dot(this.getViewVector(1.0F)) > 0.0D;
+        return blocked;
+    }
+
+    @Override
+    protected void blockUsingItem(ServerLevel level, LivingEntity attacker) {
+        super.blockUsingItem(level, attacker);
+        ItemStack blockingWith = this.getItemBlockingWith();
+        var blocksAttacks = blockingWith != null ? blockingWith.get(DataComponents.BLOCKS_ATTACKS) : null;
+        float seconds = attacker.getSecondsToDisableBlocking();
+        if (blocksAttacks != null && seconds > 0.0F && blocksAttacks.disableCooldownScale() > 0.0F) {
+            this.setShieldGuardCooldown(Math.max(this.getShieldGuardCooldown(),
+                    Math.round(seconds * blocksAttacks.disableCooldownScale() * 20.0F)));
+            blocksAttacks.disable(level, this, seconds, blockingWith);
+            this.level().broadcastEntityEvent(this, (byte) 30);
+        }
     }
 
     @Override
@@ -2685,6 +2712,49 @@ public class PlayerNpcEntity extends FakePlayer implements RangedAttackMob {
             return unwrapGoal(interestGatedGoal.getDelegateGoal());
         }
         return goal;
+    }
+
+    public SocialNoticeAi getSocialNoticeAi() {
+        return this.socialNoticeAi;
+    }
+
+    public boolean isSocialNoticePausingWork() {
+        return this.entityData.get(SOCIAL_NOTICE_PAUSES_WORK);
+    }
+
+    public void setSocialNoticePausesWork(boolean paused) {
+        this.entityData.set(SOCIAL_NOTICE_PAUSES_WORK, paused);
+        if (paused) {
+            this.entityData.set(MAIN_HAND_ATTACK_ANIMATION_TICKS, 0);
+            this.entityData.set(BETTER_COMBAT_ATTACK_ANIMATION_TICKS, 0);
+        }
+    }
+
+    public boolean canSociallyNotice() {
+        if (!this.isAlive() || this.isNoAi() || this.getTarget() != null || this.isAggressive()
+                || this.isHealing() || this.isUsingItem() || this.isSleeping() || this.isPassenger()
+                || this.isTeamUpRequestPending() || this.hurtTime > 0 || !this.onGround()
+                || this.getUpwardEscapeTarget() != null || this.getHoleEscapeCooldown() > 0
+                || this.isInWater() || this.isInLava()) {
+            return false;
+        }
+        for (WrappedGoal wrapped : this.goalSelector.getAvailableGoals()) {
+            if (!wrapped.isRunning()) {
+                continue;
+            }
+            Goal outer = wrapped.getGoal();
+            Goal goal = unwrapGoal(outer);
+            if (!(outer instanceof StartupWorkGatedGoal)) {
+                // Combat, invitations, fleeing, pillar safety and other personality actions win.
+                if (!(goal instanceof OpenDoorGoal) && !(goal instanceof NoticeNearbyPlayerGoal)
+                        && !(goal instanceof AiBudgetWaitingStrollGoal)) {
+                    return false;
+                }
+            } else if (goal instanceof SleepAtHomeGoal || goal instanceof CleanupTemporaryPillarGoal) {
+                return false;
+            }
+        }
+        return true;
     }
 
     public boolean isMainHandReservedForAi() {
@@ -3203,6 +3273,9 @@ public class PlayerNpcEntity extends FakePlayer implements RangedAttackMob {
         boolean measurePerformance = this.level() instanceof ServerLevel
                 && PlayerNpcPerformanceMonitor.shouldMeasureNpcEntityTick();
         long performanceStartNanos = measurePerformance ? System.nanoTime() : 0L;
+        if (this.level() instanceof ServerLevel) {
+            this.socialNoticeAi.validateActive();
+        }
         super.tick();
         long performanceAfterSuperNanos = measurePerformance ? System.nanoTime() : 0L;
 
@@ -3218,6 +3291,7 @@ public class PlayerNpcEntity extends FakePlayer implements RangedAttackMob {
 
         if (!(this.level() instanceof ServerLevel serverLevel)) return;
 
+        this.waterTravelAi.tick(serverLevel);
         this.tickDailyJobSelection(serverLevel);
         this.tickDailySupplyGoalReroll(serverLevel);
         this.tickFishingStarterStringMigration();
@@ -3226,9 +3300,12 @@ public class PlayerNpcEntity extends FakePlayer implements RangedAttackMob {
         this.tickStartupIdleWake();
         this.cleanupStaleCombatState();
         this.tickTasklessActivityWatchdog();
-        this.tickExplorationClimbFallback(serverLevel);
-        this.tickHighIdleDescentRecovery(serverLevel);
-        this.tickIdleResourceStuckFallback(serverLevel);
+        if (!this.socialNoticeAi.isActive()) {
+            this.tickExplorationClimbFallback(serverLevel);
+            this.tickHighIdleDescentRecovery(serverLevel);
+            this.tickIdleResourceStuckFallback(serverLevel);
+        }
+        this.socialNoticeAi.afterAiTick();
 
         // Contact pickup must not depend on routine-worker ownership or a global admission slot:
         // NPCs with the same cadence phase could otherwise starve behind the same earlier entity
@@ -3254,6 +3331,27 @@ public class PlayerNpcEntity extends FakePlayer implements RangedAttackMob {
         // Include each adjacent block horizontally and vertically, forming the
         // requested 3x3x3 pickup neighborhood around the NPC.
         return ITEM_PICKUP_REACH;
+    }
+
+    public WaterTravelAi getWaterTravelAi() {
+        return this.waterTravelAi;
+    }
+
+    public ItemApproachAi getItemApproachAi() {
+        return this.itemApproachAi;
+    }
+
+    @Override
+    public void updateSwimming() {
+        // Goals control swimming independently of sprinting; clients receive the shared flag.
+        if (!this.level().isClientSide() && this.waterTravelAi != null) {
+            this.setSwimming(this.waterTravelAi.isSwimming() && this.isInWater() && !this.isPassenger());
+        }
+    }
+
+    @Override
+    protected EntityDimensions getDefaultDimensions(Pose pose) {
+        return pose == Pose.SWIMMING ? EntityDimensions.scalable(0.6F, 0.6F).withEyeHeight(0.4F) : super.getDefaultDimensions(pose);
     }
 
     private void tickAiCooldowns() {

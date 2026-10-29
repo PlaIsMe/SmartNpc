@@ -16,20 +16,27 @@ import com.pla.smart_npc.util.ProgressionUtil;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
 import net.minecraft.commands.SharedSuggestionProvider;
+import net.minecraft.commands.arguments.EntityArgument;
+import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.DifficultyInstance;
 import net.minecraft.world.entity.EntitySpawnReason;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.Vec2;
 import net.minecraft.world.phys.Vec3;
 import net.neoforged.neoforge.event.RegisterCommandsEvent;
+import net.neoforged.neoforge.common.NeoForge;
+import net.neoforged.neoforge.event.entity.EntityTeleportEvent;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.Mod;
 import net.neoforged.fml.common.EventBusSubscriber;
 
 import java.util.StringJoiner;
+import java.util.Set;
 import java.util.UUID;
 
 @EventBusSubscriber(modid = SmartNpc.MODID)
@@ -50,15 +57,22 @@ public final class PlayerNpcCommandEvent {
                                 ))))
                 .then(Commands.literal("tp")
                         .requires(source -> SmartNpcConfig.isForceTickManageEnabled())
-                        .then(Commands.argument("name", StringArgumentType.greedyString())
+                        .then(Commands.argument("name", StringArgumentType.string())
                                 .suggests((context, builder) -> PlayerNpcForceTickManager.suggestNpcNames(
                                         context.getSource().getServer(),
-                                        builder
+                                        builder,
+                                        true
                                 ))
                                 .executes(context -> teleportToPlayerNpc(
                                         context.getSource(),
                                         StringArgumentType.getString(context, "name")
-                                ))))
+                                ))
+                                .then(Commands.argument("destination", EntityArgument.entity())
+                                        .executes(context -> teleportPlayerNpcToEntity(
+                                                context.getSource(),
+                                                StringArgumentType.getString(context, "name"),
+                                                EntityArgument.getEntity(context, "destination")
+                                        )))))
                 .then(Commands.literal("difficulty")
                         .then(Commands.literal("get")
                                 .executes(context -> getDifficulty(context.getSource())))
@@ -126,6 +140,49 @@ public final class PlayerNpcCommandEvent {
 
         player.teleportTo(targetLevel, npc.getX(), npc.getY(), npc.getZ(), java.util.Set.of(), npc.getYRot(), npc.getXRot(), false);
         source.sendSuccess(() -> Component.literal("Teleported to player NPC " + npc.getName().getString()), true);
+        return 1;
+    }
+
+    private static int teleportPlayerNpcToEntity(CommandSourceStack source, String name, Entity destination) {
+        if (!SmartNpcConfig.isForceTickManageEnabled()) {
+            source.sendFailure(Component.literal("Player NPC force-tick management is disabled"));
+            return 0;
+        }
+        PlayerNpcEntity npc = PlayerNpcForceTickManager.chooseRandomByName(source.getServer(), name).orElse(null);
+        if (npc == null) {
+            source.sendFailure(Component.literal("No tracked player NPC named " + name));
+            return 0;
+        }
+        if (!(destination.level() instanceof ServerLevel targetLevel) || destination.isRemoved()) {
+            source.sendFailure(Component.literal("Teleport destination is no longer available"));
+            return 0;
+        }
+        EntityTeleportEvent.TeleportCommand event = new EntityTeleportEvent.TeleportCommand(npc, targetLevel, destination.getX(), destination.getY(), destination.getZ());
+        NeoForge.EVENT_BUS.post(event);
+        if (event.isCanceled()) {
+            source.sendFailure(Component.literal("Player NPC teleport was canceled"));
+            return 0;
+        }
+        if (!Level.isInSpawnableBounds(BlockPos.containing(event.getTargetX(), event.getTargetY(), event.getTargetZ()))) {
+            source.sendFailure(Component.literal("Teleport destination is outside world bounds"));
+            return 0;
+        }
+        UUID npcId = npc.getUUID();
+        String npcName = npc.getName().getString();
+        npc.getNavigation().stop();
+        npc.stopRiding();
+        if (!npc.teleportTo(targetLevel, event.getTargetX(), event.getTargetY(), event.getTargetZ(), Set.of(), destination.getYRot(), destination.getXRot(), false)) {
+            source.sendFailure(Component.literal("Failed to teleport player NPC " + npcName));
+            return 0;
+        }
+        // Cross-dimension teleport replaces the entity; refresh the destination instance.
+        if (targetLevel.getEntity(npcId) instanceof PlayerNpcEntity teleported) {
+            teleported.getNavigation().stop();
+            teleported.setDeltaMovement(Vec3.ZERO);
+            teleported.fallDistance = 0.0F;
+            PlayerNpcForceTickManager.track(teleported);
+        }
+        source.sendSuccess(() -> Component.literal("Teleported player NPC " + npcName + " to " + destination.getName().getString()), true);
         return 1;
     }
 
