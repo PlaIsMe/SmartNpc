@@ -66,6 +66,15 @@ components, so gray italics never bleed into the NPC name or join/leave text.
 Join, leave, death-summary, and `teamup_accept` strings remain ordinary client language
 keys because they are outside the requested selector-aware event set.
 
+TEAMUP now uses visible reciprocal crouching, not invitation/acceptance chat. The legacy
+`teamup_request` template, `teamup_accept` keys and ChatUtil methods remain compatible data/API
+but have no active invitation callers. `ok`/`okay` chat no longer accepts a request. See
+`goals/team_up_goal.md` for gesture recognition and cancellation.
+Invitations require at most four blocks: a 2-3 second burst of 5-10 crouches, then a 2-3 second
+standing reply window. Face the inviter and tap crouch twice (release between presses); quick
+replies made during the burst are retained. This creates ordinary player-led membership, so the
+existing follow goal follows that player once farther than five blocks, stopping within 2.5 blocks.
+
 ## Ownership And Target Scope
 
 `PlayerNpcEntity` owns death and kill chat through lifecycle callbacks:

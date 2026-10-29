@@ -263,8 +263,11 @@ public class EscapeHoleWithBlockGoal extends Goal {
     private boolean workerSlotPaused;
     private boolean finished;
 
-    public EscapeHoleWithBlockGoal(PlayerNpcEntity playerNpc) {
+    private final DigDownForStoneGoal digDownForStoneGoal;
+
+    public EscapeHoleWithBlockGoal(PlayerNpcEntity playerNpc, DigDownForStoneGoal digDownForStoneGoal) {
         this.playerNpc = playerNpc;
+        this.digDownForStoneGoal = digDownForStoneGoal;
         this.toolAi = new ToolAi(playerNpc);
         this.placingBlockAi = new PlacingBlockAi(playerNpc);
         this.breakingBlockAi = new BreakingBlockAi(playerNpc, this.toolAi);
@@ -304,12 +307,16 @@ public class EscapeHoleWithBlockGoal extends Goal {
     }
 
     private boolean canUseUnmeasured() {
+        // Gathering deliberately opens/enters confined terrain. Check the actual running
+        // delegate (including both work/interest wrappers), not its mutable inspector state,
+        // before any trap probe can create an escape request or pre-empt the excavation.
         if (!(this.playerNpc.level() instanceof ServerLevel serverLevel)
                 || !this.playerNpc.isAlive()
                 || this.playerNpc.isNoAi()
                 || this.playerNpc.isPassenger()
                 || this.isInWater(serverLevel)
                 || this.playerNpc.isGatheringJobRunning()
+                || this.digDownForStoneGoal.isMiningHandoffPending()
                 || this.playerNpc.isStoneAccessClearing()) {
             return false;
         }

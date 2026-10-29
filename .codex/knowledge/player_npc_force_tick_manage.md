@@ -46,6 +46,9 @@ Teleport command:
 - Suggestions come from currently tracked alive NPC display names.
 - Name matching strips an optional `[NPC] ` prefix and compares case-insensitively.
 - If multiple tracked NPCs share the same name, the command chooses a random match.
+- `/smart_npc tp <name> <destination>` moves that named NPC to one selected entity, including across dimensions. Examples: `/smart_npc tp MrBeast @s`, `/smart_npc tp MrBeast @p`, `/smart_npc tp MrBeast @e[type=minecraft:armor_stand,limit=1,sort=nearest]`. A destination selector must resolve to exactly one entity, as in vanilla teleport.
+- Both forms require operator permission level 2 and enabled force-tick management. The one-argument form still moves the executing player to the NPC. Names containing spaces must now be quoted, e.g. `/smart_npc tp "Example NPC" @s`; teleport suggestions quote names as needed while resource-command suggestions retain their greedy-name syntax.
+- NPC teleport honors Forge's teleport-command event, stops navigation, clears momentum/fall distance, and refreshes force tracking on the destination instance after a dimension transfer. It does not change the NPC's job/home/team.
 
 Inspectator cycling:
 - Client left/right in inspectator mode sends `PlayerNpcInspectatorCyclePacket`.

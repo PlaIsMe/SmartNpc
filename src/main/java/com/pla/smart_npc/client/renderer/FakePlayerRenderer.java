@@ -1,6 +1,7 @@
 package com.pla.smart_npc.client.renderer;
 
 import com.mojang.blaze3d.vertex.PoseStack;
+import com.mojang.math.Axis;
 import com.pla.smart_npc.clazz.FakePlayer;
 import com.pla.smart_npc.client.compat.BetterCombatClientCompat;
 import com.pla.smart_npc.client.gui.SmartNpcInspectorOverlay;
@@ -27,7 +28,7 @@ import net.minecraft.world.item.BowItem;
 import net.minecraft.world.item.CrossbowItem;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.item.ShieldItem;
+import net.minecraftforge.common.ToolActions;
 import org.jetbrains.annotations.NotNull;
 
 public class FakePlayerRenderer<T extends FakePlayer> extends HumanoidMobRenderer<T, PlayerModel<T>> {
@@ -93,7 +94,9 @@ public class FakePlayerRenderer<T extends FakePlayer> extends HumanoidMobRendere
         this.model.rightArmPose = HumanoidModel.ArmPose.EMPTY;
         ItemStack mainHand = entity.getMainHandItem();
         if (!mainHand.isEmpty()) {
-            if (mainHand.is(Items.SPYGLASS) && entity.isUsingItem()) {
+            if (entity.isUsingItem() && entity.getUsedItemHand() == InteractionHand.MAIN_HAND && mainHand.canPerformAction(ToolActions.SHIELD_BLOCK)) {
+                setHandPose(entity, HumanoidModel.ArmPose.BLOCK);
+            } else if (mainHand.is(Items.SPYGLASS) && entity.isUsingItem()) {
                 setHandPose(entity, HumanoidModel.ArmPose.SPYGLASS);
             } else if (mainHand.getItem() instanceof CrossbowItem) {
                 setHandPose(entity, entity.isUsingItem() ? HumanoidModel.ArmPose.CROSSBOW_CHARGE : HumanoidModel.ArmPose.CROSSBOW_HOLD);
@@ -107,7 +110,7 @@ public class FakePlayerRenderer<T extends FakePlayer> extends HumanoidMobRendere
         }
         ItemStack offhand = entity.getOffhandItem();
         if (!offhand.isEmpty()
-                && offhand.getItem() instanceof ShieldItem
+                && offhand.canPerformAction(ToolActions.SHIELD_BLOCK)
                 && entity.isUsingItem()
                 && entity.getUsedItemHand() == InteractionHand.OFF_HAND) {
             setOffhandPose(entity, HumanoidModel.ArmPose.BLOCK);
@@ -129,6 +132,13 @@ public class FakePlayerRenderer<T extends FakePlayer> extends HumanoidMobRendere
 
     @Override
     protected float getAttackAnim(@NotNull T entity, float partialTick) {
+        if (entity instanceof PlayerNpcEntity npc && npc.isSocialNoticePausingWork()) {
+            return 0.0F;
+        }
+        if (entity.isUsingItem() && entity.getUseItem().canPerformAction(ToolActions.SHIELD_BLOCK)) {
+            // A guard must not inherit the previous attack's swing and lower the blocking arm.
+            return 0.0F;
+        }
         if (entity instanceof PlayerNpcEntity playerNpc
                 && (playerNpc.isHealing() || BetterCombatClientCompat.hasActiveAttackAnimation(playerNpc))) {
             return 0.0F;
@@ -175,6 +185,19 @@ public class FakePlayerRenderer<T extends FakePlayer> extends HumanoidMobRendere
             this.model.leftArmPose = pose;
         } else {
             this.model.rightArmPose = pose;
+        }
+    }
+
+    @Override
+    protected void setupRotations(@NotNull T entity, @NotNull PoseStack poseStack, float ageInTicks, float rotationYaw, float partialTick) {
+        super.setupRotations(entity, poseStack, ageInTicks, rotationYaw, partialTick);
+        float swimAmount = entity.getSwimAmount(partialTick);
+        if (!entity.isFallFlying() && swimAmount > 0.0F) {
+            float swimPitch = entity.isInWater() ? -90.0F - entity.getXRot() : -90.0F;
+            poseStack.mulPose(Axis.XP.rotationDegrees(Mth.lerp(swimAmount, 0.0F, swimPitch)));
+            if (entity.isVisuallySwimming()) {
+                poseStack.translate(0.0F, -1.0F, 0.3F);
+            }
         }
     }
 

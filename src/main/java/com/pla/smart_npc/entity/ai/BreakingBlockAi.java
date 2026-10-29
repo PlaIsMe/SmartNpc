@@ -123,6 +123,7 @@ public final class BreakingBlockAi {
                 40.0F
         );
         this.paused = false;
+        this.playerNpc.getSocialNoticeAi().trackBreaking(this);
         this.sneakingAi.tickHeldSneak();
         this.breakTicks++;
 
@@ -260,6 +261,7 @@ public final class BreakingBlockAi {
     }
 
     public void stop() {
+        this.playerNpc.getSocialNoticeAi().releaseBreaking(this);
         this.playerNpc.clearBlockBreakProgress(this.targetPos);
         this.sneakingAi.stopSneaking();
         this.targetPos = null;

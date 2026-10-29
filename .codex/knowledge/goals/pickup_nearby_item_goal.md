@@ -1,5 +1,16 @@
 # PickupNearbyItemGoal
 
+## Cross-goal interruption memory
+
+`ItemApproachAi` shares a bounded, session-local item-identity route episode with
+`BurnNearbyItemGoal`. A first actual start opens a 20-second absolute deadline; interruptions add
+a two-second retry delay without resetting it. Failure/exhaustion blocks that item for 60 seconds
+in both owners, preventing disposal from bypassing ordinary pickup's failed-item quarantine.
+Ordinary worker-slot suspension keeps the existing retained pillar route and is not an interruption.
+The shared memory has 24 slots, leaves other items/passive contact pickup available, and is not
+persisted. Activation revalidates the memory after predecessor stop, because that stop can quarantine
+the exact item selected earlier in the same goal-selector pass.
+
 ## Source
 
 - `src/main/java/com/pla/smart_npc/entity/goal/PickupNearbyItemGoal.java`
@@ -15,7 +26,7 @@ Makes idle Player NPCs actively walk to nearby useful dropped items instead of r
 - NPC must be alive, not healing, not riding, not no-AI, and not fighting a live target.
 - Searches an 8 block horizontal radius and 5 block vertical radius for ordinary nearby drops.
 - While post-animal-kill loot priority is active, searches a wider local area around the animal death position.
-- Skips ordinary pickup while `PlayerNpcEntity.shouldPrioritizeLogGathering()` is true, unless post-animal-kill loot priority is active.
+- Active builder site preparation defers incidental pickup until preparation is ready; post-animal-kill loot priority remains eligible. Log demand alone does not block useful dropped supplies.
 - Only targets `InventoryUtils.isInventoryBackedSupplyDrop(...)` items that can fit in the custom inventory.
 - Starts only when an actual reachable dropped item entity exists. The priority death position is a search bias, not a standalone wait task.
 

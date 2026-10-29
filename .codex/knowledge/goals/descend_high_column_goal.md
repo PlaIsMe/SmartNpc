@@ -1,5 +1,14 @@
 # DescendHighColumnGoal
 
+Active resource-gathering delegates (including DigDown and both scheduling wrappers) block
+activation through `isGatheringJobRunning()`. This runtime guard supplements the idle/return
+state filter so a diagnostic-state change cannot authorize descending during intentional digging.
+Successful DigDown-to-mining handoffs also retain the same local 60-server-tick reservation
+checked by hole escape, covering the selector gap before the next work goal starts.
+For natural terrain, validate narrow-column geometry and nearby lower walkable terrain before
+checking/reporting an unsafe landing. An ordinary dirt hillside is not a failed pillar descent.
+Owned temporary supports retain their direct landing check and all existing protection guards.
+
 Generic descent may remove a safe narrow natural column or a remembered temporary support outside
 protected home/foundation/farm areas. Worker ownership and vertical recovery handoffs remain guarded.
 

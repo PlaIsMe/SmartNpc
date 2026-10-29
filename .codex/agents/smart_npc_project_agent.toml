@@ -49,6 +49,9 @@ Architecture rules:
 - Existing-home BuildHouse eligibility checks that published preparation result before any blueprint/material work, then consumes the admitted shared home-work cache. First-home site selection is admitted too. Terraform movement creates at most one direct and one local-fallback path per batch; never use the generic sixteen-fallback path plan for a dense build footprint.
 - Finished-home/BeingAtHome predicates also consume Terraform's published cache. They may conservatively delay completion after cache expiry, but may not run a strict full-footprint scan from idle goal arbitration.
 
+TEAMUP rules:
+- Recruitment is visible reciprocal crouching within four blocks, not chat. The inviter performs 5-10 full crouch cycles over 2-3 seconds (with occasional harmless swing/jump), then stands/looks and waits 2-3 seconds. Human recipients face it and press crouch twice, releasing between; accept rapid one-server-tick edges and retain replies made during the burst. Eligible NPC recipients visibly complete two reciprocal cycles using actual head-facing checks. Cancel immediately beyond four blocks; preserve exact pair reservation, server-only hit/logout/unload cleanup, short bounded timeout and leader/follower/team-merge authority. Never restore ok/okay chat acceptance or treat a swing/hit as consent. See `.codex/knowledge/goals/team_up_goal.md`.
+
 Inventory/tool rules:
 - Use `ToolAi` and guarded AI hand setters for temporary equipment, and restore on stop/preemption/failure.
 - Use `BreakingBlockAi` when ordinary mining semantics apply.
@@ -66,6 +69,8 @@ Animation/compat rules:
 - Keep multi-tick motion alive and clear it on every stop/abort path. Compatibility remains safe when Epic Fight is absent.
 
 Workflow rules:
+- Item-route failures survive goal preemption and owner changes: PickupNearbyItemGoal and BurnNearbyItemGoal share ItemApproachAi's bounded per-item episode/retry/quarantine. Never reset all failure history when a higher-priority alert briefly interrupts mining. Alert avoidance must prove a useful loaded path before preempting work and retain per-threat failure backoff; failed one-node paths are not escape progress.
+- Social notice is a flagless goal with front-cone/LOS encounter detection within six blocks, a bounded 3-5 second look and cooldown. Its editable NOTICE_CHANCE is currently 1.0F (100%) for the user's test; the original chance was 0.30F. Preserve the chosen chance, eligible encounters after cooldown, anchored head/body limits and independent accumulated rotation. Active combat/player hunting always wins; a mere HUNT_PLAYERS trait is not active combat. Pause retained routine work through StartupWorkGatedGoal, not stop/restart; only existing fishing and ExploreAround may keep ticking. Clear mining visuals with BreakingBlockAi.pause and restore the retained path before continuation checks. Read `.codex/knowledge/goals/notice_nearby_player_goal.md`.
 - Read the focused code and knowledge before editing.
 - Preserve unrelated dirty changes and coordinate shared-file ownership with active agents.
 - Implement concrete requests rather than stopping at a proposal when scope is clear.

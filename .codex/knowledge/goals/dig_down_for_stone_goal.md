@@ -21,6 +21,30 @@ Gives Player NPCs a direct stone progression path after log supply is met, witho
 
 ## Behavior
 
+`DigDownForStoneGoal` implements `GatheringGoal`. Generic hole escape checks
+`PlayerNpcEntity.isGatheringJobRunning()`, which unwraps both the startup/work and interest
+wrappers, before probing a trap or creating an upward request. An active intentional stair
+excavation therefore retains movement even when its newly opened step looks like a hole.
+`DescendHighColumnGoal` now uses the same runtime ownership guard; mutable inspector state
+alone is not authorization to interrupt gathering. Existing timeout, failure, combat and normal
+stop paths release the job so subsequent genuine escape remains available.
+
+On a successful exposed-stone, ore, or cave handoff, the goal also reserves its local excavation
+for 60 server ticks after stopping. GoalSelector releases finished goals before admitting the
+replacement, so the running-goal marker alone cannot protect that boundary. Both generic pillar
+and column descent consult the same goal-owned reservation. It ends on timeout, movement more
+than three blocks from the handoff position, a new digging activation, combat/healing, or an
+explicit upward recovery request. Failed/aborted digging does not create a reservation, and it
+is never persisted or extended by repeated trap checks. This leaves real failed-hole recovery
+available while giving the next mining goal a bounded opportunity to acquire its work slice.
+
+The attached 2026-10-28 trace shows direct DigDown-to-EscapeHole preemption at ticks 6018
+and 6137. The checked-out source already contained the active hole-escape gathering guard;
+this audit additionally closes the successful-stop handoff gap and guards descent. The trace's
+nonzero gather cooldowns do not prove that successful handoff caused those recorded transitions,
+so validate the rebuilt delivery JAR with fresh stop diagnostics before attributing an exact cause.
+No in-game reproduction has been run for these changes.
+
 The goal chooses a random surface dig site around the saved base center for building NPCs, or around the NPC's current work area for pure miners. Building sites stay at least 18 blocks away from the home center and outside the protected home area. Farm-support origins also stay outside the farm work/entrance footprint. Pure miners do not call `PlayerNpcHomeUtil.getOrCreateHome(...)` and do not persist a home as part of mining setup.
 
 Activation is split across shared expensive-work slices. A cacheable nearby-stone check completes first; dig-origin discovery runs on a short retry afterward and checks at most one navigation path. Starting the goal does not immediately create another path. Initial routing and later repaths run from `tick()` only after a fresh scheduler admission, and a healthy live path to the same dig origin is reused instead of being rebuilt every repath interval. This prevents the nearby scan, origin paths, and route commit from becoming one server-tick pathfinding burst.

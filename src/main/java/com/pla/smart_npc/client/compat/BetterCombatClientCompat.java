@@ -13,6 +13,7 @@ import net.minecraft.world.entity.Pose;
 import net.minecraft.world.item.CrossbowItem;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.ShieldItem;
+import net.minecraftforge.common.ToolActions;
 
 import javax.annotation.Nullable;
 import java.lang.reflect.Array;
@@ -63,7 +64,8 @@ public final class BetterCombatClientCompat {
      * both systems do not fight over the same model parts.
      */
     public static boolean hasActiveAttackAnimation(PlayerNpcEntity playerNpc) {
-        if (!BetterCombatCompat.isLoaded() || disabled || playerNpc.getBetterCombatAttackAnimationTicks() <= 0) {
+        if (!BetterCombatCompat.isLoaded() || disabled || playerNpc.getBetterCombatAttackAnimationTicks() <= 0
+                || playerNpc.isUsingItem() && playerNpc.getUseItem().canPerformAction(ToolActions.SHIELD_BLOCK)) {
             return false;
         }
         try {
@@ -80,7 +82,8 @@ public final class BetterCombatClientCompat {
      * PlayerModel. Returns true when an animation was actually applied.
      */
     public static boolean applyAttackAnimation(PlayerModel<?> model, PlayerNpcEntity playerNpc, float partialTick) {
-        if (!BetterCombatCompat.isLoaded() || disabled || playerNpc.getBetterCombatAttackAnimationTicks() <= 0) {
+        if (!BetterCombatCompat.isLoaded() || disabled || playerNpc.getBetterCombatAttackAnimationTicks() <= 0
+                || playerNpc.isUsingItem() && playerNpc.getUseItem().canPerformAction(ToolActions.SHIELD_BLOCK)) {
             return false;
         }
 
@@ -162,7 +165,8 @@ public final class BetterCombatClientCompat {
             HumanoidArm renderedArm,
             float partialTick
     ) {
-        if (!BetterCombatCompat.isLoaded() || disabled) {
+        if (!BetterCombatCompat.isLoaded() || disabled
+                || playerNpc.isUsingItem() && playerNpc.getUseItem().canPerformAction(ToolActions.SHIELD_BLOCK)) {
             return false;
         }
 
