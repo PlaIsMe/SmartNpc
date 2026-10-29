@@ -1,0 +1,3 @@
+# PlayerNpcFloatGoal
+
+Extends vanilla `FloatGoal` and remains at priority zero. It owns no exclusive flags so water buoyancy cannot cancel a melee goal that owns JUMP. Vertical buoyancy and lava behavior remain vanilla. Surface horizontal pace is controlled by shared WaterTravelAi/WaterEscapeAi propulsion (0.10 cap, versus 0.16 underwater), not FloatGoal jump frequency. Only an active, safe `WaterTravelAi` dive suppresses its jump; low air, bubbles and expired destination intent restore buoyancy. It does not choose a destination or own movement. See `../water_travel.md` for the shared dive lifecycle and validation scenarios.

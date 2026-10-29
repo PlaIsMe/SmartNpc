@@ -3,14 +3,16 @@
 ## Source
 
 - `src/main/java/com/pla/smart_npc/entity/ai/WaterEscapeAi.java`
+- `src/main/java/com/pla/smart_npc/entity/ai/WaterTravelAi.java`
+- `src/main/java/com/pla/smart_npc/entity/goal/PlayerNpcFloatGoal.java`
 - `src/main/java/com/pla/smart_npc/entity/ai/PathNavigationAi.java`
 - `src/main/java/com/pla/smart_npc/entity/PlayerNpcEntity.java`
 - Direct owners currently include `GatherLogsGoal`, `GatherStoneGoal`, `BuildHouseGoal`, and `ExploreAroundGoal`.
 
 ## Ownership Rule
 
-Player NPC has no global `EscapeWaterCurrentGoal`. `FloatGoal` remains priority zero and owns
-buoyancy/JUMP only, allowing the active work goal to retain MOVE and its work destination. A global
+Player NPC has no global `EscapeWaterCurrentGoal`. `PlayerNpcFloatGoal` remains priority zero and supplies
+buoyancy without exclusive MOVE/JUMP flags, allowing active work and melee goals to retain their destinations. It suppresses jumping during an intentional dive, and resumes for air recovery, bubbles and lava. A global
 water goal must not choose an unrelated nearby bank because it does not know whether the NPC was
 crossing a river toward a log, farm supply, build position, or exploration target.
 
@@ -19,18 +21,19 @@ instance inside their `PathNavigationAi`. Goals with a repath interval must tick
 goal tick, not only when the next path is created, and must stop the helper from their own `stop()`.
 Log gathering, stone gathering, and `ExploreAroundGoal` retain vanilla's reduced goal tick cadence;
 the capped water impulse persists between updates and does not justify promoting their full state
-machines with `requiresUpdateEveryTick()`. `FloatGoal` continues to own only JUMP.
+machines with `requiresUpdateEveryTick()`. The entity-owned `WaterTravelAi` ticks only cheap motion and local safety each server tick; float buoyancy no longer preempts JUMP-owning melee pursuit.
 
 ## Destination-Preserving Behavior
 
 When a preferred destination exists, `WaterEscapeAi` swims toward that same destination and uses
-`FloatGoal` for buoyancy. It normally selects a dry exit only when the exit reduces horizontal
+cooperative buoyancy and `WaterTravelAi` for randomized dives. It normally selects a dry exit only when the exit reduces horizontal
 distance to the owning destination; an exit on the bank the NPC just left is rejected. A destination
 directly above or below the current water column is the exception: horizontal swimming cannot reach
 it, so the best dry side exit may briefly increase distance and let the owner repath from land.
 Destination swimming and no-progress episodes are bounded so an unreachable occupied target cannot
 consume AI time forever. The absolute episode start, swim count, best distance, and failure history
 survive transitions through dry-exit and footing fallback; resuming swimming must not reset them.
+The absolute episode budget is selected once from the initial horizontal distance (200 plus 20 ticks per block, clamped to 20–120 seconds). This allows longer crossings without disabling the existing eight-second no-movement failure, three stall attempts, or failed-destination quarantine.
 Because destination swimming stops land navigation, `MoveControl.setWantedPosition(...)` alone is
 not horizontal propulsion for this NPC. Water travel also applies a small capped X/Z acceleration
 toward the owner destination (and destination-side dry exit); omitting it leaves the NPC bobbing in
@@ -87,3 +90,15 @@ the saved home work-area boundary. Ready build/utility work must not let priorit
 preempt that priority-six supply owner; night/thunder and explicit exploration/home-surface recovery
 remain allowed to interrupt it. Without this ownership latch the NPC advances a few water blocks,
 stops, rescans the same tree/path after cooldown, then starts an unrelated ExploreAround route.
+
+## Dive and Surface Motion
+
+`WaterEscapeAi` renews a six-tick destination intent while crossing; `CombatMovementAi` supplies the current target while wet and outside attack range. Ordinary live navigation also participates, steering along its next path node rather than cutting directly across its route. The helper never searches for a new destination, places blocks or changes goals. Stopping the owner releases its intent; a missing renewal expires it. Moving combat targets retain their randomized swim phase.
+
+After 10-25 ticks of travel, a sufficiently deep open-water route may select a 1.4-2 block dive lasting 100-140 ticks (5-7 seconds), with 20-40 tick retry/surface intervals. Decisions still run at most once per 20 ticks, so actual starts can be later. A new dive requires reaching the surface first; air recovery may extend the surface interval. The deeper minimum avoids selecting a submerged standing box whose head is still above water. The decision checks only two short loaded columns and local collision boxes, requires a clear air opening overhead, and avoids bubbles, shallow floors and obstructed water. Local collision and overhead checks keep movement out of banks, ice, overhangs and unloaded edges. Within three horizontal blocks of the destination, or after a collision, dive timeout or low air, the NPC surfaces. Air below 140 triggers recovery until nearly full; using items pauses deliberate travel dives. Local survival-only escape remains buoyant.
+
+Surface horizontal propulsion now uses acceleration 0.018 and a 0.10 blocks/tick velocity cap (previous destination steering used 0.035 and 0.16). Underwater propulsion uses 0.025 and 0.16. Owner speed scales both. WaterEscapeAi shares these values; WaterTravelAi also caps final motion for live navigation and owner-propelled intents so propel=false cannot bypass surface pacing. These are motion parameters, not measured player-equivalent speeds. Vanilla FloatGoal's vertical buoyancy and emergency air recovery remain intact.
+
+The server synchronizes swimming and `Pose.SWIMMING`, with a 0.6-block swim body and 0.4-block eye height. The renderer uses player-style body rotation and swimming animation. Standing resumes only when the full standing body fits; dive planning conservatively checks standing-size clearance. Better Combat holding poses yield to swimming through their existing suppression guard. Epic Fight's renderer remains owned by that mod.
+
+Validation requires in-game crossings for log/stone work, navigation destinations, moving combat targets, shallow shores, deep water, low air, ice and interrupted goals. Compilation alone does not establish the visual result or route success in those scenes.

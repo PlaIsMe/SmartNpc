@@ -1,5 +1,5 @@
 name = "smart_npc_project_agent"
-description = "Shared project expert for Smart NPC Forge mod architecture, AI design patterns, compatibility boundaries, ownership safety, and cross-interest rules."
+description = "Shared project expert for Smart NPC NeoForge mod architecture, AI design patterns, compatibility boundaries, ownership safety, and cross-interest rules."
 sandbox_mode = "danger-full-access"
 
 instructions = """
@@ -14,7 +14,7 @@ Consult first:
 - The focused goal/feature notes under `.codex/knowledge/goals/`
 
 Project baseline:
-- Minecraft Forge 1.20.1, Forge 47.4.4, Parchment mappings, Java 17.
+- Minecraft 1.21.1, NeoForge 21.1.250, Parchment 2024.11.17 mappings, Java 21.
 - Current production package root is `com.pla.smart_npc`.
 - `PlayerNpcEntity` is a `FakePlayer`/`PathfinderMob` with a real inventory, persisted AI cooldowns, guarded hand swaps, synchronized animation state, daily job interests, and priority-based goals.
 
@@ -28,7 +28,7 @@ Architecture rules:
 - Admission applies to expensive reselection from inside a running goal as well as `canUse()`. Keep per-tick movement fast paths allocation-light: do not rebuild path-node snapshots or query nearby item entities every tick when a staggered/change-driven cadence preserves behavior. Cache repeated blueprint/farm readiness predicates for the selector window.
 - Pillar recovery and existing-plan farm setup are not exceptions: GatherLogs dirt/base/descent search reacquires admission, cursor-slices dirt columns, shares a per-slice budget and reuses successful selected paths, while FarmSetup owns one activation-wide path budget, preserves PENDING for repair-dirt cursor passes, and reuses selected interaction/approach paths before its repath timer expires.
 - AI scans and force-ticket movement must never load or generate an unloaded candidate chunk. Guard cross-chunk block/fluid/height follow-up reads with `hasChunkAt`/`hasChunk`, skip unloaded candidates, and keep exactly one moving distance-2 force-ticket anchor at the NPC's already-loaded center. Do not restore independent neighbor anchors: propagation supplies the fringe and a 3x3 anchor grid multiplies ticking chunks.
-- The distance-2 Player NPC ticket uses Forge `forceTicks=false` for both add and remove. Level 31 already owns entity ticking; `true` also opts every distant center into natural spawning and random `tickChunk` work. Preserve vanilla `/forceload`-like random-tick behavior unless a separately designed feature explicitly owns that world-simulation cost.
+- The distance-2 Player NPC ticket uses NeoForge `forceTicks=false` for both add and remove. Level 31 already owns entity ticking; `true` also opts every distant center into natural spawning and random `tickChunk` work. Preserve vanilla `/forceload`-like random-tick behavior unless a separately designed feature explicitly owns that world-simulation cost.
 - Item pickup selection is an admitted bounded path batch with selected-path reuse. A live path is not periodically recreated, and an exhausted target is quarantined before another activation. Wet pathless exploration runs local survival recovery with negative backoff rather than accepting a distant surface target solely because the NPC is in water.
 - Server startup is a separate scheduling boundary: routine work goals are wrapped centrally and cannot activate during the first 60 server ticks, then NPC release is deterministically staggered over another 60 ticks. Never gate target selection, combat, fleeing, healing, floating, or emergency escape, and never release every loaded NPC's work on the same tick.
 - Persistent cooldowns are integer PlayerNpcEntity fields ticked centrally, not persistent-data timestamps.
@@ -49,6 +49,9 @@ Architecture rules:
 - Existing-home BuildHouse eligibility checks that published preparation result before any blueprint/material work, then consumes the admitted shared home-work cache. First-home site selection is admitted too. Terraform movement creates at most one direct and one local-fallback path per batch; never use the generic sixteen-fallback path plan for a dense build footprint.
 - Finished-home/BeingAtHome predicates also consume Terraform's published cache. They may conservatively delay completion after cache expiry, but may not run a strict full-footprint scan from idle goal arbitration.
 
+TEAMUP rules:
+- Recruitment is visible reciprocal crouching within four blocks, not chat. The inviter performs 5-10 full crouch cycles over 2-3 seconds (with occasional harmless swing/jump), then stands/looks and waits 2-3 seconds. Human recipients face it and press crouch twice, releasing between; accept rapid one-server-tick edges and retain replies made during the burst. Eligible NPC recipients visibly complete two reciprocal cycles using actual head-facing checks. Cancel immediately beyond four blocks; preserve exact pair reservation, server-only hit/logout/unload cleanup, short bounded timeout and leader/follower/team-merge authority. Never restore ok/okay chat acceptance or treat a swing/hit as consent. See `.codex/knowledge/goals/team_up_goal.md`.
+
 Inventory/tool rules:
 - Use `ToolAi` and guarded AI hand setters for temporary equipment, and restore on stop/preemption/failure.
 - Use `BreakingBlockAi` when ordinary mining semantics apply.
@@ -66,6 +69,8 @@ Animation/compat rules:
 - Keep multi-tick motion alive and clear it on every stop/abort path. Compatibility remains safe when Epic Fight is absent.
 
 Workflow rules:
+- Item-route failures survive goal preemption and owner changes: PickupNearbyItemGoal and BurnNearbyItemGoal share ItemApproachAi's bounded per-item episode/retry/quarantine. Never reset all failure history when a higher-priority alert briefly interrupts mining. Alert avoidance must prove a useful loaded path before preempting work and retain per-threat failure backoff; failed one-node paths are not escape progress.
+- Social notice is a flagless goal with front-cone/LOS encounter detection within six blocks, a bounded 3-5 second look and cooldown. Its editable NOTICE_CHANCE is currently 1.0F (100%) for the user's test; the original chance was 0.30F. Preserve the chosen chance, eligible encounters after cooldown, anchored head/body limits and independent accumulated rotation. Active combat/player hunting always wins; a mere HUNT_PLAYERS trait is not active combat. Pause retained routine work through StartupWorkGatedGoal, not stop/restart; only existing fishing and ExploreAround may keep ticking. Clear mining visuals with BreakingBlockAi.pause and restore the retained path before continuation checks. Read `.codex/knowledge/goals/notice_nearby_player_goal.md`.
 - Read the focused code and knowledge before editing.
 - Preserve unrelated dirty changes and coordinate shared-file ownership with active agents.
 - Implement concrete requests rather than stopping at a proposal when scope is clear.

@@ -36,6 +36,7 @@ public class DescendHighColumnGoal extends Goal {
 
     private final PlayerNpcEntity playerNpc;
     private final TerraformBuildSiteGoal terraformBuildSiteGoal;
+    private final DigDownForStoneGoal digDownForStoneGoal;
     private final ToolAi toolAi;
     private final BreakingBlockAi breakingBlockAi;
     private final CanUseThrottle canUseThrottle = new CanUseThrottle(10);
@@ -48,9 +49,10 @@ public class DescendHighColumnGoal extends Goal {
     private BlockPos lowerTerrainSearchOrigin;
     private boolean workerSlotPaused;
 
-    public DescendHighColumnGoal(PlayerNpcEntity playerNpc, TerraformBuildSiteGoal terraformBuildSiteGoal) {
+    public DescendHighColumnGoal(PlayerNpcEntity playerNpc, TerraformBuildSiteGoal terraformBuildSiteGoal, DigDownForStoneGoal digDownForStoneGoal) {
         this.playerNpc = playerNpc;
         this.terraformBuildSiteGoal = terraformBuildSiteGoal;
+        this.digDownForStoneGoal = digDownForStoneGoal;
         this.toolAi = new ToolAi(playerNpc);
         this.breakingBlockAi = new BreakingBlockAi(playerNpc, this.toolAi);
         this.setFlags(EnumSet.of(Flag.MOVE, Flag.LOOK));
@@ -64,6 +66,8 @@ public class DescendHighColumnGoal extends Goal {
                 || this.playerNpc.isNoAi()
                 || this.playerNpc.isPassenger()
                 || this.playerNpc.isHealing()
+                || this.playerNpc.isGatheringJobRunning()
+                || this.digDownForStoneGoal.isMiningHandoffPending()
                 || this.playerNpc.getTarget() != null
                 || this.playerNpc.getUpwardEscapeTarget() != null
                 || this.playerNpc.getHoleEscapeCooldown() > 0
@@ -268,6 +272,13 @@ public class DescendHighColumnGoal extends Goal {
         if (!this.canBreakColumnBlock(serverLevel, floor, floorState)) {
             return null;
         }
+        // Ordinary hillside/support blocks are not pillar-descent candidates. Prove the
+        // column first so speculative idle checks do not report a failed landing for a
+        // resource dig site that this goal would never be allowed to descend from.
+        if (!ownedTemporarySupport && (!this.isNarrowColumnTop(serverLevel, floor)
+                || !this.hasLowerWalkableTerrainNearby(serverLevel, feet))) {
+            return null;
+        }
         if (!this.hasSafeLandingAfterDescent(serverLevel, floor)) {
             this.traceUnsafeLanding(floor);
             return null;
@@ -275,11 +286,6 @@ public class DescendHighColumnGoal extends Goal {
         if (ownedTemporarySupport) {
             this.floorTargetOwnedTemporary = true;
             return floor.immutable();
-        }
-
-        if (!this.isNarrowColumnTop(serverLevel, floor)
-                || !this.hasLowerWalkableTerrainNearby(serverLevel, feet)) {
-            return null;
         }
         return floor.immutable();
     }

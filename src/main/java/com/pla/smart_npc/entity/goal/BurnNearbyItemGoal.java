@@ -2,6 +2,8 @@ package com.pla.smart_npc.entity.goal;
 
 import com.pla.smart_npc.entity.PlayerNpcEntity;
 import com.pla.smart_npc.entity.ai.FarmAi;
+import com.pla.smart_npc.entity.ai.PathNavigationAi;
+import com.pla.smart_npc.util.PlayerNpcAiWorkBudget;
 import com.pla.smart_npc.util.ChatUtil;
 import com.pla.smart_npc.util.PlayerNpcBlockBreakUtil;
 import com.pla.smart_npc.util.InventoryUtils;
@@ -52,14 +54,17 @@ public class BurnNearbyItemGoal extends Goal implements GatheringGoal {
     private ItemStack burningStack = ItemStack.EMPTY;
     private ItemStack activeBurnToolStack = ItemStack.EMPTY;
     private int burnTicks;
-    private int repathTicks;
     private int failedPathTicks;
     private int obstructionMineTicks;
-    private int giveUpCooldownTicks;
+    private int retryAfterTick;
+    private int nextRouteAttemptTick;
+    private int episodeDeadlineTick;
+    private int lastAdmittedTick = Integer.MIN_VALUE;
+    private final CanUseThrottle canUseThrottle = new CanUseThrottle();
     private boolean equippedBurnTool;
     private boolean usingTemporaryTool;
     private BurnTool burnTool;
-    private static final int REPATH_INTERVAL_TICKS = 10;
+    private static final int REPATH_INTERVAL_TICKS = 20;
     private static final int MAX_FAILED_PATH_TICKS = 20 * 5;
     private static final int FAILED_BURN_COOLDOWN_TICKS = 20 * 15;
     private static final int MAX_OBSTRUCTION_BREAK_TICKS = 20 * 4;
@@ -79,8 +84,7 @@ public class BurnNearbyItemGoal extends Goal implements GatheringGoal {
 
     @Override
     public boolean canUse() {
-        if (giveUpCooldownTicks > 0) {
-            giveUpCooldownTicks--;
+        if (mob.tickCount < retryAfterTick) {
             return false;
         }
         if (!(mob.level() instanceof ServerLevel serverLevel)) return false;
@@ -88,7 +92,11 @@ public class BurnNearbyItemGoal extends Goal implements GatheringGoal {
         if (mob.isPassenger()) return false;
         if (mob.getTarget() != null) return false;
         if (mob.isNoAi()) return false;
+
         if (mob instanceof PlayerNpcEntity playerNpcEntity && playerNpcEntity.isHealing()) {
+            return false;
+        }
+        if (mob instanceof PlayerNpcEntity npc && (!canUseThrottle.canCheck(npc) || !acquireRouteBatch(serverLevel))) {
             return false;
         }
         targetItem = findTargetItem(serverLevel);
@@ -102,8 +110,11 @@ public class BurnNearbyItemGoal extends Goal implements GatheringGoal {
         if (mob.isPassenger()) return false;
         if (mob.getTarget() != null) return false;
         if (mob.isNoAi()) return false;
+        if (mob instanceof PlayerNpcEntity npc && npc.isHealing()) return false;
 
         return targetItem != null
+                && (burnTicks > 0 || mob.tickCount < episodeDeadlineTick)
+                && (burnTicks > 0 || !(mob instanceof PlayerNpcEntity npc) || npc.getItemApproachAi().canAttempt(targetItem))
                 && (burnTicks > 0 || targetItem.isAlive())
                 && (burnTicks > 0 || !targetItem.getItem().isEmpty())
                 && (burnTicks > 0 || !isSuppressedPickupCandidate(targetItem.getItem()));
@@ -116,7 +127,6 @@ public class BurnNearbyItemGoal extends Goal implements GatheringGoal {
         burningStack = ItemStack.EMPTY;
         activeBurnToolStack = ItemStack.EMPTY;
         burnTicks = 0;
-        repathTicks = 0;
         failedPathTicks = 0;
         obstructionMineTicks = 0;
         pathObstructionPos = null;
@@ -125,6 +135,15 @@ public class BurnNearbyItemGoal extends Goal implements GatheringGoal {
         equippedBurnTool = false;
         usingTemporaryTool = false;
         burnTool = null;
+
+        episodeDeadlineTick = mob.tickCount + 20 * 20;
+        nextRouteAttemptTick = mob.tickCount;
+        if (mob instanceof PlayerNpcEntity npc && targetItem != null && !npc.getItemApproachAi().canAttempt(targetItem)) {
+            targetItem = null;
+        }
+        if (mob instanceof PlayerNpcEntity npc) {
+            npc.getItemApproachAi().begin(targetItem);
+        }
 
         if (targetItem == null) {
             return;
@@ -166,8 +185,8 @@ public class BurnNearbyItemGoal extends Goal implements GatheringGoal {
 
         double dist = mob.distanceTo(targetItem);
 
-        if (dist > 1.5D && (repathTicks-- <= 0 || mob.getNavigation().isDone() || mob.getNavigation().isStuck())) {
-            repathTicks = REPATH_INTERVAL_TICKS;
+        if (dist > 1.5D && (mob.getNavigation().isDone() || mob.getNavigation().isStuck())
+                && mob.tickCount >= nextRouteAttemptTick) {
             if (moveToTargetItem()) {
                 failedPathTicks = 0;
             } else {
@@ -210,6 +229,13 @@ public class BurnNearbyItemGoal extends Goal implements GatheringGoal {
 
     @Override
     public void stop() {
+        if (mob instanceof PlayerNpcEntity npc && burnTicks <= 0) {
+            if (mob.tickCount >= episodeDeadlineTick) {
+                npc.getItemApproachAi().failed(targetItem);
+            } else {
+                npc.getItemApproachAi().interrupted(targetItem);
+            }
+        }
         boolean shouldRestoreBurnTool = equippedBurnTool || isBurnTool(mob.getMainHandItem());
 
         clearTemporaryFire();
@@ -232,7 +258,6 @@ public class BurnNearbyItemGoal extends Goal implements GatheringGoal {
         burningStack = ItemStack.EMPTY;
         activeBurnToolStack = ItemStack.EMPTY;
         burnTicks = 0;
-        repathTicks = 0;
         failedPathTicks = 0;
         obstructionMineTicks = 0;
         pathObstructionPos = null;
@@ -247,12 +272,20 @@ public class BurnNearbyItemGoal extends Goal implements GatheringGoal {
         if (targetItem == null || !targetItem.isAlive()) {
             return false;
         }
+        if (!(mob.level() instanceof ServerLevel level) || mob.tickCount < nextRouteAttemptTick) {
+            return true;
+        }
+        if (!acquireRouteBatch(level)) {
+            nextRouteAttemptTick = mob.tickCount + 2 + mob.getRandom().nextInt(4);
+            return true;
+        }
+        nextRouteAttemptTick = mob.tickCount + REPATH_INTERVAL_TICKS;
 
         restorePreviousMainHand();
         boolean burnTarget = !shouldPickupOrEquipInsteadOfBurn(targetItem.getItem());
         if (burnTarget) {
             BlockPos burnStand = findStandNearItem(targetItem);
-            Path burnStandPath = burnStand == null ? null : mob.getNavigation().createPath(burnStand, 0);
+            Path burnStandPath = createItemPath(burnStand);
             if (burnStandPath != null
                     && burnStandPath.canReach()
                     && mob.getNavigation().moveTo(burnStandPath, speed)) {
@@ -262,13 +295,13 @@ public class BurnNearbyItemGoal extends Goal implements GatheringGoal {
                     || tryStartPathObstructionMining(targetItem.blockPosition());
         }
 
-        Path itemPath = mob.getNavigation().createPath(targetItem, 0);
+        Path itemPath = createItemPath(targetItem.blockPosition());
         if (itemPath != null && itemPath.canReach() && mob.getNavigation().moveTo(itemPath, speed)) {
             return true;
         }
 
         BlockPos stand = findStandNearItem(targetItem);
-        Path standPath = stand == null ? null : mob.getNavigation().createPath(stand, 0);
+        Path standPath = createItemPath(stand);
         if (standPath != null && standPath.canReach() && mob.getNavigation().moveTo(standPath, speed)) {
             return true;
         }
@@ -280,10 +313,36 @@ public class BurnNearbyItemGoal extends Goal implements GatheringGoal {
         if (mob instanceof PlayerNpcEntity playerNpcEntity) {
             playerNpcEntity.setCurrentAiDetail(reason);
         }
-        giveUpCooldownTicks = FAILED_BURN_COOLDOWN_TICKS;
+        retryAfterTick = mob.tickCount + FAILED_BURN_COOLDOWN_TICKS;
+        if (mob instanceof PlayerNpcEntity npc) {
+            npc.getItemApproachAi().failed(targetItem);
+        }
         targetItem = null;
         clearPathObstruction();
         mob.getNavigation().stop();
+    }
+
+    private boolean acquireRouteBatch(ServerLevel level) {
+        if (!(mob instanceof PlayerNpcEntity npc)) {
+            return true;
+        }
+        if (lastAdmittedTick == mob.tickCount) {
+            return true;
+        }
+        if (!PlayerNpcAiWorkBudget.tryAcquire(level, npc)) {
+            return false;
+        }
+        lastAdmittedTick = mob.tickCount;
+        return true;
+    }
+
+    private Path createItemPath(BlockPos destination) {
+        if (destination == null) {
+            return null;
+        }
+        return mob instanceof PlayerNpcEntity npc
+                ? PathNavigationAi.createBoundedPath(npc, destination, 0.03F)
+                : mob.getNavigation().createPath(destination, 0);
     }
 
     private BlockPos findStandNearItem(ItemEntity item) {
@@ -331,7 +390,9 @@ public class BurnNearbyItemGoal extends Goal implements GatheringGoal {
         pathObstructionPos = obstruction;
         obstructionMineTicks = 0;
         mob.getNavigation().stop();
-        return tickPathObstruction();
+        // Selection can run in start(), immediately before GoalSelector also calls tick().
+        // Keep breaking on the running-tick path so that one server tick cannot advance twice.
+        return true;
     }
 
     private boolean tickPathObstruction() {
@@ -341,6 +402,10 @@ public class BurnNearbyItemGoal extends Goal implements GatheringGoal {
             return false;
         }
 
+        if (!serverLevel.hasChunkAt(pathObstructionPos)) {
+            abandonTarget("item route left loaded terrain");
+            return true;
+        }
         BlockState state = serverLevel.getBlockState(pathObstructionPos);
         if (!isPathObstructionBlock(serverLevel, pathObstructionPos, state)) {
             clearPathObstruction();
@@ -386,9 +451,8 @@ public class BurnNearbyItemGoal extends Goal implements GatheringGoal {
         if (obstructionMineTicks >= requiredMineTicks && PlayerNpcBlockBreakUtil.destroyBlock(serverLevel, clearedPos, state, playerNpc)) {
             playerNpc.hurtMainHandItem(1);
             failedPathTicks = 0;
-            repathTicks = 0;
             clearPathObstruction();
-            moveToTargetItem();
+            // A completed break yields before any new admitted route/path discovery.
         } else {
             skippedObstructions.add(clearedPos.immutable());
             failedPathTicks += REPATH_INTERVAL_TICKS;
@@ -438,6 +502,7 @@ public class BurnNearbyItemGoal extends Goal implements GatheringGoal {
             if (!seen.add(immutable)
                     || skippedObstructions.contains(immutable)
                     || !serverLevel.isInWorldBounds(immutable)
+                    || !serverLevel.hasChunkAt(immutable)
                     || !serverLevel.getWorldBorder().isWithinBounds(immutable)
                     || mob.distanceToSqr(
                     immutable.getX() + 0.5D,
@@ -482,6 +547,7 @@ public class BurnNearbyItemGoal extends Goal implements GatheringGoal {
                 && state.getFluidState().isEmpty()
                 && !CraftBasicGearGoal.isTemporaryCraftingTable(playerNpcForTempTableCheck(), serverLevel, pos)
                 && !isProtectedHomeBlock(pos)
+                && (!(mob instanceof PlayerNpcEntity npc) || !FarmAi.isOwnedFarmDestructionProtected(npc, pos))
                 && serverLevel.getBlockEntity(pos) == null
                 && hasRequiredToolFor(state);
     }
@@ -653,9 +719,12 @@ public class BurnNearbyItemGoal extends Goal implements GatheringGoal {
 
         ResourceLocation blockId = BuiltInRegistries.BLOCK.getKey(state.getBlock());
         String blockName = blockId == null ? state.getBlock().getDescriptionId() : blockId.toString();
+        boolean collecting = targetItem != null && shouldPickupOrEquipInsteadOfBurn(targetItem.getItem());
+        playerNpcEntity.setCurrentAiState(collecting ? "ai.player_npc.collecting_item" : "ai.player_npc.burning_item");
         playerNpcEntity.setCurrentAiDetail(String.format(
                 java.util.Locale.ROOT,
-                "clearing burn path %s\n@ %d %d %d %d/%dt\ncooldown if failed: 15s",
+                "disposal goal: clearing %s path %s\n@ %d %d %d %d/%dt",
+                collecting ? "item collection" : "burn",
                 blockName,
                 pathObstructionPos.getX(),
                 pathObstructionPos.getY(),
@@ -675,7 +744,7 @@ public class BurnNearbyItemGoal extends Goal implements GatheringGoal {
         boolean collecting = shouldPickupOrEquipInsteadOfBurn(stack);
         playerNpcEntity.setCurrentAiState(collecting ? "ai.player_npc.collecting_item" : "ai.player_npc.burning_item");
         playerNpcEntity.setCurrentAiDetail(
-                (collecting ? "moving to " : "moving to burn ")
+                (collecting ? "disposal goal: collecting " : "disposal goal: moving to burn ")
                         + stack.getHoverName().getString()
                         + " @ "
                         + pos.getX()
@@ -719,16 +788,22 @@ public class BurnNearbyItemGoal extends Goal implements GatheringGoal {
                 ItemEntity.class,
                 mob.getBoundingBox().inflate(searchRadius),
                 e -> e.isAlive()
+                        && (!(mob instanceof PlayerNpcEntity npc) || npc.getItemApproachAi().canAttempt(e))
                         && !e.hasPickUpDelay()
                         && e.onGround()
                         && !e.getItem().isEmpty()
-                        && (!isSuppressedPickupCandidate(e.getItem())
-                        && shouldPickupOrEquipInsteadOfBurn(e.getItem())
-                        || canBurnItem(serverLevel, e))
+                        && !isSuppressedPickupCandidate(e.getItem())
         );
 
         if (items.isEmpty()) return null;
-        return items.get(mob.getRandom().nextInt(items.size()));
+        int first = mob.getRandom().nextInt(items.size());
+        for (int offset = 0; offset < Math.min(8, items.size()); offset++) {
+            ItemEntity item = items.get((first + offset) % items.size());
+            if (shouldPickupOrEquipInsteadOfBurn(item.getItem()) || canBurnItem(serverLevel, item)) {
+                return item;
+            }
+        }
+        return null;
     }
 
     private boolean canBurnItem(ServerLevel serverLevel, ItemEntity itemEntity) {
