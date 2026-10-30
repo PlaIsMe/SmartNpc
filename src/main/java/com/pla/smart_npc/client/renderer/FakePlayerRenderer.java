@@ -28,6 +28,7 @@ import net.minecraft.resources.Identifier;
 import net.minecraft.util.Mth;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.entity.HumanoidArm;
+import net.minecraft.world.entity.Pose;
 import net.minecraft.world.item.BowItem;
 import net.minecraft.world.item.CrossbowItem;
 import net.minecraft.world.item.ItemStack;
@@ -121,6 +122,9 @@ public class FakePlayerRenderer<T extends FakePlayer>
     @Override
     public void extractRenderState(T entity, AvatarRenderState state, float partialTick) {
         super.extractRenderState(entity, state, partialTick);
+        // Gesture goals toggle the synchronized sneak flag without changing the physical pose.
+        // Preserve swimming/sleeping poses while restoring the player model's crouch animation.
+        state.isCrouching = state.isCrouching || entity.isShiftKeyDown() && state.hasPose(Pose.STANDING);
         state.skin = FakePlayerTextureUtils.getPlayerSkinData(entity);
         state.isSpectator = false;
         state.showHat = true;
@@ -136,6 +140,14 @@ public class FakePlayerRenderer<T extends FakePlayer>
             npcState.slim = state.skin.model() == net.minecraft.world.entity.player.PlayerModelType.SLIM;
             npcState.playerNpc = entity instanceof PlayerNpcEntity playerNpc ? playerNpc : null;
             npcState.hideHead = SmartNpcInspectorOverlay.shouldRenderInspectatorCameraTargetBody(entity);
+            npcState.swimXRot = state.xRot;
+            if (npcState.playerNpc != null && state.isInWater && state.swimAmount > 0.0F) {
+                // The work target can be above water while the NPC dives. Tilt the body
+                // along its motion without replacing the goal's independent head look.
+                Vec3 motion = entity.getDeltaMovement();
+                npcState.swimXRot = motion.lengthSqr() > 1.0E-6D
+                        ? (float) Math.toDegrees(-Math.atan2(motion.y, motion.horizontalDistance())) : 0.0F;
+            }
         }
         if (entity instanceof PlayerNpcEntity playerNpc) {
             if (playerNpc.isSocialNoticePausingWork() || playerNpc.isHealing()
@@ -172,6 +184,21 @@ public class FakePlayerRenderer<T extends FakePlayer>
 
     private boolean isMainHandAttackAnimating(T entity) {
         return entity instanceof PlayerNpcEntity playerNpc && playerNpc.getMainHandAttackAnimationTicks() > 0;
+    }
+
+    @Override
+    protected void setupRotations(AvatarRenderState state, PoseStack poseStack, float bodyRot, float entityScale) {
+        super.setupRotations(state, poseStack, bodyRot, entityScale);
+        // HumanoidMobRenderer animates the limbs but does not apply AvatarRenderer's swim transform.
+        if (!state.isFallFlying && !state.isAutoSpinAttack && state.deathTime <= 0.0F
+                && !state.hasPose(Pose.SLEEPING) && state.swimAmount > 0.0F) {
+            float swimXRot = state instanceof FakePlayerRenderState npcState ? npcState.swimXRot : state.xRot;
+            float targetXRot = state.isInWater ? -90.0F - swimXRot : -90.0F;
+            poseStack.mulPose(Axis.XP.rotationDegrees(Mth.lerp(state.swimAmount, 0.0F, targetXRot)));
+            if (state.isVisuallySwimming) {
+                poseStack.translate(0.0F, -1.0F, 0.3F);
+            }
+        }
     }
 
     @Override

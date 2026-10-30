@@ -7,6 +7,8 @@
 - `src/main/java/com/pla/smart_npc/entity/goal/PlayerNpcFloatGoal.java`
 - `src/main/java/com/pla/smart_npc/entity/ai/PathNavigationAi.java`
 - `src/main/java/com/pla/smart_npc/entity/PlayerNpcEntity.java`
+- `src/main/java/com/pla/smart_npc/client/renderer/FakePlayerRenderer.java`
+- `src/main/java/com/pla/smart_npc/client/renderer/FakePlayerRenderState.java`
 - Direct owners currently include `GatherLogsGoal`, `GatherStoneGoal`, `BuildHouseGoal`, and `ExploreAroundGoal`.
 
 ## Ownership Rule
@@ -101,4 +103,6 @@ Surface horizontal propulsion now uses acceleration 0.018 and a 0.10 blocks/tick
 
 The server synchronizes swimming and `Pose.SWIMMING`, with a 0.6-block swim body and 0.4-block eye height. The renderer uses player-style body rotation and swimming animation. Standing resumes only when the full standing body fits; dive planning conservatively checks standing-size clearance. Better Combat holding poses yield to swimming through their existing suppression guard. Epic Fight's renderer remains owned by that mod.
 
-Validation requires in-game crossings for log/stone work, navigation destinations, moving combat targets, shallow shores, deep water, low air, ice and interrupted goals. Compilation alone does not establish the visual result or route success in those scenes.
+On 26.1.2, `HumanoidMobRenderer` extracts the swim animation state but does not rotate the whole body like vanilla `AvatarRenderer`. `FakePlayerRenderer.setupRotations` must explicitly apply the blended swim rotation and swimming translation using the render-state API; otherwise the limbs swim while the torso stays upright. During wet Player NPC swim blending, the separate `swimXRot` render-state field derives pitch from synchronized velocity (`-atan2(vertical, horizontal)`), with neutral pitch when stationary. Descending motion therefore points the body down and ascending motion points it up, independently of a goal looking toward a bank above the water. This is a visual transform only; AI look targets, propulsion and server pose ownership remain unchanged. Fall flying, auto-spin, death and sleeping bypass this swim transform. The 1.21.1 branch has not been validated by this correction.
+
+Validation requires in-game crossings for log/stone work, navigation destinations, moving combat targets, shallow shores, deep water, low air, ice and interrupted goals. Check horizontal, descending and ascending body orientation with both skin widths, equipped armor and held items, plus the return to standing on shore. Compilation alone does not establish the visual result or route success in those scenes.

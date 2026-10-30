@@ -8,4 +8,5 @@ public class FakePlayerRenderState extends AvatarRenderState {
     public @Nullable PlayerNpcEntity playerNpc;
     public boolean slim;
     public boolean hideHead;
+    public float swimXRot;
 }

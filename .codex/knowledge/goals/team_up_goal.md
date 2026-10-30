@@ -38,3 +38,11 @@ cannot replace an existing request, and a stale stop cannot clear a newer pair's
 Every cancellation/success clears both reservations, NPC pending flags, and NPC crouches;
 human crouch input is never changed. Session shutdown clears the transient registry. Pending
 invitations are not saved. Reciprocal animation and multiplayer acceptance need in-game checks.
+
+On 26.1.2, `FakePlayerRenderer.extractRenderState` maps the synchronized sneak flag to
+`state.isCrouching` while the entity has its standing pose. `HumanoidMobRenderer` only reads
+the physical crouching pose, whereas team-up gestures intentionally toggle only the sneak
+flag; without this mapping, the name tag dims but the body never crouches. Explicit crouching
+poses still render normally, and sneak gestures cannot override swimming or sleeping poses.
+Both the skin and armor models consume this render state. Preserve this mapping when porting
+the renderer; the older renderer assigned `model.crouching` directly.
