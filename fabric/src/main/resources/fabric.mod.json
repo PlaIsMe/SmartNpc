@@ -1,0 +1,37 @@
+{
+  "schemaVersion": 1,
+  "id": "smart_npc",
+  "version": "${mod_version}",
+  "name": "${mod_name}",
+  "description": "${mod_description}",
+  "authors": [
+    "${mod_authors}"
+  ],
+  "license": "GPL-3.0-only",
+  "environment": "*",
+  "entrypoints": {
+    "main": [
+      "com.pla.smart_npc.fabric.SmartNpcFabric"
+    ],
+    "client": [
+      "com.pla.smart_npc.fabric.SmartNpcFabricClient"
+    ]
+  },
+  "mixins": [
+    "smart_npc.mixins.json",
+    "smart_npc.fabric.mixins.json"
+  ],
+  "depends": {
+    "fabricloader": ">=${fabric_loader_version}",
+    "minecraft": "1.21.1",
+    "java": ">=21",
+    "fabric-api": "*",
+    "architectury": ">=${architectury_version}",
+    "forgeconfigapiport": ">=${config_port_version}"
+  },
+  "suggests": {
+    "bettercombat": "*",
+    "yes_steve_model": "2.6.5-fabric+mc1.21.1"
+  },
+  "accessWidener": "smart_npc.accesswidener"
+}

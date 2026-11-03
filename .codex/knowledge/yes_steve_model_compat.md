@@ -1,5 +1,44 @@
 # Yes Steve Model compatibility (NeoForge 1.21.1)
 
+## Current 1.21.1 multi-loader behavior
+
+The current modules are `common`, `fabric`, and `neoforge`. Shared selection/filename
+matching stays in common; released, typed YSM adapters and display renderers live in
+each loader's `ysm.fabric` or `ysm.neoforge` package. The exact pins are Fabric
+`eGOUtHWJ` and NeoForge `HZWaR0LY`, both 2.6.5 for Minecraft 1.21.1. Fabric's class/member
+names were verified against that released jar, including its animation capability;
+NeoForge retains its existing animation attachment. The generally loaded boundary
+contains no YSM types. Neither distribution bundles YSM.
+
+With supported, native-available YSM and a loaded server registry, every NPC receives
+a usable YSM appearance. `modelChance` now means custom versus base:
+
+- `0.0`: Steve (`misc/2_steve`) or Alex (`misc/1_alex`) according to the regular skin's
+  wide/slim shape, including existing NPCs. YSM stays enabled.
+- `1.0`: another usable server-installed or bundled model. The two base IDs are excluded;
+  YSM's separate bundled `default` character remains eligible.
+- Intermediate values: save one choice per NPC, honoring a named `YSM:<filename>` on
+  the custom branch. A temporarily unavailable custom choice falls back to Steve/Alex
+  and retries when models become available. A base choice is not repeatedly rerolled.
+
+The server-only nullable `YsmCustomModel` Boolean records this decision. Existing model,
+texture and assignment-provenance tags retain their format. Older empty choices now
+receive a model. Zero replaces a custom appearance with the matching base; one upgrades
+a base to custom. Former custom IDs are not retained across a move to zero. Changing
+between intermediate chances does not reroll an existing decision. No wire-format change
+is required.
+
+Skin shape comes from Authlib 6 `getTextures(profile).skin()` metadata with the same
+18-entry UUID fallback as vanilla 1.21.1. It is revisited after asynchronous profile
+resolution. Both display players copy the NPC's PlayerSkin and expose its resolved
+GameProfile for YSM's own skin resolver. Missing/unsupported/native-unavailable YSM still
+uses the regular renderer. The historical zero-disables and empty-choice-is-final
+statements below describe the former behavior and are superseded by this section.
+
+For current build/runtime checks see `multiloader_1_21_1.md`. Older single-module ModDev
+commands and old adapter locations below are historical; the active build uses Loom.
+
+
 This branch targets Minecraft 1.21.1 / NeoForge 21.1.250 / Java 21, as verified in
 `gradle.properties` and `build.gradle`. The adapter targets released **YSM
 2.6.5-neoforge+mc1.21.1**, Modrinth version `HZWaR0LY`. Its obfuscated symbols differ
