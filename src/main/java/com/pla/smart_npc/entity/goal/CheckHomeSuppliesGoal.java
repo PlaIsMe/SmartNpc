@@ -1,5 +1,9 @@
 package com.pla.smart_npc.entity.goal;
 
+import net.minecraft.core.component.DataComponents;
+
+import com.pla.smart_npc.util.SmartNpcItemUtil;
+
 import com.pla.smart_npc.clazz.PlayerNpcInterest;
 import com.pla.smart_npc.entity.PlayerNpcEntity;
 import com.pla.smart_npc.entity.ai.ChestAi;
@@ -27,10 +31,8 @@ import net.minecraft.world.item.CrossbowItem;
 import net.minecraft.world.item.FishingRodItem;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
-import net.minecraft.world.item.PickaxeItem;
 import net.minecraft.world.item.ProjectileWeaponItem;
 import net.minecraft.world.item.ShovelItem;
-import net.minecraft.world.item.SwordItem;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.entity.AbstractFurnaceBlockEntity;
 import net.minecraft.world.level.block.entity.ChestBlockEntity;
@@ -98,7 +100,7 @@ public class CheckHomeSuppliesGoal extends Goal {
                 || this.playerNpc.isPassenger()
                 || this.playerNpc.isHealing()
                 || this.playerNpc.getTarget() != null
-                || serverLevel.isNight()) {
+                || serverLevel.isDarkOutside()) {
             return false;
         }
         if (this.playerNpc.isStoneAccessClearing()) {
@@ -210,7 +212,7 @@ public class CheckHomeSuppliesGoal extends Goal {
                 && !this.playerNpc.isHealing()
                 && this.playerNpc.getTarget() == null
                 && this.playerNpc.level() instanceof ServerLevel serverLevel
-                && !serverLevel.isNight();
+                && !serverLevel.isDarkOutside();
     }
 
     @Override
@@ -525,36 +527,36 @@ public class CheckHomeSuppliesGoal extends Goal {
 
     private boolean needsMissingTool(SupplyNeedSnapshot need, ItemStack stack) {
         return need.axe() && stack.getItem() instanceof AxeItem
-                || need.pickaxe() && stack.getItem() instanceof PickaxeItem
+                || need.pickaxe() && stack.is(ItemTags.PICKAXES)
                 || need.shovel() && stack.getItem() instanceof ShovelItem
-                || need.sword() && stack.getItem() instanceof SwordItem;
+                || need.sword() && stack.is(ItemTags.SWORDS);
     }
 
     private boolean isToolStack(ItemStack stack) {
         return !stack.isEmpty()
                 && (stack.getItem() instanceof AxeItem
-                || stack.getItem() instanceof PickaxeItem
+                || stack.is(ItemTags.PICKAXES)
                 || stack.getItem() instanceof ShovelItem
-                || stack.getItem() instanceof SwordItem
+                || stack.is(ItemTags.SWORDS)
                 || stack.getItem() instanceof FishingRodItem);
     }
 
     private boolean needsToolSupply() {
         return this.needsTool(AxeItem.class)
-                || this.needsTool(PickaxeItem.class)
+                || this.needsTool(ItemTags.PICKAXES)
                 || this.needsTool(ShovelItem.class)
                 || this.needsFishingRod()
                 || this.needsFishingString();
     }
 
     private boolean needsToolCraftingMaterials() {
-        return this.needsTool(AxeItem.class) || this.needsTool(PickaxeItem.class);
+        return this.needsTool(AxeItem.class) || this.needsTool(ItemTags.PICKAXES);
     }
 
-    private boolean needsTool(Class<?> toolClass) {
-        return !toolClass.isInstance(this.playerNpc.getMainHandItem().getItem())
-                && !toolClass.isInstance(this.playerNpc.getOffhandItem().getItem())
-                && !InventoryUtils.hasItem(this.playerNpc, stack -> toolClass.isInstance(stack.getItem()));
+    private boolean needsTool(Object toolClass) {
+        return !SmartNpcItemUtil.matches(toolClass, this.playerNpc.getMainHandItem().getItem())
+                && !SmartNpcItemUtil.matches(toolClass, this.playerNpc.getOffhandItem().getItem())
+                && !InventoryUtils.hasItem(this.playerNpc, stack -> SmartNpcItemUtil.matches(toolClass, stack.getItem()));
     }
 
     private boolean needsFood() {
@@ -602,9 +604,9 @@ public class CheckHomeSuppliesGoal extends Goal {
 
     private SupplyNeedSnapshot createSupplyNeedSnapshot(ServerLevel serverLevel, boolean includeFurnaceOutput) {
         boolean axe = this.needsTool(AxeItem.class);
-        boolean pickaxe = this.needsTool(PickaxeItem.class);
+        boolean pickaxe = this.needsTool(ItemTags.PICKAXES);
         boolean shovel = this.needsTool(ShovelItem.class);
-        boolean sword = this.needsTool(SwordItem.class);
+        boolean sword = this.needsTool(ItemTags.SWORDS);
         boolean fishingRod = this.needsFishingRod();
         boolean fishingString = this.needsFishingString();
         boolean food = this.needsFood();
@@ -690,7 +692,7 @@ public class CheckHomeSuppliesGoal extends Goal {
     }
 
     private boolean isFuel(ItemStack stack) {
-        return !stack.isEmpty() && AbstractFurnaceBlockEntity.isFuel(stack);
+        return !stack.isEmpty() && this.playerNpc.level().fuelValues().isFuel(stack);
     }
 
     private boolean isCurrentBuildSupply(ServerLevel serverLevel, ItemStack stack) {
@@ -786,7 +788,7 @@ public class CheckHomeSuppliesGoal extends Goal {
                 && serverLevel.hasChunkAt(pos)
                 && serverLevel.getBlockState(pos).isAir()
                 && serverLevel.getBlockState(pos.above()).isAir()
-                && serverLevel.getBlockState(pos.below()).isSolidRender(serverLevel, pos.below());
+                && serverLevel.getBlockState(pos.below()).isSolidRender();
     }
 
     private boolean isAtStand() {
@@ -848,8 +850,8 @@ public class CheckHomeSuppliesGoal extends Goal {
     }
 
     private boolean canRetryToolChestCheck(ServerLevel serverLevel) {
-        return !this.playerNpc.getPersistentData().contains(LAST_TOOL_CHEST_CHECK_TIME, Tag.TAG_LONG)
-                || serverLevel.getGameTime() - this.playerNpc.getPersistentData().getLong(LAST_TOOL_CHEST_CHECK_TIME) >= TOOL_CHEST_RECHECK_TICKS;
+        return !this.playerNpc.getPersistentData().contains(LAST_TOOL_CHEST_CHECK_TIME)
+                || serverLevel.getGameTime() - this.playerNpc.getPersistentData().getLongOr(LAST_TOOL_CHEST_CHECK_TIME, 0L) >= TOOL_CHEST_RECHECK_TICKS;
     }
 
     private void markToolChestChecked(ServerLevel serverLevel) {
@@ -857,8 +859,8 @@ public class CheckHomeSuppliesGoal extends Goal {
     }
 
     private boolean checkedToday(String key, long day) {
-        return this.playerNpc.getPersistentData().contains(key, Tag.TAG_LONG)
-                && this.playerNpc.getPersistentData().getLong(key) == day;
+        return this.playerNpc.getPersistentData().contains(key)
+                && this.playerNpc.getPersistentData().getLongOr(key, 0L) == day;
     }
 
     private void markModeChecked(ServerLevel serverLevel) {

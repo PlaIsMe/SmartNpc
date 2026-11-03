@@ -296,6 +296,6 @@ public class ChatUtil {
     }
 
     private static String randomKey(Entity entity, String prefix, int messageCount) {
-        return prefix + "." + (entity.level().random.nextInt(messageCount) + 1);
+        return prefix + "." + (entity.level().getRandom().nextInt(messageCount) + 1);
     }
 }

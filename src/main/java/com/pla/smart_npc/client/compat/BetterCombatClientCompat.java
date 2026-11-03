@@ -1,23 +1,22 @@
 package com.pla.smart_npc.client.compat;
 
+import net.minecraft.core.component.DataComponents;
+
 import com.mojang.blaze3d.vertex.PoseStack;
-import com.mojang.math.Axis;
 import com.pla.smart_npc.SmartNpc;
 import com.pla.smart_npc.compat.BetterCombatCompat;
 import com.pla.smart_npc.entity.PlayerNpcEntity;
 import com.pla.smart_npc.entity.ai.VanillaMeleeAttackAi;
-import net.minecraft.client.model.PlayerModel;
+import net.minecraft.client.model.player.PlayerModel;
 import net.minecraft.client.model.geom.ModelPart;
 import net.minecraft.core.particles.ParticleOptions;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.world.entity.HumanoidArm;
-import net.minecraft.world.entity.Pose;
 import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.item.CrossbowItem;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.ShieldItem;
 import net.minecraft.world.phys.Vec3;
-import net.neoforged.neoforge.common.ItemAbilities;
 
 import javax.annotation.Nullable;
 import java.lang.reflect.Array;
@@ -33,23 +32,16 @@ import java.util.WeakHashMap;
 /**
  * Client-only Better Combat bridge for PlayerNpcEntity.
  *
- * Better Combat only injects its PlayerAnimator animation stack into actual
+ * Better Combat only injects its Player Animation Library animation stack into actual
  * client Player entities. PlayerNpcEntity is a PathfinderMob rendered with a
  * PlayerModel, so it never reaches that mixin. This bridge deliberately uses
  * reflection: Better Combat stays a truly optional dependency while, when it
  * is present, we can still use its already-resolved WeaponRegistry and its
- * PlayerAnimator animation registry.
+ * Player Animation Library animation registry.
  */
 public final class BetterCombatClientCompat {
     private static final String BETTER_COMBAT_CLASS = "net.bettercombat.BetterCombatMod";
     private static final String WEAPON_REGISTRY_CLASS = "net.bettercombat.logic.WeaponRegistry";
-    private static final String ANIMATION_REGISTRY_CLASS = "dev.kosmx.playerAnim.minecraftApi.PlayerAnimationRegistry";
-    private static final String CUSTOM_ANIMATION_PLAYER_CLASS = "net.bettercombat.client.animation.CustomAnimationPlayer";
-    private static final String ANIMATION_APPLIER_CLASS = "dev.kosmx.playerAnim.impl.animation.AnimationApplier";
-    private static final String MODIFIER_LAYER_CLASS = "dev.kosmx.playerAnim.api.layered.ModifierLayer";
-    private static final String MIRROR_MODIFIER_CLASS = "dev.kosmx.playerAnim.api.layered.modifier.MirrorModifier";
-    private static final String TRANSFORM_TYPE_CLASS = "dev.kosmx.playerAnim.api.TransformType";
-    private static final String VEC3F_CLASS = "dev.kosmx.playerAnim.core.util.Vec3f";
     private static final String TRAIL_PARTICLES_CLASS = "net.bettercombat.client.particle.TrailParticles";
     private static final String SLASH_PARTICLE_EFFECT_CLASS = "net.bettercombat.particle.SlashParticleEffect";
     private static final String BETTER_COMBAT_CLIENT_CLASS = "net.bettercombat.client.BetterCombatClientMod";
@@ -58,7 +50,6 @@ public final class BetterCombatClientCompat {
     private static final Map<PlayerNpcEntity, Integer> SPAWNED_TRAIL_SEQUENCES = new WeakHashMap<>();
 
     private static Method weaponRegistryGetAttributes;
-    private static Method animationRegistryGetAnimation;
     private static boolean disabled;
     private static boolean warnedFailure;
     private static boolean trailsDisabled;
@@ -75,7 +66,7 @@ public final class BetterCombatClientCompat {
      */
     public static boolean hasActiveAttackAnimation(PlayerNpcEntity playerNpc) {
         if (!BetterCombatCompat.isLoaded() || disabled || playerNpc.getBetterCombatAttackAnimationTicks() <= 0
-                || playerNpc.isUsingItem() && playerNpc.getUseItem().canPerformAction(ItemAbilities.SHIELD_BLOCK)) {
+                || playerNpc.isUsingItem() && playerNpc.getUseItem().has(DataComponents.BLOCKS_ATTACKS)) {
             return false;
         }
         try {
@@ -91,9 +82,8 @@ public final class BetterCombatClientCompat {
      * Applies Better Combat's selected keyframe animation to the supplied
      * PlayerModel. Returns true when an animation was actually applied.
      */
-    public static boolean applyAttackAnimation(PlayerModel<?> model, PlayerNpcEntity playerNpc, float partialTick) {
-        if (!BetterCombatCompat.isLoaded() || disabled || playerNpc.getBetterCombatAttackAnimationTicks() <= 0
-                || playerNpc.isUsingItem() && playerNpc.getUseItem().canPerformAction(ItemAbilities.SHIELD_BLOCK)) {
+    public static boolean applyAttackAnimation(PlayerModel model, PlayerNpcEntity playerNpc, float partialTick) {
+        if (!BetterCombatCompat.isLoaded() || disabled || playerNpc.getBetterCombatAttackAnimationTicks() <= 0) {
             return false;
         }
 
@@ -104,8 +94,8 @@ public final class BetterCombatClientCompat {
             }
 
             Object animationApplier = sampled.animationApplier();
-            // Match PlayerAnimator's PlayerModelMixin application order.
-            applyBodyParts(animationApplier, model);
+            // Match Player Animation Library's PlayerModelMixin application order.
+            applyBodyParts(animationApplier, model, playerNpc);
             maybeSpawnAttackTrail(playerNpc, sampled.attack(), partialTick);
             return true;
         } catch (ReflectiveOperationException | LinkageError | RuntimeException exception) {
@@ -126,7 +116,7 @@ public final class BetterCombatClientCompat {
      *  - attacks, item use, swimming, digging/swing activity and charged
      *    crossbows suppress the idle pose.
      */
-    public static boolean applyPoseAnimation(PlayerModel<?> model, PlayerNpcEntity playerNpc, float partialTick) {
+    public static boolean applyPoseAnimation(PlayerModel model, PlayerNpcEntity playerNpc, float partialTick) {
         if (!BetterCombatCompat.isLoaded() || disabled || isPoseSuppressed(playerNpc)) {
             return false;
         }
@@ -162,8 +152,8 @@ public final class BetterCombatClientCompat {
     }
 
     /**
-     * Applies PlayerAnimator's rightItem/leftItem channel at the same point in
-     * the render pipeline as PlayerAnimator's HeldItemMixin: after vanilla's
+     * Applies Player Animation Library's rightItem/leftItem channel at the same point in
+     * the render pipeline as Player Animation Library's HeldItemMixin: after vanilla's
      * third-person hand transform and immediately before ItemInHandRenderer.
      *
      * Better Combat's attack JSONs animate these item channels independently
@@ -177,14 +167,14 @@ public final class BetterCombatClientCompat {
             float partialTick
     ) {
         if (!BetterCombatCompat.isLoaded() || disabled
-                || playerNpc.isUsingItem() && playerNpc.getUseItem().canPerformAction(ItemAbilities.SHIELD_BLOCK)) {
+                || playerNpc.isUsingItem() && playerNpc.getUseItem().has(DataComponents.BLOCKS_ATTACKS)) {
             return false;
         }
 
         try {
             // Attack has the highest Better Combat animation-stack priority.
             // Do not compose an idle pose on top of it or the transforms would
-            // add together instead of behaving like layered PlayerAnimator.
+            // add together instead of behaving like layered Player Animation Library.
             if (playerNpc.getBetterCombatAttackAnimationTicks() > 0) {
                 SampledAnimation sampled = sampleCurrentAttack(playerNpc, partialTick);
                 if (sampled != null) {
@@ -225,15 +215,7 @@ public final class BetterCombatClientCompat {
             HumanoidArm renderedArm
     ) throws ReflectiveOperationException {
         String itemPart = renderedArm == HumanoidArm.LEFT ? "leftItem" : "rightItem";
-        TransformVector position = sampleTransform(sampled.animationApplier(), itemPart, "POSITION");
-        TransformVector rotation = sampleTransform(sampled.animationApplier(), itemPart, "ROTATION");
-
-        // Match PlayerAnimator 1.20 HeldItemMixin exactly: model-pixel
-        // translation followed by roll(Z), yaw(Y), pitch(X).
-        poseStack.translate(position.x() / 16.0F, position.y() / 16.0F, position.z() / 16.0F);
-        poseStack.mulPose(Axis.ZP.rotation(rotation.z()));
-        poseStack.mulPose(Axis.YP.rotation(rotation.y()));
-        poseStack.mulPose(Axis.XP.rotation(rotation.x()));
+        PlayerAnimationSampler.applyHeldItemTransform(poseStack, sampled.animationApplier(), itemPart);
         return true;
     }
 
@@ -251,44 +233,11 @@ public final class BetterCombatClientCompat {
             return null;
         }
 
-        int animationTick = Math.max(
-                0,
-                Math.min(animationStopTick - 1, (int) Math.floor(animationTime)));
-        float animationPartialTick = clamp(animationTime - animationTick, 0.0F, 0.9999F);
-
-        Object animationPlayer = newCustomAnimationPlayer(attack.animation(), animationTick);
-        Object animationForApplier = attack.mirror()
-                ? createMirroredAnimation(animationPlayer)
-                : animationPlayer;
-        Object animationApplier = newAnimationApplier(animationForApplier);
-        setAnimationPartialTick(animationApplier, animationForApplier, animationPartialTick);
+        Object animationApplier = PlayerAnimationSampler.sample(
+                attack.animation(),
+                Math.min(animationTime, animationStopTick - 0.0001F),
+                attack.mirror());
         return new SampledAnimation(animationApplier, attack);
-    }
-
-    private static TransformVector sampleTransform(Object animationApplier, String partName, String transformTypeName)
-            throws ReflectiveOperationException {
-        Class<?> transformTypeClass = Class.forName(TRANSFORM_TYPE_CLASS);
-        Class<?> vec3fClass = Class.forName(VEC3F_CLASS);
-
-        @SuppressWarnings({"rawtypes", "unchecked"})
-        Object transformType = Enum.valueOf((Class<? extends Enum>) transformTypeClass.asSubclass(Enum.class), transformTypeName);
-        Object zero = vec3fClass.getField("ZERO").get(null);
-        Method get3DTransform = animationApplier.getClass().getMethod(
-                "get3DTransform", String.class, transformTypeClass, vec3fClass);
-        Object vector = get3DTransform.invoke(animationApplier, partName, transformType, zero);
-
-        return new TransformVector(
-                readVectorComponent(vector, "getX"),
-                readVectorComponent(vector, "getY"),
-                readVectorComponent(vector, "getZ"));
-    }
-
-    private static float readVectorComponent(Object vector, String getter) throws ReflectiveOperationException {
-        Object value = vector.getClass().getMethod(getter).invoke(vector);
-        if (!(value instanceof Number number)) {
-            throw new IllegalStateException("PlayerAnimator vector " + getter + "() did not return a number");
-        }
-        return number.floatValue();
     }
 
     @Nullable
@@ -303,15 +252,7 @@ public final class BetterCombatClientCompat {
         }
 
         float animationTime = poseAnimationTime(animation, playerNpc, partialTick);
-        int animationTick = Math.max(0, (int) Math.floor(animationTime));
-        float animationPartialTick = clamp(animationTime - animationTick, 0.0F, 0.9999F);
-
-        Object animationPlayer = newCustomAnimationPlayer(animation, animationTick);
-        Object animationForApplier = pose.mirror()
-                ? createMirroredAnimation(animationPlayer)
-                : animationPlayer;
-        Object animationApplier = newAnimationApplier(animationForApplier);
-        setAnimationPartialTick(animationApplier, animationForApplier, animationPartialTick);
+        Object animationApplier = PlayerAnimationSampler.sample(animation, animationTime, pose.mirror());
         return new SampledAnimation(animationApplier, null);
     }
 
@@ -321,25 +262,8 @@ public final class BetterCombatClientCompat {
      * stack, so sample the same looping interval from the NPC's world age.
      */
     private static float poseAnimationTime(Object animation, PlayerNpcEntity playerNpc, float partialTick) {
-        int beginTick = readIntField(animation, "beginTick", 0);
-        int returnTick = readIntField(animation, "returnTick", beginTick);
-        int stopTick = readIntField(animation, "stopTick", Math.max(returnTick + 1, 20));
-
-        if (stopTick <= returnTick) {
-            return Math.max(0, beginTick);
-        }
-
         float absoluteTime = Math.max(0.0F, playerNpc.tickCount + partialTick);
-        if (absoluteTime < stopTick) {
-            return absoluteTime;
-        }
-
-        float loopLength = stopTick - returnTick;
-        float loopTime = (absoluteTime - returnTick) % loopLength;
-        if (loopTime < 0.0F) {
-            loopTime += loopLength;
-        }
-        return returnTick + loopTime;
+        return PlayerAnimationSampler.loopedTime(animation, absoluteTime);
     }
 
     @Nullable
@@ -402,8 +326,7 @@ public final class BetterCombatClientCompat {
                 || playerNpc.getMainHandAttackAnimationTicks() > 0
                 || playerNpc.swinging
                 || playerNpc.isUsingItem()
-                || playerNpc.isSwimming()
-                || playerNpc.isEpicFightDigging()) {
+                || playerNpc.isSwimming()) {
             return true;
         }
         ItemStack mainHand = playerNpc.getMainHandItem();
@@ -414,7 +337,7 @@ public final class BetterCombatClientCompat {
 
     private static void applyPoseBodyParts(
             Object animationApplier,
-            PlayerModel<?> model,
+            PlayerModel model,
             PlayerNpcEntity playerNpc
     ) throws ReflectiveOperationException {
         applyPart(animationApplier, "head", model.head);
@@ -430,12 +353,19 @@ public final class BetterCombatClientCompat {
         applyPart(animationApplier, "torso", model.body);
     }
 
-    private static void applyBodyParts(Object animationApplier, PlayerModel<?> model) throws ReflectiveOperationException {
-        applyPart(animationApplier, "head", model.head);
+    private static void applyBodyParts(
+            Object animationApplier,
+            PlayerModel model,
+            PlayerNpcEntity playerNpc
+    ) throws ReflectiveOperationException {
+        // NPC look control owns the head. Better Combat's player controller
+        // similarly releases the attack animation's head pitch channel.
         applyPart(animationApplier, "leftArm", model.leftArm);
         applyPart(animationApplier, "rightArm", model.rightArm);
-        applyPart(animationApplier, "leftLeg", model.leftLeg);
-        applyPart(animationApplier, "rightLeg", model.rightLeg);
+        if (!playerNpc.isSwimming() && playerNpc.getVehicle() == null) {
+            applyPart(animationApplier, "leftLeg", model.leftLeg);
+            applyPart(animationApplier, "rightLeg", model.rightLeg);
+        }
         applyPart(animationApplier, "torso", model.body);
     }
 
@@ -574,8 +504,8 @@ public final class BetterCombatClientCompat {
             return null;
         }
 
-        int endTick = readIntField(animation, "endTick", 20);
-        int stopTick = readIntField(animation, "stopTick", Math.max(endTick, 20));
+        int endTick = Math.max(1, Math.round(PlayerAnimationSampler.endTick(animation)));
+        int stopTick = Math.max(1, (int) Math.ceil(PlayerAnimationSampler.stopTick(animation)));
         if (stopTick <= 0) {
             stopTick = Math.max(1, endTick);
         }
@@ -584,11 +514,6 @@ public final class BetterCombatClientCompat {
         float upswingMultiplier = betterCombatUpswingMultiplier();
         float upswingRate = clamp(rawUpswing, 0.0F, 1.0F) * upswingMultiplier;
         float attackLength = playerStyleAttackCooldownTicks(attackStack);
-
-        // Better Combat mutates a copy before handing it to PlayerAnimator:
-        // activity-specific leg channels can be disabled and the torso is
-        // explicitly enabled. The NPC-specific head ownership is applied too.
-        Object preparedAnimation = prepareAttackAnimation(animation, playerNpc);
 
         boolean mirror = offHandAttack;
         if (playerNpc.getMainArm() == HumanoidArm.LEFT) {
@@ -607,7 +532,7 @@ public final class BetterCombatClientCompat {
 
         return new ResolvedAttack(
                 animationName,
-                preparedAnimation,
+                animation,
                 Math.max(1, endTick),
                 stopTick,
                 mirror,
@@ -615,27 +540,6 @@ public final class BetterCombatClientCompat {
                 upswingRate,
                 upswingMultiplier,
                 trail);
-    }
-
-    private static Object prepareAttackAnimation(Object animation, PlayerNpcEntity playerNpc) throws ReflectiveOperationException {
-        Object builder = animation.getClass().getMethod("mutableCopy").invoke(animation);
-
-        if (playerNpc.getPose() == Pose.SWIMMING || playerNpc.getVehicle() != null) {
-            configureStateCollection(builder, "rightLeg", false, false);
-            configureStateCollection(builder, "leftLeg", false, false);
-        }
-
-        Field torsoField = builder.getClass().getField("torso");
-        Object torso = torsoField.get(builder);
-        torso.getClass().getMethod("fullyEnablePart", boolean.class).invoke(torso, true);
-
-        // Player NPC look control already owns the complete head transform.
-        // Better Combat only releases pitch for real players, whose vanilla
-        // renderer reconstructs the other channels differently. Releasing all
-        // head channels prevents the body attack from twisting the NPC head.
-        configureStateCollection(builder, "head", false, false);
-
-        return builder.getClass().getMethod("build").invoke(builder);
     }
 
     @Nullable
@@ -910,28 +814,6 @@ public final class BetterCombatClientCompat {
         return number.floatValue();
     }
 
-    private static void configureStateCollection(
-            Object animationBuilder,
-            String collectionFieldName,
-            boolean rotationEnabled,
-            boolean offsetEnabled
-    ) throws ReflectiveOperationException {
-        Field collectionField = animationBuilder.getClass().getField(collectionFieldName);
-        Object collection = collectionField.get(animationBuilder);
-        setStateEnabled(collection, "pitch", rotationEnabled);
-        setStateEnabled(collection, "roll", rotationEnabled);
-        setStateEnabled(collection, "yaw", rotationEnabled);
-        setStateEnabled(collection, "x", offsetEnabled);
-        setStateEnabled(collection, "y", offsetEnabled);
-        setStateEnabled(collection, "z", offsetEnabled);
-    }
-
-    private static void setStateEnabled(Object stateCollection, String fieldName, boolean enabled) throws ReflectiveOperationException {
-        Field field = stateCollection.getClass().getField(fieldName);
-        Object state = field.get(stateCollection);
-        state.getClass().getMethod("setEnabled", boolean.class).invoke(state, enabled);
-    }
-
     private static boolean evaluateAttackConditions(
             Object attack,
             PlayerNpcEntity playerNpc,
@@ -1078,139 +960,15 @@ public final class BetterCombatClientCompat {
 
     @Nullable
     private static Object animationByName(String animationName) throws ReflectiveOperationException {
-        if (animationRegistryGetAnimation == null) {
-            Class<?> registryClass = Class.forName(ANIMATION_REGISTRY_CLASS);
-            animationRegistryGetAnimation = registryClass.getMethod("getAnimation", ResourceLocation.class);
-        }
-        return animationRegistryGetAnimation.invoke(null, ResourceLocation.parse(animationName));
-    }
-
-    private static Object newCustomAnimationPlayer(Object animation, int animationTick) throws ReflectiveOperationException {
-        Class<?> playerClass = Class.forName(CUSTOM_ANIMATION_PLAYER_CLASS);
-        for (Constructor<?> constructor : playerClass.getConstructors()) {
-            Class<?>[] parameterTypes = constructor.getParameterTypes();
-            if (parameterTypes.length == 2
-                    && parameterTypes[1] == int.class
-                    && parameterTypes[0].isAssignableFrom(animation.getClass())) {
-                return constructor.newInstance(animation, animationTick);
-            }
-        }
-        throw new NoSuchMethodException("No compatible CustomAnimationPlayer(animation, int) constructor");
-    }
-
-    private static Object createMirroredAnimation(Object animationPlayer) throws ReflectiveOperationException {
-        Class<?> layerClass = Class.forName(MODIFIER_LAYER_CLASS);
-        Object layer = layerClass.getConstructor().newInstance();
-
-        Method setAnimation = findCompatibleMethod(layerClass, "setAnimation", animationPlayer);
-        if (setAnimation == null) {
-            throw new NoSuchMethodException("No compatible ModifierLayer.setAnimation(IAnimation) method");
-        }
-        setAnimation.invoke(layer, animationPlayer);
-
-        Class<?> mirrorClass = Class.forName(MIRROR_MODIFIER_CLASS);
-        Object mirrorModifier = mirrorClass.getConstructor().newInstance();
-        mirrorClass.getMethod("setEnabled", boolean.class).invoke(mirrorModifier, true);
-
-        Method addModifier = findCompatibleMethod(layerClass, "addModifier", mirrorModifier, 0);
-        if (addModifier == null) {
-            throw new NoSuchMethodException("No compatible ModifierLayer.addModifier(AbstractModifier, int) method");
-        }
-        addModifier.invoke(layer, mirrorModifier, 0);
-        return layer;
-    }
-
-    private static Object newAnimationApplier(Object animation) throws ReflectiveOperationException {
-        Class<?> applierClass = Class.forName(ANIMATION_APPLIER_CLASS);
-        for (Constructor<?> constructor : applierClass.getConstructors()) {
-            Class<?>[] parameterTypes = constructor.getParameterTypes();
-            if (parameterTypes.length == 1 && parameterTypes[0].isAssignableFrom(animation.getClass())) {
-                return constructor.newInstance(animation);
-            }
-        }
-        throw new NoSuchMethodException("No compatible AnimationApplier(IAnimation) constructor");
-    }
-
-    private static void setAnimationPartialTick(Object animationApplier, Object animation, float partialTick) throws ReflectiveOperationException {
-        Method method = findPublicMethod(animationApplier.getClass(), "setTickDelta", float.class);
-        if (method != null) {
-            method.invoke(animationApplier, partialTick);
-            return;
-        }
-
-        // Compatibility fallback for older PlayerAnimator builds.
-        Method setupAnim = findPublicMethod(animation.getClass(), "setupAnim", float.class);
-        if (setupAnim != null) {
-            setupAnim.invoke(animation, partialTick);
-        }
+        return PlayerAnimationSampler.animation(Identifier.parse(animationName));
     }
 
     private static void applyPart(Object animationApplier, String partName, ModelPart part) throws ReflectiveOperationException {
-        Method updatePart = animationApplier.getClass().getMethod("updatePart", String.class, ModelPart.class);
-        updatePart.invoke(animationApplier, partName, part);
-    }
-
-    @Nullable
-    private static Method findPublicMethod(Class<?> owner, String name, Class<?>... parameterTypes) {
-        try {
-            return owner.getMethod(name, parameterTypes);
-        } catch (NoSuchMethodException ignored) {
-            return null;
-        }
-    }
-
-    @Nullable
-    private static Method findCompatibleMethod(Class<?> owner, String name, Object... arguments) {
-        methodLoop:
-        for (Method method : owner.getMethods()) {
-            if (!method.getName().equals(name) || method.getParameterCount() != arguments.length) {
-                continue;
-            }
-            Class<?>[] parameterTypes = method.getParameterTypes();
-            for (int index = 0; index < parameterTypes.length; index++) {
-                Object argument = arguments[index];
-                if (argument == null) {
-                    if (parameterTypes[index].isPrimitive()) {
-                        continue methodLoop;
-                    }
-                    continue;
-                }
-                Class<?> argumentClass = argument.getClass();
-                if (parameterTypes[index].isPrimitive()) {
-                    if (!primitiveWrapperMatches(parameterTypes[index], argumentClass)) {
-                        continue methodLoop;
-                    }
-                } else if (!parameterTypes[index].isAssignableFrom(argumentClass)) {
-                    continue methodLoop;
-                }
-            }
-            return method;
-        }
-        return null;
-    }
-
-    private static boolean primitiveWrapperMatches(Class<?> primitive, Class<?> wrapper) {
-        return (primitive == boolean.class && wrapper == Boolean.class)
-                || (primitive == byte.class && wrapper == Byte.class)
-                || (primitive == short.class && wrapper == Short.class)
-                || (primitive == int.class && wrapper == Integer.class)
-                || (primitive == long.class && wrapper == Long.class)
-                || (primitive == float.class && wrapper == Float.class)
-                || (primitive == double.class && wrapper == Double.class)
-                || (primitive == char.class && wrapper == Character.class);
+        PlayerAnimationSampler.applyPart(animationApplier, partName, part);
     }
 
     private static Object invokeNoArgs(Object target, String methodName) throws ReflectiveOperationException {
         return target.getClass().getMethod(methodName).invoke(target);
-    }
-
-    private static int readIntField(Object target, String fieldName, int fallback) {
-        try {
-            Field field = target.getClass().getField(fieldName);
-            return field.getInt(target);
-        } catch (ReflectiveOperationException | RuntimeException ignored) {
-            return fallback;
-        }
     }
 
     private static float clamp(float value, float min, float max) {
@@ -1255,9 +1013,6 @@ public final class BetterCombatClientCompat {
     }
 
     private record SampledAnimation(Object animationApplier, @Nullable ResolvedAttack attack) {
-    }
-
-    private record TransformVector(float x, float y, float z) {
     }
 
     private record CachedAttack(int sequence, @Nullable ResolvedAttack attack) {

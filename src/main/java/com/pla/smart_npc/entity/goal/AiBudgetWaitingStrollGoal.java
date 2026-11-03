@@ -121,7 +121,7 @@ public final class AiBudgetWaitingStrollGoal extends WaterAvoidingRandomStrollGo
                 && !this.playerNpc.isHealing()
                 && this.playerNpc.getTarget() == null
                 && this.playerNpc.getUpwardEscapeTarget() == null
-                && (this.playerNpc.onGround() || this.playerNpc.isInWaterOrBubble())
+                && (this.playerNpc.onGround() || this.playerNpc.isInWater())
                 && PlayerNpcPerformanceMonitor.isOptionalAiWorkAllowed()
                 && PlayerNpcAiWorkBudget.isWaitingForTurn(this.playerNpc);
     }

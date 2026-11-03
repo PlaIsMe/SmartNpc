@@ -107,7 +107,7 @@ public final class TeamUpGoal extends Goal {
         }
         if (this.gestureTicks == this.jumpTick && this.playerNpc.onGround()
                 && this.playerNpc.distanceToSqr(this.inviteTarget) <= 4.0D
-                && !this.playerNpc.isInWaterOrBubble() && !this.playerNpc.isInLava()) {
+                && !this.playerNpc.isInWater() && !this.playerNpc.isInLava()) {
             this.playerNpc.getJumpControl().jump();
         }
         if (this.gestureTicks == this.offerTicks) {

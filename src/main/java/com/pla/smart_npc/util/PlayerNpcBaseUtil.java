@@ -41,7 +41,7 @@ public final class PlayerNpcBaseUtil {
         }
         Optional<CampBase> campBase = getStoredCampBase(playerNpc);
         if (campBase.isEmpty()
-                || !serverLevel.dimension().location().toString().equals(campBase.get().dimension())) {
+                || !serverLevel.dimension().identifier().toString().equals(campBase.get().dimension())) {
             return Optional.empty();
         }
         return Optional.of(campBase.get().pos());
@@ -58,7 +58,7 @@ public final class PlayerNpcBaseUtil {
     ) {
         Optional<CampBase> stored = getStoredCampBase(playerNpc);
         if (stored.isPresent()) {
-            return serverLevel.dimension().location().toString().equals(stored.get().dimension())
+            return serverLevel.dimension().identifier().toString().equals(stored.get().dimension())
                     ? Optional.of(stored.get().pos())
                     : Optional.empty();
         }
@@ -66,7 +66,7 @@ public final class PlayerNpcBaseUtil {
         playerNpc.getPersistentData().putLong(CAMP_BASE_POS, saved.asLong());
         playerNpc.getPersistentData().putString(
                 CAMP_BASE_DIMENSION,
-                serverLevel.dimension().location().toString()
+                serverLevel.dimension().identifier().toString()
         );
         return Optional.of(saved);
     }
@@ -87,16 +87,16 @@ public final class PlayerNpcBaseUtil {
 
     private static Optional<CampBase> getStoredCampBase(PlayerNpcEntity playerNpc) {
         if (playerNpc == null
-                || !playerNpc.getPersistentData().contains(CAMP_BASE_POS, Tag.TAG_LONG)
-                || !playerNpc.getPersistentData().contains(CAMP_BASE_DIMENSION, Tag.TAG_STRING)) {
+                || !playerNpc.getPersistentData().contains(CAMP_BASE_POS)
+                || !playerNpc.getPersistentData().contains(CAMP_BASE_DIMENSION)) {
             return Optional.empty();
         }
-        String dimension = playerNpc.getPersistentData().getString(CAMP_BASE_DIMENSION);
+        String dimension = playerNpc.getPersistentData().getStringOr(CAMP_BASE_DIMENSION, "");
         if (dimension.isBlank()) {
             return Optional.empty();
         }
         return Optional.of(new CampBase(
-                BlockPos.of(playerNpc.getPersistentData().getLong(CAMP_BASE_POS)),
+                BlockPos.of(playerNpc.getPersistentData().getLongOr(CAMP_BASE_POS, 0L)),
                 dimension
         ));
     }

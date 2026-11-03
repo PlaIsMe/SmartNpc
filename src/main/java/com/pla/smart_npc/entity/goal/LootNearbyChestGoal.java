@@ -238,7 +238,7 @@ public class LootNearbyChestGoal extends Goal {
                 && this.playerNpc.level() instanceof ServerLevel serverLevel) {
             this.closeChest(serverLevel, this.chestPos);
         }
-        if (!this.playerNpc.level().isClientSide) {
+        if (!this.playerNpc.level().isClientSide()) {
             int cooldown = this.reachedChest
                     ? COOLDOWN_TICKS + this.playerNpc.getRandom().nextInt(20 * 30)
                     : FAILED_ROUTE_COOLDOWN_TICKS + this.playerNpc.getRandom().nextInt(20 * 3);
@@ -476,7 +476,7 @@ public class LootNearbyChestGoal extends Goal {
                 && serverLevel.hasChunkAt(pos)
                 && serverLevel.getBlockState(pos).isAir()
                 && serverLevel.getBlockState(pos.above()).isAir()
-                && serverLevel.getBlockState(pos.below()).isSolidRender(serverLevel, pos.below());
+                && serverLevel.getBlockState(pos.below()).isSolidRender();
     }
 
     private boolean trySelectReachableStand(ServerLevel serverLevel) {

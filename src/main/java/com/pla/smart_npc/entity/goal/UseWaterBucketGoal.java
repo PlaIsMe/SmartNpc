@@ -1,5 +1,7 @@
 package com.pla.smart_npc.entity.goal;
 
+import net.minecraft.world.attribute.EnvironmentAttributes;
+
 import com.pla.smart_npc.entity.PlayerNpcEntity;
 import com.pla.smart_npc.util.InventoryUtils;
 import net.minecraft.core.BlockPos;
@@ -43,7 +45,8 @@ public class UseWaterBucketGoal extends Goal {
                 || this.playerNpc.isPassenger()
                 || this.playerNpc.isHealing()
                 || !this.playerNpc.onGround()
-                || serverLevel.dimensionType().ultraWarm()
+                || serverLevel.environmentAttributes().getValue(
+                        EnvironmentAttributes.WATER_EVAPORATES, this.playerNpc.position())
                 || !InventoryUtils.hasItem(this.playerNpc, Items.WATER_BUCKET)
                 || this.playerNpc.getBucketCooldown() > 0) {
             return false;
@@ -168,7 +171,7 @@ public class UseWaterBucketGoal extends Goal {
         if (!serverLevel.isInWorldBounds(pos)
                 || !serverLevel.getWorldBorder().isWithinBounds(pos)
                 || !serverLevel.hasChunkAt(pos)
-                || serverLevel.dimensionType().ultraWarm()) {
+                || serverLevel.environmentAttributes().getValue(EnvironmentAttributes.WATER_EVAPORATES, pos)) {
             return false;
         }
 

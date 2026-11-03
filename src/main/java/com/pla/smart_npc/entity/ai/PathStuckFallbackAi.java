@@ -435,7 +435,7 @@ public final class PathStuckFallbackAi {
         BlockState support = serverLevel.getBlockState(pos.below());
         return serverLevel.getBlockState(pos).getCollisionShape(serverLevel, pos).isEmpty()
                 && serverLevel.getBlockState(pos.above()).getCollisionShape(serverLevel, pos.above()).isEmpty()
-                && (support.isSolidRender(serverLevel, pos.below()) || support.is(BlockTags.LEAVES))
+                && (support.isSolidRender() || support.is(BlockTags.LEAVES))
                 && !support.getCollisionShape(serverLevel, pos.below()).isEmpty()
                 && serverLevel.getFluidState(pos).isEmpty()
                 && serverLevel.getFluidState(pos.above()).isEmpty();
@@ -566,7 +566,7 @@ public final class PathStuckFallbackAi {
                 motion.y,
                 dz / length * DEFAULT_STEP_OFF_SPEED
         );
-        this.playerNpc.hasImpulse = true;
+        this.playerNpc.hurtMarked = true;
         this.detail = detailPrefix + " path fallback forced step off @ "
                 + posText(this.stepOffStartPos)
                 + " -> "

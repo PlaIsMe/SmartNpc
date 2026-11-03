@@ -59,7 +59,7 @@ public class PlayerNpcRangedBowAttackGoal extends RangedBowAttackGoal<PlayerNpcE
 
     private boolean canUseBow() {
         LivingEntity target = this.playerNpc.getTarget();
-        return !this.playerNpc.level().isClientSide
+        return !this.playerNpc.level().isClientSide()
                 && this.playerNpc.isAlive()
                 && !this.playerNpc.isRemoved()
                 && !this.playerNpc.isDeadOrDying()

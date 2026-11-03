@@ -23,7 +23,7 @@ public class ScaredHideGoal extends Goal {
 
     @Override
     public boolean canUse() {
-        if (this.playerNpc.level().isClientSide
+        if (this.playerNpc.level().isClientSide()
                 || !this.playerNpc.isAlive()
                 || this.playerNpc.isNoAi()
                 || this.playerNpc.isPassenger()
@@ -78,7 +78,7 @@ public class ScaredHideGoal extends Goal {
     public void stop() {
         this.playerNpc.setShiftKeyDown(false);
         this.playerNpc.setPose(Pose.STANDING);
-        if (!this.playerNpc.level().isClientSide) {
+        if (!this.playerNpc.level().isClientSide()) {
             this.playerNpc.setScaredHideCooldown(20 * 70 + this.playerNpc.getRandom().nextInt(20 * 120));
         }
         this.hideTicks = 0;

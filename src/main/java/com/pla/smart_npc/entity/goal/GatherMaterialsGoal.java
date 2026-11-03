@@ -1,5 +1,7 @@
 package com.pla.smart_npc.entity.goal;
 
+import com.pla.smart_npc.util.SmartNpcItemUtil;
+
 import com.pla.smart_npc.entity.PlayerNpcEntity;
 import com.pla.smart_npc.entity.ai.PlacingBlockAi;
 import com.pla.smart_npc.util.PlayerNpcBlockBreakUtil;
@@ -14,7 +16,7 @@ import com.pla.smart_npc.util.PlayerNpcHomeUtil;
 import com.pla.smart_npc.util.PlayerNpcAiWorkBudget;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.tags.BlockTags;
 import net.minecraft.tags.ItemTags;
@@ -25,9 +27,7 @@ import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.item.AxeItem;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
-import net.minecraft.world.item.PickaxeItem;
 import net.minecraft.world.item.ShovelItem;
-import net.minecraft.world.item.SwordItem;
 import net.minecraft.world.level.ClipContext;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.FenceBlock;
@@ -315,7 +315,7 @@ public class GatherMaterialsGoal extends Goal implements GatheringGoal {
         this.failedToGather = false;
         this.playerNpc.setCurrentAiState(PlayerNpcEntity.AI_IDLE);
         this.playerNpc.setCurrentAiDetail("");
-        if (!this.playerNpc.level().isClientSide) {
+        if (!this.playerNpc.level().isClientSide()) {
             int cooldown = failedThisRun
                     ? FAILED_GATHER_COOLDOWN_TICKS
                     : shouldRunNextAiSoon
@@ -1796,7 +1796,7 @@ public class GatherMaterialsGoal extends Goal implements GatheringGoal {
                 && serverLevel.getBlockState(pos.above()).getCollisionShape(serverLevel, pos.above()).isEmpty()
                 && serverLevel.getFluidState(pos).isEmpty()
                 && serverLevel.getFluidState(pos.above()).isEmpty()
-                && serverLevel.getBlockState(pos.below()).isSolidRender(serverLevel, pos.below());
+                && serverLevel.getBlockState(pos.below()).isSolidRender();
     }
 
     private boolean canReachStand(ServerLevel serverLevel, BlockPos pos) {
@@ -1877,7 +1877,7 @@ public class GatherMaterialsGoal extends Goal implements GatheringGoal {
 
         int woodCount = this.countWood();
         int stoneCount = this.countStone();
-        if (!this.hasTool(AxeItem.class) || !this.hasTool(PickaxeItem.class)) {
+        if (!this.hasTool(AxeItem.class) || !this.hasTool(ItemTags.PICKAXES)) {
             return MaterialTarget.LOG;
         }
 
@@ -1885,8 +1885,8 @@ public class GatherMaterialsGoal extends Goal implements GatheringGoal {
             return MaterialTarget.LOG;
         }
 
-        boolean wantsStoneGearMaterial = this.hasTool(PickaxeItem.class) && this.needsStoneGear() && stoneCount < STONE_GEAR_STONE_TARGET;
-        boolean wantsStoneSupply = this.hasTool(PickaxeItem.class) && stoneCount < this.playerNpc.getCobblestoneSupplyTarget();
+        boolean wantsStoneGearMaterial = this.hasTool(ItemTags.PICKAXES) && this.needsStoneGear() && stoneCount < STONE_GEAR_STONE_TARGET;
+        boolean wantsStoneSupply = this.hasTool(ItemTags.PICKAXES) && stoneCount < this.playerNpc.getCobblestoneSupplyTarget();
         if ((wantsStoneGearMaterial || wantsStoneSupply) && this.shouldGatherWoodBeforeStone()) {
             this.logReserveTarget = Math.max(this.logReserveTarget, MIN_RAW_LOGS_FOR_STONE_GATHERING);
             return MaterialTarget.LOG;
@@ -1908,7 +1908,7 @@ public class GatherMaterialsGoal extends Goal implements GatheringGoal {
             return MaterialTarget.LOG;
         }
 
-        if (this.hasTool(PickaxeItem.class) && this.shouldGatherCoal()) {
+        if (this.hasTool(ItemTags.PICKAXES) && this.shouldGatherCoal()) {
             return MaterialTarget.COAL;
         }
 
@@ -2028,10 +2028,10 @@ public class GatherMaterialsGoal extends Goal implements GatheringGoal {
         if (!this.hasTool(AxeItem.class)) {
             return woodAfterTable >= 5;
         }
-        if (!this.hasTool(PickaxeItem.class)) {
+        if (!this.hasTool(ItemTags.PICKAXES)) {
             return woodAfterTable >= 5;
         }
-        return !this.hasTool(SwordItem.class) && woodAfterTable >= 4
+        return !this.hasTool(ItemTags.SWORDS) && woodAfterTable >= 4
                 || !this.hasTool(ShovelItem.class) && woodAfterTable >= 3;
     }
 
@@ -2063,9 +2063,9 @@ public class GatherMaterialsGoal extends Goal implements GatheringGoal {
         }
 
         return new BlockPos(
-                this.playerNpc.getPersistentData().getInt(CraftBasicGearGoal.TEMP_TABLE_X),
-                this.playerNpc.getPersistentData().getInt(CraftBasicGearGoal.TEMP_TABLE_Y),
-                this.playerNpc.getPersistentData().getInt(CraftBasicGearGoal.TEMP_TABLE_Z)
+                this.playerNpc.getPersistentData().getIntOr(CraftBasicGearGoal.TEMP_TABLE_X, 0),
+                this.playerNpc.getPersistentData().getIntOr(CraftBasicGearGoal.TEMP_TABLE_Y, 0),
+                this.playerNpc.getPersistentData().getIntOr(CraftBasicGearGoal.TEMP_TABLE_Z, 0)
         );
     }
 
@@ -2081,7 +2081,7 @@ public class GatherMaterialsGoal extends Goal implements GatheringGoal {
 
         for (BlockPos candidate : candidates) {
             if (serverLevel.getBlockState(candidate).isAir()
-                    && serverLevel.getBlockState(candidate.below()).isSolidRender(serverLevel, candidate.below())) {
+                    && serverLevel.getBlockState(candidate.below()).isSolidRender()) {
                 return candidate.immutable();
             }
         }
@@ -2089,13 +2089,13 @@ public class GatherMaterialsGoal extends Goal implements GatheringGoal {
     }
 
     private boolean needsStarterGear() {
-        return !this.hasTool(PickaxeItem.class)
+        return !this.hasTool(ItemTags.PICKAXES)
                 || !this.hasTool(AxeItem.class)
-                || !this.hasTool(SwordItem.class);
+                || !this.hasTool(ItemTags.SWORDS);
     }
 
     private boolean needsCriticalGatherTool() {
-        return !this.hasTool(AxeItem.class) || !this.hasTool(PickaxeItem.class);
+        return !this.hasTool(AxeItem.class) || !this.hasTool(ItemTags.PICKAXES);
     }
 
     private boolean needsStoneGear() {
@@ -2110,15 +2110,15 @@ public class GatherMaterialsGoal extends Goal implements GatheringGoal {
         if (!this.hasTool(AxeItem.class)) {
             return woodCount >= 5;
         }
-        if (!this.hasTool(PickaxeItem.class)) {
+        if (!this.hasTool(ItemTags.PICKAXES)) {
             return woodCount >= 5;
         }
-        return !this.hasTool(SwordItem.class) && woodCount >= 4
+        return !this.hasTool(ItemTags.SWORDS) && woodCount >= 4
                 || !this.hasTool(ShovelItem.class) && woodCount >= 3;
     }
 
     private boolean canCraftStoneGear() {
-        if (!this.hasTool(PickaxeItem.class)) {
+        if (!this.hasTool(ItemTags.PICKAXES)) {
             return false;
         }
 
@@ -2169,7 +2169,7 @@ public class GatherMaterialsGoal extends Goal implements GatheringGoal {
             return this.hasTool(AxeItem.class);
         }
         if (this.isStoneBlock(state) || this.isCoalOre(state)) {
-            return this.hasTool(PickaxeItem.class);
+            return this.hasTool(ItemTags.PICKAXES);
         }
         return true;
     }
@@ -2231,7 +2231,7 @@ public class GatherMaterialsGoal extends Goal implements GatheringGoal {
             this.equipEmptyHandForMining();
             return true;
         } else if (this.isStoneBlock(state) || this.isCoalOre(state) || state.is(BlockTags.MINEABLE_WITH_PICKAXE)) {
-            return this.equipTool(PickaxeItem.class);
+            return this.equipTool(ItemTags.PICKAXES);
         }
         return true;
     }
@@ -2250,15 +2250,15 @@ public class GatherMaterialsGoal extends Goal implements GatheringGoal {
         return MAX_GATHER_TICKS;
     }
 
-    private boolean equipTool(Class<?> toolClass) {
-        if (toolClass.isInstance(this.playerNpc.getMainHandItem().getItem())) {
+    private boolean equipTool(Object toolClass) {
+        if (SmartNpcItemUtil.matches(toolClass, this.playerNpc.getMainHandItem().getItem())) {
             return true;
         }
         if (this.restorePreviousMainHandForTool(toolClass)) {
             return true;
         }
 
-        ItemStack tool = this.playerNpc.consumeInventoryItem(stack -> toolClass.isInstance(stack.getItem()), 1)
+        ItemStack tool = this.playerNpc.consumeInventoryItem(stack -> SmartNpcItemUtil.matches(toolClass, stack.getItem()), 1)
                 .orElse(ItemStack.EMPTY);
         if (tool.isEmpty()) {
             return false;
@@ -2304,8 +2304,8 @@ public class GatherMaterialsGoal extends Goal implements GatheringGoal {
         this.playerNpc.setItemSlot(EquipmentSlot.MAINHAND, stack);
     }
 
-    private boolean restorePreviousMainHandForTool(Class<?> toolClass) {
-        if (!this.usingTemporaryTool || !toolClass.isInstance(this.previousMainHand.getItem())) {
+    private boolean restorePreviousMainHandForTool(Object toolClass) {
+        if (!this.usingTemporaryTool || !SmartNpcItemUtil.matches(toolClass, this.previousMainHand.getItem())) {
             return false;
         }
 
@@ -2340,14 +2340,14 @@ public class GatherMaterialsGoal extends Goal implements GatheringGoal {
         this.usingTemporaryTool = false;
     }
 
-    private boolean hasTool(Class<?> toolClass) {
-        if (toolClass.isInstance(this.playerNpc.getMainHandItem().getItem())) {
+    private boolean hasTool(Object toolClass) {
+        if (SmartNpcItemUtil.matches(toolClass, this.playerNpc.getMainHandItem().getItem())) {
             return true;
         }
-        if (this.usingTemporaryTool && toolClass.isInstance(this.previousMainHand.getItem())) {
+        if (this.usingTemporaryTool && SmartNpcItemUtil.matches(toolClass, this.previousMainHand.getItem())) {
             return true;
         }
-        return InventoryUtils.hasItem(this.playerNpc, stack -> toolClass.isInstance(stack.getItem()));
+        return InventoryUtils.hasItem(this.playerNpc, stack -> SmartNpcItemUtil.matches(toolClass, stack.getItem()));
     }
 
     private boolean hasItem(net.minecraft.world.level.ItemLike itemLike) {
@@ -2470,7 +2470,7 @@ public class GatherMaterialsGoal extends Goal implements GatheringGoal {
     }
 
     private boolean hasFuel() {
-        return InventoryUtils.hasItem(this.playerNpc, stack -> !stack.isEmpty() && AbstractFurnaceBlockEntity.isFuel(stack));
+        return InventoryUtils.hasItem(this.playerNpc, stack -> !stack.isEmpty() && this.playerNpc.level().fuelValues().isFuel(stack));
     }
 
     private boolean hasNearbyCraftingTable(ServerLevel serverLevel) {
@@ -2490,7 +2490,7 @@ public class GatherMaterialsGoal extends Goal implements GatheringGoal {
         }
 
         BlockState state = serverLevel.getBlockState(this.targetPos);
-        ResourceLocation blockId = BuiltInRegistries.BLOCK.getKey(state.getBlock());
+        Identifier blockId = BuiltInRegistries.BLOCK.getKey(state.getBlock());
         String blockName = blockId == null ? state.getBlock().getDescriptionId() : blockId.toString();
         int requiredMineTicks = this.getRequiredMineTicks(serverLevel, state);
         boolean inBreakRange = this.playerNpc.distanceToSqr(
@@ -2515,7 +2515,7 @@ public class GatherMaterialsGoal extends Goal implements GatheringGoal {
             return;
         }
 
-        ResourceLocation blockId = BuiltInRegistries.BLOCK.getKey(state.getBlock());
+        Identifier blockId = BuiltInRegistries.BLOCK.getKey(state.getBlock());
         String blockName = blockId == null ? state.getBlock().getDescriptionId() : blockId.toString();
         this.playerNpc.setCurrentAiDetail(String.format(
                 java.util.Locale.ROOT,

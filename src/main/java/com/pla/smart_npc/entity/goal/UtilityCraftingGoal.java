@@ -115,7 +115,7 @@ public class UtilityCraftingGoal extends Goal {
     }
 
     private boolean isNearWater(ServerLevel serverLevel) {
-        if (this.playerNpc.isInWaterOrBubble()) {
+        if (this.playerNpc.isInWater()) {
             return true;
         }
 
@@ -161,7 +161,7 @@ public class UtilityCraftingGoal extends Goal {
 
         for (BlockPos candidate : candidates) {
             if (serverLevel.getBlockState(candidate).isAir()
-                    && serverLevel.getBlockState(candidate.below()).isSolidRender(serverLevel, candidate.below())) {
+                    && serverLevel.getBlockState(candidate.below()).isSolidRender()) {
                 return candidate.immutable();
             }
         }

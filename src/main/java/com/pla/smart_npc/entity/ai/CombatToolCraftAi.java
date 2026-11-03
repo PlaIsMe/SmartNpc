@@ -1,5 +1,7 @@
 package com.pla.smart_npc.entity.ai;
 
+import net.minecraft.tags.ItemTags;
+
 import com.pla.smart_npc.entity.PlayerNpcEntity;
 import com.pla.smart_npc.entity.goal.CraftBasicGearGoal;
 import com.pla.smart_npc.util.PlayerNpcAiWorkBudget;
@@ -213,8 +215,8 @@ public final class CombatToolCraftAi {
     }
 
     private static ToolKind kindFor(BlockState state) {
-        Class<?> preferred = ToolAi.preferredToolFor(state);
-        return preferred == PickaxeItem.class ? ToolKind.PICKAXE
+        Object preferred = ToolAi.preferredToolFor(state);
+        return preferred == ItemTags.PICKAXES ? ToolKind.PICKAXE
                 : preferred == AxeItem.class ? ToolKind.AXE : preferred == ShovelItem.class ? ToolKind.SHOVEL : null;
     }
 

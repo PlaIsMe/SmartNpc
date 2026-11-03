@@ -60,7 +60,7 @@ public final class DangerousReactionGoal extends Goal {
     }
 
     private boolean canReact() {
-        return !this.npc.level().isClientSide && this.npc.isAlive()
+        return !this.npc.level().isClientSide() && this.npc.isAlive()
                 && !this.npc.isNoAi() && !this.npc.isPassenger() && !this.npc.isHealing();
     }
 }

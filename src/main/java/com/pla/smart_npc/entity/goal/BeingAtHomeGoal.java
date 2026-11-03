@@ -255,7 +255,7 @@ public class BeingAtHomeGoal extends Goal {
 
     @Override
     public void stop() {
-        if (!this.playerNpc.level().isClientSide) {
+        if (!this.playerNpc.level().isClientSide()) {
             this.cooldownTicks = this.sheltering
                     ? 20 * 5 + this.playerNpc.getRandom().nextInt(20 * 5)
                     : BASE_COOLDOWN_TICKS + this.playerNpc.getRandom().nextInt(RANDOM_COOLDOWN_TICKS);
@@ -449,7 +449,7 @@ public class BeingAtHomeGoal extends Goal {
                 && head.getCollisionShape(serverLevel, pos.above()).isEmpty()
                 && feet.getFluidState().isEmpty()
                 && head.getFluidState().isEmpty()
-                && serverLevel.getBlockState(floorPos).isSolidRender(serverLevel, floorPos);
+                && serverLevel.getBlockState(floorPos).isSolidRender();
     }
 
     private void moveToAfkPos() {
@@ -555,12 +555,12 @@ public class BeingAtHomeGoal extends Goal {
     }
 
     private boolean shouldShelterAtHome(ServerLevel serverLevel) {
-        return (serverLevel.isNight() || serverLevel.isThundering())
+        return (serverLevel.isDarkOutside() || serverLevel.isThundering())
                 && !this.shouldHuntMonstersTonight(serverLevel);
     }
 
     private boolean shouldHuntMonstersTonight(ServerLevel serverLevel) {
-        return serverLevel.isNight()
+        return serverLevel.isDarkOutside()
                 && this.playerNpc.hasInterest(PlayerNpcInterest.HUNT_MONSTERS);
     }
 
@@ -640,11 +640,6 @@ public class BeingAtHomeGoal extends Goal {
             this.sneakingAi.setSneaking(false);
             this.lookAroundAtHome();
         }
-    }
-
-    public boolean isRelaxingForYsm() {
-        return this.reachedSpot && (this.activityMode == ActivityMode.LOOK
-                || this.activityMode == ActivityMode.WALK && this.stationaryTicks > 0);
     }
 
     private void tickSneakAtHome() {

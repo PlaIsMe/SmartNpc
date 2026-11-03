@@ -25,7 +25,7 @@ public class RandomCombatJumpGoal extends Goal {
         if (!this.hasCombatTarget()
                 || this.playerNpc.isNoAi()
                 || this.playerNpc.isPassenger()
-                || this.playerNpc.isInWaterOrBubble()
+                || this.playerNpc.isInWater()
                 || this.playerNpc.isInLava()
                 || !this.playerNpc.onGround()) {
             return false;

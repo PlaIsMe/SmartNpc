@@ -1,5 +1,9 @@
 package com.pla.smart_npc.entity.goal;
 
+import net.minecraft.core.component.DataComponents;
+
+import net.minecraft.tags.ItemTags;
+
 import com.pla.smart_npc.entity.PlayerNpcEntity;
 import com.pla.smart_npc.entity.ai.PathNavigationAi;
 import com.pla.smart_npc.util.PlayerNpcTrashUtil;
@@ -58,7 +62,7 @@ public class RecoverWeaponInCombatGoal extends Goal {
 
     @Override
     public boolean canUse() {
-        if (mob.level().isClientSide) return false;
+        if (mob.level().isClientSide()) return false;
         if (!mob.isAlive() || mob.isRemoved() || mob.isDeadOrDying()) return false;
         if (mob.isPassenger()) return false;
         if (mob.isNoAi()) return false;
@@ -104,7 +108,7 @@ public class RecoverWeaponInCombatGoal extends Goal {
     public boolean canContinueToUse() {
         if (finished) return false;
 
-        if (mob.level().isClientSide) return false;
+        if (mob.level().isClientSide()) return false;
         if (!mob.isAlive() || mob.isRemoved() || mob.isDeadOrDying()) return false;
         if (mob.isPassenger()) return false;
         if (mob.isNoAi()) return false;
@@ -438,8 +442,8 @@ public class RecoverWeaponInCombatGoal extends Goal {
 
         Item item = stack.getItem();
 
-        return item instanceof SwordItem
-                || item instanceof DiggerItem
+        return item.builtInRegistryHolder().is(ItemTags.SWORDS)
+                || item.components().has(DataComponents.TOOL)
                 || item instanceof TridentItem;
     }
 }

@@ -1,0 +1,6 @@
+{
+  "model": {
+    "type": "minecraft:model",
+    "model": "smart_npc:item/player_npc_inspector"
+  }
+}

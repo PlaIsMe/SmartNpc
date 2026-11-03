@@ -177,7 +177,7 @@ public class UseFlintAndSteelGoal extends Goal {
                 && target != this.playerNpc && target.isAlive() && !target.isRemoved()
                 && target.level() == this.playerNpc.level()
                 && target.onGround() && this.playerNpc.getY() >= target.getY()
-                && !target.isOnFire() && !target.fireImmune() && !target.isInWaterOrBubble()
+                && !target.isOnFire() && !target.fireImmune() && !target.isInWater()
                 && this.playerNpc.distanceToSqr(target) <= MAX_TARGET_DISTANCE_SQR;
     }
 

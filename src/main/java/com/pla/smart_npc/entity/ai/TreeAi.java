@@ -151,7 +151,7 @@ public final class TreeAi {
                     column.getX(),
                     column.getZ()
             ) - 1;
-            int bottomY = Math.max(serverLevel.getMinBuildHeight(), topY - 8);
+            int bottomY = Math.max(serverLevel.getMinY(), topY - 8);
             for (int y = topY; y >= bottomY && !searchBudget.exhausted(); y--) {
                 BlockPos pos = new BlockPos(column.getX(), y, column.getZ());
                 if (visited.contains(pos) || !isLog(serverLevel, pos, allowedLogPos, searchBudget)) {

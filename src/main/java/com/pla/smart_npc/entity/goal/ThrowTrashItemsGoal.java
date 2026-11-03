@@ -73,7 +73,7 @@ public final class ThrowTrashItemsGoal extends Goal {
     private boolean isSafeToPause() {
         return npc.level() instanceof ServerLevel && npc.isAlive() && !npc.isNoAi()
                 && npc.onGround() && !npc.isPassenger() && !npc.isSleeping()
-                && !npc.isInWaterOrBubble() && !npc.isInLava() && !npc.isOnFire()
+                && !npc.isInWater() && !npc.isInLava() && !npc.isOnFire()
                 && npc.getTarget() == null && !npc.isHealing()
                 && npc.getUpwardEscapeTarget() == null && !npc.isTeamUpRequestPending();
     }
@@ -99,7 +99,7 @@ public final class ThrowTrashItemsGoal extends Goal {
         Vec3 look = npc.getLookAngle();
         Vec3 horizontal = new Vec3(look.x, 0.0D, look.z);
         if (horizontal.lengthSqr() < 1.0E-4D) {
-            horizontal = Vec3.atLowerCornerOf(npc.getDirection().getNormal());
+            horizontal = Vec3.atLowerCornerOf(npc.getDirection().getUnitVec3i());
         }
         horizontal = horizontal.normalize();
         Vec3 origin = npc.getEyePosition().add(0.0D, -0.3D, 0.0D);
@@ -238,7 +238,7 @@ public final class ThrowTrashItemsGoal extends Goal {
         boolean burned = false;
         // Only this batch: no world fire, no nearby loot queries, no damage to players or buildings.
         for (ItemEntity drop : discarded) {
-            if (!drop.isAlive() || !drop.onGround() || drop.isInWaterOrBubble()
+            if (!drop.isAlive() || !drop.onGround() || drop.isInWater()
                     || npc.distanceToSqr(drop) > 16 || !PlayerNpcTrashUtil.isDiscarded(drop.getItem())) continue;
             level.sendParticles(ParticleTypes.FLAME, drop.getX(), drop.getY() + 0.1D, drop.getZ(), 6, 0.1, 0.1, 0.1, 0.01);
             level.sendParticles(ParticleTypes.SMOKE, drop.getX(), drop.getY() + 0.2D, drop.getZ(), 4, 0.1, 0.1, 0.1, 0.01);

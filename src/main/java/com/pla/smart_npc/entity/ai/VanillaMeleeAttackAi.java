@@ -3,7 +3,7 @@ package com.pla.smart_npc.entity.ai;
 import com.pla.smart_npc.entity.PlayerNpcEntity;
 import com.pla.smart_npc.clazz.PlayerNpcInterest;
 import net.minecraft.core.particles.ParticleTypes;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
@@ -14,11 +14,10 @@ import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.ShieldItem;
-import net.neoforged.fml.ModList;
 
 /** Vanilla damage keeps enchantments, armor, hurt immunity, and held-weapon durability. */
 public final class VanillaMeleeAttackAi {
-    private static final ResourceLocation CRITICAL_DAMAGE_ID = ResourceLocation.fromNamespaceAndPath("smart_npc", "critical_damage");
+    private static final Identifier CRITICAL_DAMAGE_ID = Identifier.fromNamespaceAndPath("smart_npc", "critical_damage");
     private static final int SHIELD_DISABLE_TICKS = 100;
 
     private VanillaMeleeAttackAi() {
@@ -54,7 +53,7 @@ public final class VanillaMeleeAttackAi {
     }
 
     public static boolean attack(PlayerNpcEntity npc, LivingEntity target, boolean critical) {
-        if (ModList.get().isLoaded("epicfight") || !(npc.level() instanceof ServerLevel serverLevel)
+        if (!(npc.level() instanceof ServerLevel serverLevel)
                 || !npc.isAlive() || npc.isNoAi() || npc.isPassenger() || npc.isHealing() || npc.isUsingItem()
                 || npc.hasInterest(PlayerNpcInterest.CAUTIOUS)
                 || target instanceof Player player && (player.isCreative() || player.isSpectator())
@@ -66,13 +65,16 @@ public final class VanillaMeleeAttackAi {
         boolean modified = critical && damage != null;
         if (critical && target.isBlocking() && target.getUseItem().getItem() instanceof ShieldItem) {
             if (target instanceof Player player) {
-                player.disableShield();
+                player.getCooldowns().addCooldown(player.getUseItem(), SHIELD_DISABLE_TICKS);
+                player.stopUsingItem();
+                serverLevel.playSound(null, target.blockPosition(), SoundEvents.SHIELD_BREAK.value(),
+                        SoundSource.PLAYERS, 0.8F, 0.9F + npc.getRandom().nextFloat() * 0.2F);
             } else {
                 if (target instanceof PlayerNpcEntity otherNpc) {
                     otherNpc.setShieldGuardCooldown(Math.max(otherNpc.getShieldGuardCooldown(), SHIELD_DISABLE_TICKS));
                 }
                 target.stopUsingItem();
-                serverLevel.playSound(null, target.blockPosition(), SoundEvents.SHIELD_BREAK,
+                serverLevel.playSound(null, target.blockPosition(), SoundEvents.SHIELD_BREAK.value(),
                         SoundSource.PLAYERS, 0.8F, 0.9F + npc.getRandom().nextFloat() * 0.2F);
             }
         }

@@ -20,7 +20,7 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.tags.ItemTags;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.entity.ai.goal.Goal;
-import net.minecraft.world.entity.animal.Sheep;
+import net.minecraft.world.entity.animal.sheep.Sheep;
 import net.minecraft.world.item.ShovelItem;
 import net.minecraft.world.level.block.BedBlock;
 import net.minecraft.world.level.block.state.BlockState;
@@ -757,7 +757,7 @@ public class GatherMissingBuildMaterialGoal extends Goal implements GatheringGoa
     }
 
     private static boolean shouldStayHomeForWeather(ServerLevel serverLevel) {
-        return serverLevel.isNight() || serverLevel.isThundering();
+        return serverLevel.isDarkOutside() || serverLevel.isThundering();
     }
 
     private static BlockPos matchingTargetPos(ServerLevel serverLevel, BlockPos pos, MissingBuildMaterialNeed need) {

@@ -3,13 +3,14 @@ package com.pla.smart_npc.util;
 import com.pla.smart_npc.clazz.PlayerNpcInterest;
 import com.pla.smart_npc.entity.PlayerNpcEntity;
 import net.minecraft.core.BlockPos;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.SimpleContainer;
 import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.world.level.block.state.BlockState;
 
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -47,6 +48,15 @@ public final class PlayerNpcBuildStatusUtil {
         if (layout.isEmpty()) {
             return cacheDescription(playerNpc, home.get(), layoutId.get(), "Missing layout " + layoutId.get());
         }
+        if (playerNpc.level() instanceof ServerLevel serverLevel
+                && !isLayoutLoaded(serverLevel, home.get(), layout.get())) {
+            return cacheDescription(
+                    playerNpc,
+                    home.get(),
+                    layoutId.get(),
+                    "Build area unavailable (home chunks unloaded)"
+            );
+        }
 
         if (playerNpc.level() instanceof ServerLevel serverLevel) {
             int missing = PlayerNpcBuildLayoutLoader.countMissingRequired(serverLevel, layout.get(), home.get().origin());
@@ -77,6 +87,14 @@ public final class PlayerNpcBuildStatusUtil {
         if (layout.isEmpty()) {
             return cacheRequirements(playerNpc, home.get(), layoutId.get(), "Missing layout " + layoutId.get());
         }
+        if (!isLayoutLoaded(serverLevel, home.get(), layout.get())) {
+            return cacheRequirements(
+                    playerNpc,
+                    home.get(),
+                    layoutId.get(),
+                    "Build area unavailable (home chunks unloaded)"
+            );
+        }
 
         Map<Item, RequirementLine> requirements = collectRequirements(serverLevel, playerNpc, home.get(), layout.get());
         if (requirements.isEmpty()) {
@@ -104,7 +122,7 @@ public final class PlayerNpcBuildStatusUtil {
             if (rendered >= MAX_REQUIREMENT_LINES) {
                 break;
             }
-            ResourceLocation itemId = BuiltInRegistries.ITEM.getKey(line.item);
+            Identifier itemId = BuiltInRegistries.ITEM.getKey(line.item);
             if (itemId == null) {
                 continue;
             }
@@ -228,6 +246,7 @@ public final class PlayerNpcBuildStatusUtil {
             PlayerNpcBuildLayout layout
     ) {
         Map<Item, RequirementLine> requirements = new LinkedHashMap<>();
+        Map<BlockState, ItemStack> previewItems = new HashMap<>();
         for (PlayerNpcBuildLayout.RelativeBlock block : layout.blocks()) {
             if (block.optional()
                     || block.state().isAir()
@@ -236,7 +255,10 @@ public final class PlayerNpcBuildStatusUtil {
                 continue;
             }
 
-            ItemStack preview = PlayerNpcBuildMaterialUtil.previewItem(serverLevel, playerNpc, block);
+            ItemStack preview = previewItems.computeIfAbsent(
+                    block.state(),
+                    ignored -> PlayerNpcBuildMaterialUtil.previewItem(serverLevel, playerNpc, block)
+            );
             if (preview.isEmpty()) {
                 preview = block.requiredItem();
             }
@@ -251,6 +273,20 @@ public final class PlayerNpcBuildStatusUtil {
             }
         }
         return requirements;
+    }
+
+    /** Inspector diagnostics must never synchronously load an NPC's remote home chunks. */
+    private static boolean isLayoutLoaded(
+            ServerLevel serverLevel,
+            PlayerNpcHomeUtil.HomeArea homeArea,
+            PlayerNpcBuildLayout layout
+    ) {
+        for (PlayerNpcBuildLayout.RelativeBlock block : layout.blocks()) {
+            if (!serverLevel.hasChunkAt(block.toWorld(homeArea.origin()))) {
+                return false;
+            }
+        }
+        return true;
     }
 
     private static int countHeldAndInventory(PlayerNpcEntity playerNpc, Item item) {
@@ -299,7 +335,7 @@ public final class PlayerNpcBuildStatusUtil {
             return stack.getHoverName().getString();
         }
 
-        ResourceLocation key = BuiltInRegistries.ITEM.getKey(item);
+        Identifier key = BuiltInRegistries.ITEM.getKey(item);
         return key == null ? "unknown" : key.toString();
     }
 

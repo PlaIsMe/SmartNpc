@@ -307,7 +307,7 @@ public class JukeboxDanceGoal extends Goal {
     private boolean canPlaceAt(ServerLevel serverLevel, PlayerNpcHomeUtil.HomeArea home, BlockPos pos) {
         return PlayerNpcHomeUtil.isInside(home, pos)
                 && serverLevel.getBlockState(pos).isAir()
-                && serverLevel.getBlockState(pos.below()).isSolidRender(serverLevel, pos.below());
+                && serverLevel.getBlockState(pos.below()).isSolidRender();
     }
 
     private boolean hasRecord(ServerLevel serverLevel, BlockPos pos) {
@@ -342,7 +342,7 @@ public class JukeboxDanceGoal extends Goal {
     private boolean canDanceAt(ServerLevel serverLevel, BlockPos pos) {
         return serverLevel.getBlockState(pos).isAir()
                 && serverLevel.getBlockState(pos.above()).isAir()
-                && serverLevel.getBlockState(pos.below()).isSolidRender(serverLevel, pos.below());
+                && serverLevel.getBlockState(pos.below()).isSolidRender();
     }
 
     private enum Action {

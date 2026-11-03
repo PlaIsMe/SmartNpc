@@ -1,5 +1,7 @@
 package com.pla.smart_npc.entity.goal;
 
+import net.minecraft.core.component.DataComponents;
+
 import com.pla.smart_npc.entity.PlayerNpcEntity;
 import com.pla.smart_npc.clazz.PlayerNpcInterest;
 import com.pla.smart_npc.entity.ai.PathNavigationAi;
@@ -181,10 +183,10 @@ public class LowHealthFleeGoal extends Goal {
     }
 
     private boolean canMoveForFlee() {
-        return !this.playerNpc.level().isClientSide && this.playerNpc.isAlive()
+        return !this.playerNpc.level().isClientSide() && this.playerNpc.isAlive()
                 && !this.playerNpc.isNoAi()
                 && !this.playerNpc.isPassenger()
-                && !this.playerNpc.isInWaterOrBubble()
+                && !this.playerNpc.isInWater()
                 && !this.playerNpc.isInLava();
     }
 
@@ -243,7 +245,7 @@ public class LowHealthFleeGoal extends Goal {
         }
 
         if (this.playerNpc.onGround()
-                && !this.playerNpc.isInWaterOrBubble()
+                && !this.playerNpc.isInWater()
                 && !this.playerNpc.isInLava()) {
             BlockPos feet = this.playerNpc.blockPosition();
             if (this.playerNpc.getRandom().nextFloat() < SUPPORT_JUMP_CHANCE
@@ -264,7 +266,7 @@ public class LowHealthFleeGoal extends Goal {
         if (!(this.playerNpc.level() instanceof ServerLevel serverLevel)
                 || supportPos == null
                 || ++this.jumpSupportTicks > MAX_SUPPORT_PLACE_TICKS
-                || this.playerNpc.isInWaterOrBubble()
+                || this.playerNpc.isInWater()
                 || this.playerNpc.isInLava()
                 || this.playerNpc.onGround() && this.jumpSupportTicks > 1
                 || this.horizontalDistanceSqr(supportPos) > MAX_SUPPORT_HORIZONTAL_DRIFT_SQR) {

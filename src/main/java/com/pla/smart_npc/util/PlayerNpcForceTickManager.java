@@ -1,6 +1,7 @@
 package com.pla.smart_npc.util;
 
 import com.mojang.authlib.GameProfile;
+import com.mojang.authlib.properties.PropertyMap;
 import com.mojang.brigadier.arguments.StringArgumentType;
 import com.pla.smart_npc.SmartNpc;
 import com.pla.smart_npc.config.SmartNpcConfig;
@@ -15,12 +16,11 @@ import net.minecraft.network.protocol.game.ClientboundPlayerInfoUpdatePacket;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
-import net.minecraft.server.level.TicketType;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.GameType;
 import net.minecraft.world.level.Level;
-import net.neoforged.neoforge.common.util.FakePlayerFactory;
+import net.neoforged.neoforge.common.world.chunk.TicketController;
 import net.neoforged.neoforge.event.tick.ServerTickEvent;
 import net.neoforged.neoforge.event.entity.EntityJoinLevelEvent;
 import net.neoforged.neoforge.event.entity.EntityLeaveLevelEvent;
@@ -67,9 +67,8 @@ public final class PlayerNpcForceTickManager {
     private static final String NPC_TAB_PREFIX = "[NPC] ";
     private static final String NPC_TAB_PROFILE_PREFIX = "zzNPC";
     private static final int TAB_PROFILE_NAME_LENGTH = 16;
-    private static final TicketType<TicketKey> PLAYER_NPC_TICKET = TicketType.create(
-            SmartNpc.MODID + ":player_npc_force_tick",
-            Comparator.comparing(TicketKey::npcId).thenComparingLong(TicketKey::chunkLong)
+    public static final TicketController PLAYER_NPC_TICKET = new TicketController(
+            net.minecraft.resources.Identifier.fromNamespaceAndPath(SmartNpc.MODID, "player_npc_force_tick")
     );
     private static final Map<UUID, ManagedNpc> MANAGED_NPCS = new LinkedHashMap<>();
     @Nullable
@@ -127,7 +126,7 @@ public final class PlayerNpcForceTickManager {
             return;
         }
 
-        MinecraftServer server = serverPlayer.getServer();
+        MinecraftServer server = serverPlayer.level().getServer();
         if (server == null) {
             return;
         }
@@ -541,7 +540,7 @@ public final class PlayerNpcForceTickManager {
         if (matches.isEmpty()) {
             return Optional.empty();
         }
-        return Optional.of(matches.get(server.overworld().random.nextInt(matches.size())));
+        return Optional.of(matches.get(server.overworld().getRandom().nextInt(matches.size())));
     }
 
     public static CompletableFuture<com.mojang.brigadier.suggestion.Suggestions> suggestNpcNames(
@@ -574,7 +573,7 @@ public final class PlayerNpcForceTickManager {
         }
 
         npcs.sort(Comparator
-                .comparing((PlayerNpcEntity npc) -> npc.level().dimension().location().toString())
+                .comparing((PlayerNpcEntity npc) -> npc.level().dimension().identifier().toString())
                 .thenComparing(npc -> displayName(npc).toLowerCase(Locale.ROOT))
                 .thenComparing(Entity::getUUID));
 
@@ -779,25 +778,20 @@ public final class PlayerNpcForceTickManager {
     }
 
     private static GameProfile createTabProfile(PlayerNpcEntity npc) {
-        GameProfile profile = new GameProfile(npc.getUUID(), tabProfileName(npc.getUUID()));
-        copyProfileProperties(npc.getProfile(), profile);
-        return profile;
-    }
-
-    private static void copyProfileProperties(@Nullable GameProfile sourceProfile, GameProfile targetProfile) {
-        targetProfile.getProperties().clear();
-        if (sourceProfile != null) {
-            targetProfile.getProperties().putAll(sourceProfile.getProperties());
-        }
+        GameProfile sourceProfile = npc.getProfile();
+        PropertyMap properties = sourceProfile == null || sourceProfile.properties().isEmpty()
+                ? PropertyMap.EMPTY
+                : new PropertyMap(sourceProfile.properties());
+        return new GameProfile(npc.getUUID(), tabProfileName(npc.getUUID()), properties);
     }
 
     private static String profilePropertiesSignature(@Nullable GameProfile profile) {
-        if (profile == null || profile.getProperties().isEmpty()) {
+        if (profile == null || profile.properties().isEmpty()) {
             return "";
         }
 
         List<String> entries = new ArrayList<>();
-        for (Map.Entry<String, com.mojang.authlib.properties.Property> entry : profile.getProperties().entries()) {
+        for (Map.Entry<String, com.mojang.authlib.properties.Property> entry : profile.properties().entries()) {
             com.mojang.authlib.properties.Property property = entry.getValue();
             entries.add(entry.getKey()
                     + "="
@@ -851,9 +845,6 @@ public final class PlayerNpcForceTickManager {
         public String modeText() {
             return this.configuredMode < 0 ? "AUTO" : this.configuredMode == 0 ? "OFF" : "FULL";
         }
-    }
-
-    private record TicketKey(UUID npcId, long chunkLong) {
     }
 
     private static final class ManagedNpc {
@@ -1031,28 +1022,14 @@ public final class PlayerNpcForceTickManager {
         }
 
         private void addTicket(ServerLevel level, ChunkPos chunkPos) {
-            level.getChunkSource().addRegionTicket(
-                    PLAYER_NPC_TICKET,
-                    chunkPos,
-                    FORCE_TICK_DISTANCE,
-                    new TicketKey(this.npcId, chunkPos.toLong()),
-                    // Level 31 already keeps the center ENTITY_TICKING so the NPC, scheduled
-                    // ticks, and ticking block entities continue to run. Forge's forceTicks flag
-                    // additionally opts an otherwise-distant chunk into tickChunk/random ticks
-                    // and natural spawning. Match vanilla /forceload semantics and do not make
-                    // every roaming NPC a synthetic player for chunk-environment work.
-                    false
-            );
+            // Registered controller tickets replace generic region tickets in NeoForge 26.1.
+            // Entity tickets keep the NPC UUID as the owner and use the same forced level as
+            // the old distance-2 ticket without enabling natural spawning.
+            PLAYER_NPC_TICKET.forceChunk(level, this.npcId, chunkPos.x, chunkPos.z, true, false);
         }
 
         private void removeTicket(ServerLevel level, ChunkPos chunkPos) {
-            level.getChunkSource().removeRegionTicket(
-                    PLAYER_NPC_TICKET,
-                    chunkPos,
-                    FORCE_TICK_DISTANCE,
-                    new TicketKey(this.npcId, chunkPos.toLong()),
-                    false
-            );
+            PLAYER_NPC_TICKET.forceChunk(level, this.npcId, chunkPos.x, chunkPos.z, false, false);
         }
 
         private void releaseTickets(MinecraftServer server) {
@@ -1108,11 +1085,16 @@ public final class PlayerNpcForceTickManager {
         }
 
         private net.neoforged.neoforge.common.util.FakePlayer tabPlayer(ServerLevel level, PlayerNpcEntity npc) {
-            if (this.tabPlayer == null || !Objects.equals(this.tabPlayerLevelKey, level.dimension())) {
-                this.tabPlayer = FakePlayerFactory.get(level, createTabProfile(npc));
+            GameProfile tabProfile = createTabProfile(npc);
+            if (this.tabPlayer == null
+                    || !Objects.equals(this.tabPlayerLevelKey, level.dimension())
+                    || !this.tabPlayer.getGameProfile().equals(tabProfile)) {
+                // Authlib 7 profiles and their property maps are immutable. Rebuild the
+                // lightweight tab-list player when its skin properties change instead of
+                // mutating the profile held by an existing fake player.
+                this.tabPlayer = new net.neoforged.neoforge.common.util.FakePlayer(level, tabProfile);
                 this.tabPlayerLevelKey = level.dimension();
             }
-            copyProfileProperties(npc.getProfile(), this.tabPlayer.getGameProfile());
             if (this.tabPlayer.gameMode.getGameModeForPlayer() != GameType.SPECTATOR) {
                 this.tabPlayer.setGameMode(GameType.SPECTATOR);
             }

@@ -706,7 +706,7 @@ public final class ClearBlockAi {
             return Optional.empty();
         }
 
-        int topY = Math.min(origin.getY(), serverLevel.getMaxBuildHeight() - 1);
+        int topY = Math.min(origin.getY(), serverLevel.getMaxY());
         for (int y = topY; y > targetPos.getY(); y--) {
             BlockPos cover = new BlockPos(targetPos.getX(), y, targetPos.getZ());
             if (!serverLevel.hasChunkAt(cover)) {

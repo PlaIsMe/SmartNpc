@@ -4,11 +4,11 @@ import com.pla.smart_npc.client.gui.SmartNpcInspectorOverlay;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.neoforged.neoforge.network.handling.IPayloadContext;
 
 public class PlayerNpcInspectatorCycleResultPacket implements CustomPacketPayload {
-    public static final Type<PlayerNpcInspectatorCycleResultPacket> TYPE = new Type<>(ResourceLocation.fromNamespaceAndPath("smart_npc", "inspectator_cycle_result"));
+    public static final Type<PlayerNpcInspectatorCycleResultPacket> TYPE = new Type<>(Identifier.fromNamespaceAndPath("smart_npc", "inspectator_cycle_result"));
     public static final StreamCodec<FriendlyByteBuf, PlayerNpcInspectatorCycleResultPacket> STREAM_CODEC = StreamCodec.ofMember(PlayerNpcInspectatorCycleResultPacket::encode, PlayerNpcInspectatorCycleResultPacket::decode);
     private final boolean handledByServer;
     private final int entityId;

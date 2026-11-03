@@ -7,6 +7,8 @@ import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.Tag;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.world.level.saveddata.SavedData;
+import net.minecraft.world.level.saveddata.SavedDataType;
+import net.minecraft.resources.Identifier;
 
 import javax.annotation.Nullable;
 import java.util.HashMap;
@@ -18,6 +20,11 @@ import java.util.UUID;
 /** Persistent redirects/tombstones keep unloaded members consistent after merges and deaths. */
 public final class PlayerNpcTeamData extends SavedData {
     private static final String DATA_NAME = SmartNpc.MODID + "_player_npc_teams";
+    private static final SavedDataType<PlayerNpcTeamData> TYPE = new SavedDataType<>(
+            DATA_NAME,
+            PlayerNpcTeamData::new,
+            CompoundTag.CODEC.xmap(tag -> load(tag, null), data -> data.save(new CompoundTag(), null))
+    );
     private static final String REDIRECTS_TAG = "Redirects";
     private static final String DISBANDED_TAG = "Disbanded";
     private static final String PLAYER_TEAMS_TAG = "PlayerTeams";
@@ -29,56 +36,54 @@ public final class PlayerNpcTeamData extends SavedData {
     private final Map<UUID, UUID> leaderReplacements = new HashMap<>();
 
     public static PlayerNpcTeamData get(MinecraftServer server) {
-        return server.overworld().getDataStorage().computeIfAbsent(
-                new SavedData.Factory<>(PlayerNpcTeamData::new, PlayerNpcTeamData::load), DATA_NAME);
+        return server.overworld().getDataStorage().computeIfAbsent(TYPE);
     }
 
     public static PlayerNpcTeamData load(CompoundTag tag, HolderLookup.Provider registries) {
         PlayerNpcTeamData data = new PlayerNpcTeamData();
-        ListTag redirects = tag.getList(REDIRECTS_TAG, Tag.TAG_COMPOUND);
+        ListTag redirects = tag.getListOrEmpty(REDIRECTS_TAG);
         for (int index = 0; index < redirects.size(); index++) {
-            CompoundTag entry = redirects.getCompound(index);
-            if (entry.hasUUID("From") && entry.hasUUID("To") && entry.hasUUID("Founder")) {
-                data.redirects.put(entry.getUUID("From"), new TeamRedirect(
-                        entry.getUUID("To"), entry.getString("Name"), entry.getUUID("Founder")
+            CompoundTag entry = redirects.getCompoundOrEmpty(index);
+            if (SmartNpcNbt.hasUuid(entry, "From") && SmartNpcNbt.hasUuid(entry, "To") && SmartNpcNbt.hasUuid(entry, "Founder")) {
+                data.redirects.put(SmartNpcNbt.getUuid(entry, "From"), new TeamRedirect(
+                        SmartNpcNbt.getUuid(entry, "To"), entry.getStringOr("Name", ""), SmartNpcNbt.getUuid(entry, "Founder")
                 ));
             }
         }
-        ListTag disbanded = tag.getList(DISBANDED_TAG, Tag.TAG_COMPOUND);
+        ListTag disbanded = tag.getListOrEmpty(DISBANDED_TAG);
         for (int index = 0; index < disbanded.size(); index++) {
-            CompoundTag entry = disbanded.getCompound(index);
-            if (entry.hasUUID("Id")) {
-                data.disbandedTeamIds.add(entry.getUUID("Id"));
+            CompoundTag entry = disbanded.getCompoundOrEmpty(index);
+            if (SmartNpcNbt.hasUuid(entry, "Id")) {
+                data.disbandedTeamIds.add(SmartNpcNbt.getUuid(entry, "Id"));
             }
         }
-        ListTag playerTeams = tag.getList(PLAYER_TEAMS_TAG, Tag.TAG_COMPOUND);
+        ListTag playerTeams = tag.getListOrEmpty(PLAYER_TEAMS_TAG);
         for (int index = 0; index < playerTeams.size(); index++) {
-            CompoundTag entry = playerTeams.getCompound(index);
-            if (entry.hasUUID("Player") && entry.hasUUID("Team")) {
-                data.playerTeams.put(entry.getUUID("Player"), new PlayerTeam(
-                        entry.getUUID("Team"), entry.getString("Name")
+            CompoundTag entry = playerTeams.getCompoundOrEmpty(index);
+            if (SmartNpcNbt.hasUuid(entry, "Player") && SmartNpcNbt.hasUuid(entry, "Team")) {
+                data.playerTeams.put(SmartNpcNbt.getUuid(entry, "Player"), new PlayerTeam(
+                        SmartNpcNbt.getUuid(entry, "Team"), entry.getStringOr("Name", "")
                 ));
             }
         }
-        ListTag replacements = tag.getList(LEADER_REPLACEMENTS_TAG, Tag.TAG_COMPOUND);
+        ListTag replacements = tag.getListOrEmpty(LEADER_REPLACEMENTS_TAG);
         for (int index = 0; index < replacements.size(); index++) {
-            CompoundTag entry = replacements.getCompound(index);
-            if (entry.hasUUID("Old") && entry.hasUUID("New")) {
-                data.leaderReplacements.put(entry.getUUID("Old"), entry.getUUID("New"));
+            CompoundTag entry = replacements.getCompoundOrEmpty(index);
+            if (SmartNpcNbt.hasUuid(entry, "Old") && SmartNpcNbt.hasUuid(entry, "New")) {
+                data.leaderReplacements.put(SmartNpcNbt.getUuid(entry, "Old"), SmartNpcNbt.getUuid(entry, "New"));
             }
         }
         return data;
     }
 
-    @Override
     public CompoundTag save(CompoundTag tag, HolderLookup.Provider registries) {
         ListTag redirectTags = new ListTag();
         for (Map.Entry<UUID, TeamRedirect> entry : this.redirects.entrySet()) {
             CompoundTag value = new CompoundTag();
-            value.putUUID("From", entry.getKey());
-            value.putUUID("To", entry.getValue().teamId());
+            SmartNpcNbt.putUuid(value, "From", entry.getKey());
+            SmartNpcNbt.putUuid(value, "To", entry.getValue().teamId());
             value.putString("Name", entry.getValue().teamName());
-            value.putUUID("Founder", entry.getValue().founderUuid());
+            SmartNpcNbt.putUuid(value, "Founder", entry.getValue().founderUuid());
             redirectTags.add(value);
         }
         tag.put(REDIRECTS_TAG, redirectTags);
@@ -86,7 +91,7 @@ public final class PlayerNpcTeamData extends SavedData {
         ListTag disbandedTags = new ListTag();
         for (UUID teamId : this.disbandedTeamIds) {
             CompoundTag value = new CompoundTag();
-            value.putUUID("Id", teamId);
+            SmartNpcNbt.putUuid(value, "Id", teamId);
             disbandedTags.add(value);
         }
         tag.put(DISBANDED_TAG, disbandedTags);
@@ -94,8 +99,8 @@ public final class PlayerNpcTeamData extends SavedData {
         ListTag playerTeamTags = new ListTag();
         for (Map.Entry<UUID, PlayerTeam> entry : this.playerTeams.entrySet()) {
             CompoundTag value = new CompoundTag();
-            value.putUUID("Player", entry.getKey());
-            value.putUUID("Team", entry.getValue().teamId());
+            SmartNpcNbt.putUuid(value, "Player", entry.getKey());
+            SmartNpcNbt.putUuid(value, "Team", entry.getValue().teamId());
             value.putString("Name", entry.getValue().teamName());
             playerTeamTags.add(value);
         }
@@ -104,8 +109,8 @@ public final class PlayerNpcTeamData extends SavedData {
         ListTag replacementTags = new ListTag();
         for (Map.Entry<UUID, UUID> entry : this.leaderReplacements.entrySet()) {
             CompoundTag value = new CompoundTag();
-            value.putUUID("Old", entry.getKey());
-            value.putUUID("New", entry.getValue());
+            SmartNpcNbt.putUuid(value, "Old", entry.getKey());
+            SmartNpcNbt.putUuid(value, "New", entry.getValue());
             replacementTags.add(value);
         }
         tag.put(LEADER_REPLACEMENTS_TAG, replacementTags);

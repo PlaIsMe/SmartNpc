@@ -16,6 +16,7 @@ import net.minecraft.world.item.Items;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.entity.AbstractFurnaceBlockEntity;
 import net.minecraft.world.level.block.entity.FurnaceBlockEntity;
+import net.minecraft.world.level.Level;
 
 import java.util.Optional;
 import java.util.function.Predicate;
@@ -53,9 +54,9 @@ public final class FurnaceAi {
         }
 
         BlockPos pos = new BlockPos(
-                playerNpc.getPersistentData().getInt(TEMP_FURNACE_X),
-                playerNpc.getPersistentData().getInt(TEMP_FURNACE_Y),
-                playerNpc.getPersistentData().getInt(TEMP_FURNACE_Z)
+                playerNpc.getPersistentData().getIntOr(TEMP_FURNACE_X, 0),
+                playerNpc.getPersistentData().getIntOr(TEMP_FURNACE_Y, 0),
+                playerNpc.getPersistentData().getIntOr(TEMP_FURNACE_Z, 0)
         );
         return serverLevel.hasChunkAt(pos)
                 && serverLevel.getBlockState(pos).is(Blocks.FURNACE)
@@ -118,7 +119,7 @@ public final class FurnaceAi {
     }
 
     public boolean hasFuel() {
-        return this.hasHeldOrInventoryItem(FurnaceAi::isFuel);
+        return this.hasHeldOrInventoryItem(stack -> isFuel(this.playerNpc.level(), stack));
     }
 
     public boolean isFurnaceEmpty(FurnaceBlockEntity furnace) {
@@ -194,8 +195,8 @@ public final class FurnaceAi {
         return !furnace.getItem(2).isEmpty();
     }
 
-    public static boolean isFuel(ItemStack stack) {
-        return !stack.isEmpty() && AbstractFurnaceBlockEntity.isFuel(stack);
+    public static boolean isFuel(Level level, ItemStack stack) {
+        return !stack.isEmpty() && level.fuelValues().isFuel(stack);
     }
 
     public static boolean isCookableFood(ItemStack stack) {
@@ -279,14 +280,14 @@ public final class FurnaceAi {
                 .or(() -> this.consumeFirstMatchingStack(stack -> stack.is(Items.STICK), SMALL_FUEL_BATCH))
                 .or(() -> this.consumeFirstMatchingStack(stack -> stack.is(ItemTags.PLANKS), PLANK_FUEL_BATCH))
                 .or(this::takeExcessLogFuelInput)
-                .or(() -> this.consumeFirstMatchingStack(FurnaceAi::isFuel, 1));
+                .or(() -> this.consumeFirstMatchingStack(stack -> isFuel(this.playerNpc.level(), stack), 1));
     }
 
     private Optional<ItemStack> takeTorchCharcoalFuelInput() {
         return this.consumeFirstMatchingStack(stack -> stack.is(ItemTags.SAPLINGS), SMALL_FUEL_BATCH)
                 .or(this::takeExcessLogFuelInput)
                 .or(() -> this.consumeFirstMatchingStack(stack -> stack.is(ItemTags.PLANKS), 1))
-                .or(() -> this.consumeFirstMatchingStack(FurnaceAi::isFuel, 1));
+                .or(() -> this.consumeFirstMatchingStack(stack -> isFuel(this.playerNpc.level(), stack), 1));
     }
 
     private boolean isTorchCharcoalWork(ServerLevel serverLevel, FurnaceBlockEntity furnace) {

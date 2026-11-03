@@ -7,7 +7,7 @@ import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.NbtIo;
 import net.minecraft.nbt.NbtUtils;
 import net.minecraft.nbt.Tag;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
 import net.neoforged.fml.ModList;
@@ -35,33 +35,33 @@ public final class PlayerNpcBlueprintLayoutReader {
     private PlayerNpcBlueprintLayoutReader() {
     }
 
-    public static Optional<PlayerNpcBuildLayout> read(ResourceLocation id, InputStream inputStream) throws IOException {
+    public static Optional<PlayerNpcBuildLayout> read(Identifier id, InputStream inputStream) throws IOException {
         CompoundTag tag = NbtIo.readCompressed(inputStream, net.minecraft.nbt.NbtAccounter.unlimitedHeap());
         if (tag == null) {
             return Optional.empty();
         }
 
-        byte version = tag.getByte("version");
+        byte version = tag.getByteOr("version", (byte) 0);
         if (version != SUPPORTED_VERSION) {
             throw new IllegalArgumentException("unsupported Structurize blueprint version " + version);
         }
 
-        int width = tag.getShort("size_x");
-        int height = tag.getShort("size_y");
-        int depth = tag.getShort("size_z");
+        int width = tag.getShortOr("size_x", (short) 0);
+        int height = tag.getShortOr("size_y", (short) 0);
+        int depth = tag.getShortOr("size_z", (short) 0);
         if (width < 1 || height < 1 || depth < 1) {
             return Optional.empty();
         }
 
-        warnForMissingRequiredMods(id, tag.getList("required_mods", Tag.TAG_STRING));
+        warnForMissingRequiredMods(id, tag.getListOrEmpty("required_mods"));
 
-        List<BlockState> palette = readPalette(tag.getList("palette", Tag.TAG_COMPOUND));
+        List<BlockState> palette = readPalette(tag.getListOrEmpty("palette"));
         if (palette.isEmpty()) {
             return Optional.empty();
         }
 
-        short[] blockIndexes = unpackBlockIndexes(tag.getIntArray("blocks"), width, height, depth);
-        Map<Long, CompoundTag> blockEntities = readBlockEntities(tag.getList("tile_entities", Tag.TAG_COMPOUND));
+        short[] blockIndexes = unpackBlockIndexes(tag.getIntArray("blocks").orElseGet(() -> new int[0]), width, height, depth);
+        Map<Long, CompoundTag> blockEntities = readBlockEntities(tag.getListOrEmpty("tile_entities"));
         List<PlayerNpcBuildLayout.RelativeBlock> blocks = new ArrayList<>(width * height * depth);
 
         int index = 0;
@@ -83,7 +83,7 @@ public final class PlayerNpcBlueprintLayoutReader {
             }
         }
 
-        String name = tag.contains("name", Tag.TAG_STRING) ? tag.getString("name") : id.toString();
+        String name = tag.contains("name") ? tag.getStringOr("name", "") : id.toString();
         return Optional.of(new PlayerNpcBuildLayout(id.toString(), width, height, depth, name, blocks));
     }
 
@@ -91,7 +91,7 @@ public final class PlayerNpcBlueprintLayoutReader {
         List<BlockState> palette = new ArrayList<>(paletteTag.size());
         for (int i = 0; i < paletteTag.size(); i++) {
             try {
-                palette.add(NbtUtils.readBlockState(BuiltInRegistries.BLOCK.asLookup(), paletteTag.getCompound(i)));
+                palette.add(NbtUtils.readBlockState(BuiltInRegistries.BLOCK, paletteTag.getCompoundOrEmpty(i)));
             } catch (RuntimeException exception) {
                 LOGGER.warn("Blueprint reader replaced invalid palette entry {} with air: {}", i, exception.getMessage());
                 palette.add(Blocks.AIR.defaultBlockState());
@@ -120,10 +120,10 @@ public final class PlayerNpcBlueprintLayoutReader {
     private static Map<Long, CompoundTag> readBlockEntities(ListTag tileEntitiesTag) {
         Map<Long, CompoundTag> result = new HashMap<>();
         for (int i = 0; i < tileEntitiesTag.size(); i++) {
-            CompoundTag tag = tileEntitiesTag.getCompound(i);
-            int x = tag.getInt("x");
-            int y = tag.getInt("y");
-            int z = tag.getInt("z");
+            CompoundTag tag = tileEntitiesTag.getCompoundOrEmpty(i);
+            int x = tag.getIntOr("x", 0);
+            int y = tag.getIntOr("y", 0);
+            int z = tag.getIntOr("z", 0);
             result.put(pack(x, y, z), tag.copy());
         }
         return result;
@@ -138,9 +138,9 @@ public final class PlayerNpcBlueprintLayoutReader {
         return state == null ? Blocks.AIR.defaultBlockState() : state;
     }
 
-    private static void warnForMissingRequiredMods(ResourceLocation id, ListTag requiredMods) {
+    private static void warnForMissingRequiredMods(Identifier id, ListTag requiredMods) {
         for (int i = 0; i < requiredMods.size(); i++) {
-            String modId = requiredMods.getString(i);
+            String modId = requiredMods.getStringOr(i, "");
             if (!modId.isBlank() && !"minecraft".equals(modId) && !ModList.get().isLoaded(modId)) {
                 LOGGER.warn("PlayerNpc blueprint {} requires missing mod {}; those blocks may load as air", id, modId);
             }

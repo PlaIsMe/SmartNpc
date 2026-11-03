@@ -1,5 +1,7 @@
 package com.pla.smart_npc.entity.goal;
 
+import net.minecraft.tags.ItemTags;
+
 import com.pla.smart_npc.clazz.PlayerNpcInterest;
 import com.pla.smart_npc.entity.PlayerNpcEntity;
 import com.pla.smart_npc.entity.ai.FarmAi;
@@ -32,9 +34,7 @@ import net.minecraft.world.item.FishingRodItem;
 import net.minecraft.world.item.HoeItem;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
-import net.minecraft.world.item.PickaxeItem;
 import net.minecraft.world.item.ShovelItem;
-import net.minecraft.world.item.SwordItem;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.FenceBlock;
 import net.minecraft.world.level.block.FenceGateBlock;
@@ -137,7 +137,7 @@ public class CraftBasicGearGoal extends Goal {
 
         CraftBasicGearGoal probe = new CraftBasicGearGoal(playerNpc);
         boolean logGatheringEpisodeActive = GatherLogsGoal.isLogGatheringEpisodeActive(playerNpc);
-        boolean missingPickaxe = !probe.hasTool(PickaxeItem.class);
+        boolean missingPickaxe = !probe.hasTool(ItemTags.PICKAXES);
         boolean blockedByVerticalEscape = isBlockedByVerticalEscape(playerNpc, logGatheringEpisodeActive);
         boolean emergencyPickaxeCraft = missingPickaxe && blockedByVerticalEscape;
         if (logGatheringEpisodeActive && !emergencyPickaxeCraft) {
@@ -196,9 +196,9 @@ public class CraftBasicGearGoal extends Goal {
         }
 
         return new BlockPos(
-                playerNpc.getPersistentData().getInt(TEMP_TABLE_X),
-                playerNpc.getPersistentData().getInt(TEMP_TABLE_Y),
-                playerNpc.getPersistentData().getInt(TEMP_TABLE_Z)
+                playerNpc.getPersistentData().getIntOr(TEMP_TABLE_X, 0),
+                playerNpc.getPersistentData().getIntOr(TEMP_TABLE_Y, 0),
+                playerNpc.getPersistentData().getIntOr(TEMP_TABLE_Z, 0)
         );
     }
 
@@ -272,7 +272,7 @@ public class CraftBasicGearGoal extends Goal {
         }
 
         boolean logGatheringEpisodeActive = GatherLogsGoal.isLogGatheringEpisodeActive(this.playerNpc);
-        boolean missingPickaxe = !this.hasTool(PickaxeItem.class);
+        boolean missingPickaxe = !this.hasTool(ItemTags.PICKAXES);
         boolean blockedByVerticalEscape = isBlockedByVerticalEscape(this.playerNpc, logGatheringEpisodeActive);
         boolean emergencyPickaxeCraft = missingPickaxe && blockedByVerticalEscape;
         if (logGatheringEpisodeActive && !emergencyPickaxeCraft) {
@@ -455,7 +455,7 @@ public class CraftBasicGearGoal extends Goal {
         this.routeClearBlockAi.stop();
         this.routeToolAi.restoreMainHand();
         this.skippedRouteClearTargets.clear();
-        if (!this.playerNpc.level().isClientSide) {
+        if (!this.playerNpc.level().isClientSide()) {
             boolean canStillCraftUsefulGear = this.playerNpc.level() instanceof ServerLevel serverLevel
                     && this.canCraftUsefulGear(serverLevel);
             boolean escapeHandoff = this.playerNpc.tickCount < this.craftingEscapeHandoffUntilTick
@@ -684,14 +684,14 @@ public class CraftBasicGearGoal extends Goal {
 
     private boolean needsCriticalStarterTool() {
         return !this.hasTool(AxeItem.class)
-                || !this.hasTool(PickaxeItem.class)
+                || !this.hasTool(ItemTags.PICKAXES)
                 || !GatherStoneGoal.isFarmingSupportJob(this.playerNpc)
                 && !this.hasTool(ShovelItem.class);
     }
 
     private boolean needsCriticalStarterToolForCooldown() {
         if (this.shouldLimitMiningProspectingGear()) {
-            return !this.hasTool(PickaxeItem.class);
+            return !this.hasTool(ItemTags.PICKAXES);
         }
         return this.needsCriticalStarterTool();
     }
@@ -749,10 +749,10 @@ public class CraftBasicGearGoal extends Goal {
         if (!this.hasTool(AxeItem.class)) {
             return this.bestCraftableToolRecipe(ToolKind.AXE);
         }
-        if (!this.hasTool(PickaxeItem.class)) {
+        if (!this.hasTool(ItemTags.PICKAXES)) {
             return this.bestCraftableToolRecipe(ToolKind.PICKAXE);
         }
-        if (!this.hasTool(SwordItem.class)) {
+        if (!this.hasTool(ItemTags.SWORDS)) {
             return this.bestCraftableToolRecipe(ToolKind.SWORD);
         }
         if (!GatherStoneGoal.isFarmingSupportJob(this.playerNpc)
@@ -763,7 +763,7 @@ public class CraftBasicGearGoal extends Goal {
     }
 
     private ToolRecipe nextMiningProspectingGearRecipe() {
-        if (!this.hasTool(PickaxeItem.class)) {
+        if (!this.hasTool(ItemTags.PICKAXES)) {
             return this.bestCraftableToolRecipe(ToolKind.PICKAXE);
         }
         if (this.isMiningProspectingState()) {
@@ -781,7 +781,7 @@ public class CraftBasicGearGoal extends Goal {
         if (!this.isActiveStoneGatheringPhase()) {
             return null;
         }
-        if (!this.hasTool(PickaxeItem.class)) {
+        if (!this.hasTool(ItemTags.PICKAXES)) {
             return this.bestCraftableToolRecipe(ToolKind.PICKAXE);
         }
         if (!GatherStoneGoal.isFarmingSupportJob(this.playerNpc)
@@ -889,29 +889,29 @@ public class CraftBasicGearGoal extends Goal {
     }
 
     private ToolRecipe nextReadyFarmSupportRecipe(ServerLevel serverLevel) {
-        if (this.emergencyPickaxeCraft && !this.hasTool(PickaxeItem.class)) {
+        if (this.emergencyPickaxeCraft && !this.hasTool(ItemTags.PICKAXES)) {
             return this.bestCraftableToolRecipe(ToolKind.PICKAXE);
         }
         if (FarmAi.needsFarmLogs(this.playerNpc, serverLevel) && !this.hasTool(AxeItem.class)) {
             return this.bestCraftableToolRecipe(ToolKind.AXE);
         }
-        if (FarmAi.needsFarmStone(this.playerNpc, serverLevel) && !this.hasTool(PickaxeItem.class)) {
+        if (FarmAi.needsFarmStone(this.playerNpc, serverLevel) && !this.hasTool(ItemTags.PICKAXES)) {
             return this.bestCraftableToolRecipe(ToolKind.PICKAXE);
         }
         return null;
     }
 
     private ToolRecipe nextCriticalStarterRecipe() {
-        if (this.emergencyPickaxeCraft && !this.hasTool(PickaxeItem.class)) {
+        if (this.emergencyPickaxeCraft && !this.hasTool(ItemTags.PICKAXES)) {
             return this.bestCraftableToolRecipe(ToolKind.PICKAXE);
         }
-        if (this.shouldPrioritizeMiningStarterPickaxe() && !this.hasTool(PickaxeItem.class)) {
+        if (this.shouldPrioritizeMiningStarterPickaxe() && !this.hasTool(ItemTags.PICKAXES)) {
             return this.bestCraftableToolRecipe(ToolKind.PICKAXE);
         }
         if (!this.hasTool(AxeItem.class)) {
             return this.bestCraftableToolRecipe(ToolKind.AXE);
         }
-        if (!this.hasTool(PickaxeItem.class)) {
+        if (!this.hasTool(ItemTags.PICKAXES)) {
             return this.bestCraftableToolRecipe(ToolKind.PICKAXE);
         }
         if (!GatherStoneGoal.isFarmingSupportJob(this.playerNpc)
@@ -969,7 +969,7 @@ public class CraftBasicGearGoal extends Goal {
         return crafted;
     }
 
-    private boolean hasTool(Class<?> toolClass) {
+    private boolean hasTool(Object toolClass) {
         return this.playerNpc.hasCarriedTool(toolClass);
     }
 
@@ -1059,7 +1059,7 @@ public class CraftBasicGearGoal extends Goal {
 
     private boolean isCriticalStarterRecipe(ToolRecipe recipe) {
         return recipe.kind() == ToolKind.AXE && !this.hasTool(AxeItem.class)
-                || recipe.kind() == ToolKind.PICKAXE && !this.hasTool(PickaxeItem.class)
+                || recipe.kind() == ToolKind.PICKAXE && !this.hasTool(ItemTags.PICKAXES)
                 || recipe.kind() == ToolKind.SHOVEL && !this.hasTool(ShovelItem.class)
                 || recipe.kind() == ToolKind.HOE && this.needsFarmHoe();
     }
@@ -1274,7 +1274,7 @@ public class CraftBasicGearGoal extends Goal {
         }
 
         if (this.craftingStandPos.getY() > feet.getY()) {
-            boolean wetForLandEscape = this.playerNpc.isInWaterOrBubble()
+            boolean wetForLandEscape = this.playerNpc.isInWater()
                     || serverLevel.getFluidState(feet).is(FluidTags.WATER)
                     || serverLevel.getFluidState(feet.above()).is(FluidTags.WATER);
             if (!wetForLandEscape) {
@@ -1762,7 +1762,7 @@ public class CraftBasicGearGoal extends Goal {
                 && !PlayerNpcHomeUtil.isInsideBuildFootprint(this.playerNpc, pos)
                 && !FarmAi.isProtectedFarmBlock(this.playerNpc, pos)
                 && serverLevel.getFluidState(pos).isEmpty()
-                && serverLevel.getBlockState(pos.below()).isSolidRender(serverLevel, pos.below())
+                && serverLevel.getBlockState(pos.below()).isSolidRender()
                 && this.placingBlockAi.canPlaceWithoutClipping(serverLevel, pos, Blocks.CRAFTING_TABLE.defaultBlockState());
     }
 

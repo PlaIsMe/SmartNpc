@@ -23,7 +23,7 @@ public class SmartNpcModEntities {
     public static final DeferredHolder<EntityType<?>, EntityType<PlayerNpcFishingBobberEntity>> PLAYER_NPC_FISHING_BOBBER = register(PLAYER_NPC_FISHING_BOBBER_ID, Builder.<PlayerNpcFishingBobberEntity>of(PlayerNpcFishingBobberEntity::new, MobCategory.MISC).setShouldReceiveVelocityUpdates(true).setTrackingRange(64).setUpdateInterval(5).sized(0.25F, 0.25F));
 
     private static <T extends Entity> DeferredHolder<EntityType<?>, EntityType<T>> register(String s, Builder<T> builder) {
-        return SmartNpcModEntities.REGISTRY.register(s, () -> builder.build(s));
+        return SmartNpcModEntities.REGISTRY.register(s, id -> builder.build(net.minecraft.resources.ResourceKey.create(net.minecraft.core.registries.Registries.ENTITY_TYPE, id)));
     }
 
     @SubscribeEvent

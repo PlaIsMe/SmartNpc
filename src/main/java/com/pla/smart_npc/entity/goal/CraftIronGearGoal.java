@@ -1,5 +1,7 @@
 package com.pla.smart_npc.entity.goal;
 
+import com.pla.smart_npc.util.SmartNpcItemUtil;
+
 import com.pla.smart_npc.entity.PlayerNpcEntity;
 import com.pla.smart_npc.util.InventoryUtils;
 import com.pla.smart_npc.util.PlayerNpcCraftingUtil;
@@ -12,7 +14,6 @@ import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.ai.goal.Goal;
-import net.minecraft.world.item.ArmorItem;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
@@ -184,16 +185,17 @@ public class CraftIronGearGoal extends Goal {
     }
 
     private boolean isArmorUpgrade(EquipmentSlot slot, Item item) {
-        if (!(item instanceof ArmorItem newArmor)) {
+        ItemStack newStack = item.getDefaultInstance();
+        if (!SmartNpcItemUtil.isArmor(newStack)) {
             return false;
         }
 
         ItemStack currentStack = this.playerNpc.getItemBySlot(slot);
-        if (currentStack.isEmpty() || !(currentStack.getItem() instanceof ArmorItem currentArmor)) {
+        if (currentStack.isEmpty() || !SmartNpcItemUtil.isArmor(currentStack)) {
             return true;
         }
 
-        return newArmor.getDefense() + newArmor.getToughness() > currentArmor.getDefense() + currentArmor.getToughness();
+        return SmartNpcItemUtil.armorScore(newStack) > SmartNpcItemUtil.armorScore(currentStack);
     }
 
     private int countMaterial(ItemLike material) {

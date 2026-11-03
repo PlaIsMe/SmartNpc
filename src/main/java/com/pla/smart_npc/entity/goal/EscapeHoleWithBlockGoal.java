@@ -1,6 +1,7 @@
 package com.pla.smart_npc.entity.goal;
 
-import com.pla.smart_npc.compat.epicfight.EpicFight;
+import com.pla.smart_npc.util.SmartNpcItemUtil;
+
 import com.pla.smart_npc.entity.PlayerNpcEntity;
 import com.pla.smart_npc.entity.ai.BreakingBlockAi;
 import com.pla.smart_npc.entity.ai.CautiousThreatAi;
@@ -36,7 +37,6 @@ import net.minecraft.world.item.AxeItem;
 import net.minecraft.world.item.BlockItem;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
-import net.minecraft.world.item.PickaxeItem;
 import net.minecraft.world.item.ShovelItem;
 import net.minecraft.world.level.block.BedBlock;
 import net.minecraft.world.level.block.Blocks;
@@ -49,7 +49,6 @@ import net.minecraft.world.level.levelgen.Heightmap;
 import net.minecraft.world.level.pathfinder.Path;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
-import net.neoforged.fml.ModList;
 
 import java.util.ArrayDeque;
 import java.util.ArrayList;
@@ -285,9 +284,7 @@ public class EscapeHoleWithBlockGoal extends Goal {
     private void setEscapeMode(EscapeMode inputMode) {
         if ((this.mode == EscapeMode.GATHER_BLOCKS || this.mode == EscapeMode.CLEAR_EXIT || this.mode == EscapeMode.CLEAR_ROUTE)
                 && (inputMode != EscapeMode.GATHER_BLOCKS && inputMode != EscapeMode.CLEAR_EXIT && inputMode != EscapeMode.CLEAR_ROUTE)) {
-            if (ModList.get().isLoaded("epicfight")) {
-                EpicFight.stopDiggingAnimation(this.playerNpc);
-            }
+            // Epic Fight compatibility is disabled.
         }
         this.mode = inputMode;
     }
@@ -861,7 +858,7 @@ public class EscapeHoleWithBlockGoal extends Goal {
 
     private boolean isInWater(ServerLevel serverLevel) {
         BlockPos feet = this.playerNpc.blockPosition();
-        return this.playerNpc.isInWaterOrBubble()
+        return this.playerNpc.isInWater()
                 || serverLevel.getFluidState(feet).is(FluidTags.WATER)
                 || serverLevel.getFluidState(feet.above()).is(FluidTags.WATER)
                 || !this.playerNpc.onGround() && serverLevel.getFluidState(feet.below()).is(FluidTags.WATER);
@@ -1048,7 +1045,7 @@ public class EscapeHoleWithBlockGoal extends Goal {
         this.toolAi.restoreMainHand();
         this.restorePreviousMainHand();
         this.restorePreviousPillarMainHand();
-        if (!this.playerNpc.level().isClientSide) {
+        if (!this.playerNpc.level().isClientSide()) {
             this.playerNpc.setHoleEscapeCooldown(Math.max(this.playerNpc.getHoleEscapeCooldown(), COOLDOWN_TICKS));
         }
         if (this.shouldClearUpwardEscapeTargetOnStop()) {
@@ -2938,7 +2935,7 @@ public class EscapeHoleWithBlockGoal extends Goal {
                 motion.y,
                 dz / length * EXPLORATION_CLIMB_STEP_OFF_SPEED
         );
-        this.playerNpc.hasImpulse = true;
+        this.playerNpc.hurtMarked = true;
         this.playerNpc.setCurrentAiDetail("exploration climb forced step off @ "
                 + posText(this.explorationClimbStepOffStartPos)
                 + " -> "
@@ -3686,7 +3683,7 @@ public class EscapeHoleWithBlockGoal extends Goal {
         int scanBlocks = requestedRouteMax > 0
                 ? Math.min(PILLAR_SURFACE_SCAN_UP, requestedRouteMax)
                 : PILLAR_SURFACE_SCAN_UP;
-        int scanTop = Math.min(serverLevel.getMaxBuildHeight() - 3, base.getY() + scanBlocks);
+        int scanTop = Math.min(serverLevel.getMaxY() - 2, base.getY() + scanBlocks);
         for (int y = base.getY(); y <= scanTop; y++) {
             BlockPos feetAtY = new BlockPos(base.getX(), y, base.getZ());
             if (!serverLevel.hasChunkAt(feetAtY)) {
@@ -4135,8 +4132,8 @@ public class EscapeHoleWithBlockGoal extends Goal {
     }
 
     private void addRouteNavigationColumn(ServerLevel serverLevel, List<BlockPos> candidates, BlockPos column, BlockPos feet, BlockPos routeTarget) {
-        int minY = Math.max(serverLevel.getMinBuildHeight() + 1, feet.getY() - ROUTE_NAV_VERTICAL_DOWN);
-        int maxY = Math.min(serverLevel.getMaxBuildHeight() - 2, feet.getY() + ROUTE_NAV_VERTICAL_UP);
+        int minY = Math.max(serverLevel.getMinY() + 1, feet.getY() - ROUTE_NAV_VERTICAL_DOWN);
+        int maxY = Math.min(serverLevel.getMaxY() - 1, feet.getY() + ROUTE_NAV_VERTICAL_UP);
 
         for (int y = maxY; y >= minY; y--) {
             BlockPos candidate = new BlockPos(column.getX(), y, column.getZ());
@@ -4588,20 +4585,20 @@ public class EscapeHoleWithBlockGoal extends Goal {
     }
 
     private boolean hasPickaxe() {
-        return this.playerNpc.getMainHandItem().getItem() instanceof PickaxeItem
-                || InventoryUtils.hasItem(this.playerNpc, stack -> stack.getItem() instanceof PickaxeItem);
+        return this.playerNpc.getMainHandItem().is(ItemTags.PICKAXES)
+                || InventoryUtils.hasItem(this.playerNpc, stack -> stack.is(ItemTags.PICKAXES));
     }
 
     private boolean equipPickaxe() {
-        return this.equipTool(PickaxeItem.class);
+        return this.equipTool(ItemTags.PICKAXES);
     }
 
-    private boolean equipTool(Class<?> toolClass) {
-        if (toolClass.isInstance(this.playerNpc.getMainHandItem().getItem())) {
+    private boolean equipTool(Object toolClass) {
+        if (SmartNpcItemUtil.matches(toolClass, this.playerNpc.getMainHandItem().getItem())) {
             return true;
         }
 
-        ItemStack tool = this.playerNpc.consumeInventoryItem(stack -> toolClass.isInstance(stack.getItem()), 1)
+        ItemStack tool = this.playerNpc.consumeInventoryItem(stack -> SmartNpcItemUtil.matches(toolClass, stack.getItem()), 1)
                 .orElse(ItemStack.EMPTY);
         if (tool.isEmpty()) {
             return false;
@@ -4633,7 +4630,7 @@ public class EscapeHoleWithBlockGoal extends Goal {
         } else if (state.is(BlockTags.MINEABLE_WITH_AXE) || state.is(BlockTags.LOGS) || state.is(Blocks.CRAFTING_TABLE)) {
             return this.equipTool(AxeItem.class);
         } else if (state.is(BlockTags.MINEABLE_WITH_PICKAXE) || state.requiresCorrectToolForDrops()) {
-            return this.equipTool(PickaxeItem.class);
+            return this.equipTool(ItemTags.PICKAXES);
         }
         return true;
     }

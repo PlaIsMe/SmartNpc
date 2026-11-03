@@ -81,7 +81,7 @@ public final class FarmAi {
         }
 
         Plan plan = saved.get();
-        String dimension = serverLevel.dimension().location().toString();
+        String dimension = serverLevel.dimension().identifier().toString();
         if (plan.dimension().isBlank()) {
             plan = plan.withDimension(dimension);
             PlayerNpcFarmPlan.save(playerNpc, plan);
@@ -132,7 +132,7 @@ public final class FarmAi {
         Optional<Plan> invalidOrOtherDimension = PlayerNpcFarmPlan.get(playerNpc);
         if (invalidOrOtherDimension.isPresent()) {
             if (!invalidOrOtherDimension.get().dimension().isBlank()
-                    && !serverLevel.dimension().location().toString().equals(invalidOrOtherDimension.get().dimension())) {
+                    && !serverLevel.dimension().identifier().toString().equals(invalidOrOtherDimension.get().dimension())) {
                 return Optional.empty();
             }
             PlayerNpcFarmPlan.clear(playerNpc);
@@ -140,7 +140,7 @@ public final class FarmAi {
         }
 
         BlockPos searchCenter = playerNpc.blockPosition();
-        String dimension = serverLevel.dimension().location().toString();
+        String dimension = serverLevel.dimension().identifier().toString();
         PlanSearchCursor cursor = PLAN_SEARCH_CURSORS.get(playerNpc);
         if (cursor == null
                 || !dimension.equals(cursor.dimension)
@@ -213,7 +213,7 @@ public final class FarmAi {
             return false;
         }
         PlanSearchCursor cursor = PLAN_SEARCH_CURSORS.get(playerNpc);
-        String currentDimension = serverLevel.dimension().location().toString();
+        String currentDimension = serverLevel.dimension().identifier().toString();
         return cursor == null
                 || !currentDimension.equals(cursor.dimension)
                 || !cursor.exhausted;
@@ -435,7 +435,7 @@ public final class FarmAi {
         }
         return PlayerNpcFarmPlan.get(playerNpc).map(plan -> {
             if (!plan.dimension().isBlank()
-                    && !playerNpc.level().dimension().location().toString().equals(plan.dimension())) {
+                    && !playerNpc.level().dimension().identifier().toString().equals(plan.dimension())) {
                 return false;
             }
             if (plan.owns(pos) || isEntranceCorridor(plan, pos)) {
@@ -524,7 +524,7 @@ public final class FarmAi {
             return Optional.empty();
         }
         return PlayerNpcFarmPlan.get(playerNpc).filter(plan -> plan.dimension().isBlank()
-                || playerNpc.level().dimension().location().toString().equals(plan.dimension()));
+                || playerNpc.level().dimension().identifier().toString().equals(plan.dimension()));
     }
 
     public static boolean overlapsOwnedFarm(PlayerNpcEntity playerNpc, BlockPos origin, int width, int depth) {
@@ -533,7 +533,7 @@ public final class FarmAi {
         }
         return PlayerNpcFarmPlan.get(playerNpc).map(plan -> {
             if (!plan.dimension().isBlank()
-                    && !playerNpc.level().dimension().location().toString().equals(plan.dimension())) {
+                    && !playerNpc.level().dimension().identifier().toString().equals(plan.dimension())) {
                 return false;
             }
             int firstMinX = origin.getX() - 1;
@@ -635,7 +635,7 @@ public final class FarmAi {
         if (facing == null
                 || !state.hasProperty(FenceGateBlock.FACING)
                 || state.getValue(FenceGateBlock.FACING) != facing
-                || !serverLevel.getBlockState(plan.gatePos().below()).isSolidRender(serverLevel, plan.gatePos().below())) {
+                || !serverLevel.getBlockState(plan.gatePos().below()).isSolidRender()) {
             return false;
         }
         Direction firstSide = facing.getClockWise();
@@ -722,12 +722,12 @@ public final class FarmAi {
             }
         }
         for (BlockPos fence : plan.fencePositions()) {
-            if (!serverLevel.getBlockState(fence.below()).isSolidRender(serverLevel, fence.below())
+            if (!serverLevel.getBlockState(fence.below()).isSolidRender()
                     || !canClearSurfaceAt(serverLevel, fence)) {
                 return false;
             }
         }
-        return serverLevel.getBlockState(plan.gatePos().below()).isSolidRender(serverLevel, plan.gatePos().below())
+        return serverLevel.getBlockState(plan.gatePos().below()).isSolidRender()
                 && canClearSurfaceAt(serverLevel, plan.gatePos())
                 && hasReachableEntry(playerNpc, serverLevel, plan);
     }

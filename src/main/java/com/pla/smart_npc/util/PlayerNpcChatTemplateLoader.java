@@ -7,10 +7,12 @@ import com.pla.smart_npc.SmartNpc;
 import com.pla.smart_npc.config.SmartNpcConfig;
 import com.pla.smart_npc.entity.PlayerNpcEntity;
 import net.minecraft.core.registries.BuiltInRegistries;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
+import net.minecraft.resources.FileToIdConverter;
 import net.minecraft.server.packs.resources.ResourceManager;
 import net.minecraft.server.packs.resources.SimpleJsonResourceReloadListener;
 import net.minecraft.util.GsonHelper;
+import net.minecraft.util.ExtraCodecs;
 import net.minecraft.util.RandomSource;
 import net.minecraft.util.profiling.ProfilerFiller;
 import net.minecraft.world.entity.Entity;
@@ -25,7 +27,7 @@ import java.util.Optional;
 import java.util.Set;
 
 /** Loads selector-aware Player NPC chat from data/smart_npc/chat/&lt;locale&gt;/&lt;event&gt;.json. */
-public class PlayerNpcChatTemplateLoader extends SimpleJsonResourceReloadListener {
+public class PlayerNpcChatTemplateLoader extends SimpleJsonResourceReloadListener<JsonElement> {
     public static final String CALL_HELP = "call_help";
     public static final String TEAMUP_REQUEST = "teamup_request";
     public static final String WARN_DEATH = "warn_death";
@@ -53,15 +55,15 @@ public class PlayerNpcChatTemplateLoader extends SimpleJsonResourceReloadListene
     private static volatile Map<String, Map<String, List<ChatEntry>>> entriesByLocale = Map.of();
 
     public PlayerNpcChatTemplateLoader() {
-        super(GSON, "chat");
+        super(ExtraCodecs.JSON, FileToIdConverter.json("chat"));
     }
 
     @Override
-    protected void apply(Map<ResourceLocation, JsonElement> resources, ResourceManager manager, ProfilerFiller profiler) {
+    protected void apply(Map<Identifier, JsonElement> resources, ResourceManager manager, ProfilerFiller profiler) {
         Map<String, Map<String, List<ChatEntry>>> loaded = new HashMap<>();
 
-        for (Map.Entry<ResourceLocation, JsonElement> resource : resources.entrySet()) {
-            ResourceLocation id = resource.getKey();
+        for (Map.Entry<Identifier, JsonElement> resource : resources.entrySet()) {
+            Identifier id = resource.getKey();
             if (!SmartNpc.MODID.equals(id.getNamespace())) {
                 continue;
             }
@@ -142,7 +144,7 @@ public class PlayerNpcChatTemplateLoader extends SimpleJsonResourceReloadListene
                 .filter(entry -> matchesTarget(entry.targetSelector(), target));
     }
 
-    private static List<ChatEntry> parseEntries(ResourceLocation id, JsonElement root) {
+    private static List<ChatEntry> parseEntries(Identifier id, JsonElement root) {
         if (!root.isJsonArray()) {
             SmartNpc.LOGGER.warn("Skipping Player NPC chat resource {} because its root is not an array", id);
             return List.of();
@@ -183,7 +185,7 @@ public class PlayerNpcChatTemplateLoader extends SimpleJsonResourceReloadListene
         }
 
         if (selector.indexOf(':') > 0) {
-            ResourceLocation targetType = BuiltInRegistries.ENTITY_TYPE.getKey(target.getType());
+            Identifier targetType = BuiltInRegistries.ENTITY_TYPE.getKey(target.getType());
             return targetType != null && targetType.toString().equalsIgnoreCase(selector);
         }
         return entityNameMatches(target, selector);

@@ -3,7 +3,7 @@ plugins {
     id 'idea'
     id 'java-library'
     id 'maven-publish'
-    id 'net.neoforged.moddev' version '1.0.21'
+    id 'net.neoforged.moddev' version '2.0.147'
 }
 
 tasks.named('wrapper', Wrapper).configure {
@@ -14,18 +14,13 @@ version = mod_version
 group = mod_group_id
 
 base {
-    archivesName = "SmartNpc-1.21.1"
+    archivesName = "SmartNpc-1.21.11"
 }
 
 java.toolchain.languageVersion = JavaLanguageVersion.of(21)
 
 neoForge {
     version = project.neo_version
-
-    parchment {
-        mappingsVersion = project.parchment_mappings_version
-        minecraftVersion = project.parchment_minecraft_version
-    }
 
     runs {
         client {
@@ -42,7 +37,7 @@ neoForge {
             systemProperty 'neoforge.enabledGameTestNamespaces', project.mod_id
         }
         data {
-            data()
+            clientData()
             programArguments.addAll '--mod', project.mod_id, '--all', '--output',
                     file('src/generated/resources/').absolutePath, '--existing',
                     file('src/main/resources/').absolutePath
@@ -78,13 +73,10 @@ repositories {
 }
 
 dependencies {
-    compileOnly "maven.modrinth:yes-steve-model:HZWaR0LY"
-
-    compileOnly "curse.maven:epic-fight-mod-405076:8175609"
-
-    compileOnly "curse.maven:cloth-config-348521:5729127"
-    compileOnly "curse.maven:playeranimator-658587:7389814"
-    compileOnly "curse.maven:better-combat-by-daedelus-639842:8430183"
+    localRuntime "maven.modrinth:cloth-config:Wsus0EWg"
+    compileOnly "maven.modrinth:player-animation-library:uue016SO"
+    localRuntime "maven.modrinth:player-animation-library:uue016SO"
+    localRuntime "maven.modrinth:better-combat:lkzLyXbV"
     compileOnly(annotationProcessor('io.github.llamalad7:mixinextras-common:0.5.0'))
 }
 

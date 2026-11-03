@@ -4,7 +4,7 @@ import com.pla.smart_npc.entity.PlayerNpcEntity;
 import com.pla.smart_npc.entity.ai.FurnaceAi;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.tags.ItemTags;
 import net.minecraft.world.SimpleContainer;
@@ -329,7 +329,7 @@ public final class PlayerNpcBuildMaterialUtil {
             return false;
         }
 
-        ResourceLocation key = BuiltInRegistries.BLOCK.getKey(state.getBlock());
+        Identifier key = BuiltInRegistries.BLOCK.getKey(state.getBlock());
         return key != null
                 && "structurize".equals(key.getNamespace())
                 && "blocksolidsubstitution".equals(key.getPath());
@@ -473,13 +473,13 @@ public final class PlayerNpcBuildMaterialUtil {
 
         MissingNeedSearch search = MISSING_NEED_SEARCHES.get(playerNpc);
         if (search == null || !search.matches(
-                serverLevel.dimension().location(),
+                serverLevel.dimension().identifier(),
                 home.get(),
                 currentLayoutId,
                 inventoryHash
         )) {
             search = MissingNeedSearch.create(
-                    serverLevel.dimension().location(),
+                    serverLevel.dimension().identifier(),
                     home.get(),
                     currentLayoutId,
                     inventoryHash,
@@ -573,7 +573,7 @@ public final class PlayerNpcBuildMaterialUtil {
         if (stack.isEmpty()) {
             return 0;
         }
-        ResourceLocation id = BuiltInRegistries.ITEM.getKey(stack.getItem());
+        Identifier id = BuiltInRegistries.ITEM.getKey(stack.getItem());
         int hash = id == null ? 0 : id.hashCode();
         hash = 31 * hash + stack.getCount();
         hash = 31 * hash + stack.getComponents().hashCode();
@@ -1220,7 +1220,7 @@ public final class PlayerNpcBuildMaterialUtil {
     }
 
     private static boolean isWoodNamedItem(Item item, String suffix) {
-        ResourceLocation key = BuiltInRegistries.ITEM.getKey(item);
+        Identifier key = BuiltInRegistries.ITEM.getKey(item);
         if (key == null || !key.getPath().endsWith(suffix)) {
             return false;
         }
@@ -1288,7 +1288,7 @@ public final class PlayerNpcBuildMaterialUtil {
             return false;
         }
 
-        ResourceLocation key = BuiltInRegistries.BLOCK.getKey(state.getBlock());
+        Identifier key = BuiltInRegistries.BLOCK.getKey(state.getBlock());
         return key != null && key.getPath().startsWith("potted_");
     }
 
@@ -1413,9 +1413,9 @@ public final class PlayerNpcBuildMaterialUtil {
         }
 
         return new BlockPos(
-                playerNpc.getPersistentData().getInt(FurnaceAi.TEMP_FURNACE_X),
-                playerNpc.getPersistentData().getInt(FurnaceAi.TEMP_FURNACE_Y),
-                playerNpc.getPersistentData().getInt(FurnaceAi.TEMP_FURNACE_Z)
+                playerNpc.getPersistentData().getIntOr(FurnaceAi.TEMP_FURNACE_X, 0),
+                playerNpc.getPersistentData().getIntOr(FurnaceAi.TEMP_FURNACE_Y, 0),
+                playerNpc.getPersistentData().getIntOr(FurnaceAi.TEMP_FURNACE_Z, 0)
         );
     }
 
@@ -1432,7 +1432,7 @@ public final class PlayerNpcBuildMaterialUtil {
     }
 
     private static boolean hasFuel(PlayerNpcEntity playerNpc) {
-        return InventoryUtils.hasItem(playerNpc, stack -> !stack.isEmpty() && AbstractFurnaceBlockEntity.isFuel(stack));
+        return InventoryUtils.hasItem(playerNpc, stack -> !stack.isEmpty() && playerNpc.level().fuelValues().isFuel(stack));
     }
 
     private static boolean canUseOrCreateHomeFurnace(ServerLevel serverLevel, PlayerNpcEntity playerNpc) {
@@ -1598,7 +1598,7 @@ public final class PlayerNpcBuildMaterialUtil {
     }
 
     private record MissingNeedSearch(
-            ResourceLocation dimension,
+            Identifier dimension,
             BlockPos homeOrigin,
             int homeWidth,
             int homeDepth,
@@ -1610,7 +1610,7 @@ public final class PlayerNpcBuildMaterialUtil {
             MissingMaterialLedger materialLedger
     ) {
         private static MissingNeedSearch create(
-                ResourceLocation dimension,
+                Identifier dimension,
                 PlayerNpcHomeUtil.HomeArea homeArea,
                 String layoutId,
                 int inventoryHash,
@@ -1631,7 +1631,7 @@ public final class PlayerNpcBuildMaterialUtil {
         }
 
         private boolean matches(
-                ResourceLocation currentDimension,
+                Identifier currentDimension,
                 PlayerNpcHomeUtil.HomeArea homeArea,
                 String currentLayoutId,
                 int currentInventoryHash

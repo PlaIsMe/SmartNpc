@@ -100,7 +100,7 @@ public class PlayerNpcFishingGoal extends Goal {
         return playerNpc != null
                 && serverLevel != null
                 && playerNpc.isDailyJobActive(PlayerNpcInterest.FISHING)
-                && !serverLevel.isNight()
+                && !serverLevel.isDarkOutside()
                 && playerNpc.getUpwardEscapeTarget() == null
                 && !hasFishingRod(playerNpc)
                 && PlayerNpcCraftingUtil.countItem(playerNpc.getInventory(), stack -> stack.is(Items.STRING)) < 2
@@ -247,7 +247,7 @@ public class PlayerNpcFishingGoal extends Goal {
             this.playerNpc.setMainHandItemForAi(this.previousMainHand.copy());
         }
 
-        if (!this.playerNpc.level().isClientSide) {
+        if (!this.playerNpc.level().isClientSide()) {
             int cooldown = this.nextCooldownTicks();
             this.playerNpc.setFishingCooldown(cooldown);
         }
@@ -273,7 +273,7 @@ public class PlayerNpcFishingGoal extends Goal {
             return false;
         }
 
-        PlayerNpcFishingBobberEntity nextBobber = SmartNpcModEntities.PLAYER_NPC_FISHING_BOBBER.get().create(serverLevel);
+        PlayerNpcFishingBobberEntity nextBobber = SmartNpcModEntities.PLAYER_NPC_FISHING_BOBBER.get().create(serverLevel, net.minecraft.world.entity.EntitySpawnReason.TRIGGERED);
         if (nextBobber == null) {
             return false;
         }
@@ -296,7 +296,7 @@ public class PlayerNpcFishingGoal extends Goal {
                 SoundEvents.FISHING_BOBBER_THROW,
                 SoundSource.NEUTRAL,
                 0.5F,
-                0.4F / (serverLevel.random.nextFloat() * 0.4F + 0.8F)
+                0.4F / (serverLevel.getRandom().nextFloat() * 0.4F + 0.8F)
         );
         return true;
     }
@@ -393,7 +393,7 @@ public class PlayerNpcFishingGoal extends Goal {
         if (!playerNpc.isDailyJobActive(PlayerNpcInterest.FISHING)) {
             return "fishing blocked: fishing job inactive";
         }
-        if (serverLevel.isNight()) {
+        if (serverLevel.isDarkOutside()) {
             return "fishing blocked: night camp active";
         }
         if (playerNpc.getFishingCooldown() > 0) {
@@ -612,7 +612,7 @@ public class PlayerNpcFishingGoal extends Goal {
 
     private static BlockPos findSurfaceWaterInColumn(ServerLevel serverLevel, int x, int z) {
         int y = serverLevel.getHeight(Heightmap.Types.WORLD_SURFACE, x, z) - 1;
-        if (y < serverLevel.getMinBuildHeight()) {
+        if (y < serverLevel.getMinY()) {
             return null;
         }
         BlockPos pos = new BlockPos(x, y, z);

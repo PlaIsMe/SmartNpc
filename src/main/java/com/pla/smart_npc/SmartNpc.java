@@ -3,13 +3,7 @@ package com.pla.smart_npc;
 import com.mojang.serialization.MapCodec;
 import com.pla.smart_npc.client.SmartNpcClientItemProperties;
 import com.pla.smart_npc.client.gui.InventoryViewerScreen;
-import com.pla.smart_npc.compat.epicfight.EpicFight;
-import com.pla.smart_npc.compat.epicfight.EpicFightCloneAnimations;
-import com.pla.smart_npc.compat.epicfight.EpicFightSmartNpcPatchedRenderer;
-import com.pla.smart_npc.compat.epicfight.EpicFightSmartNpcPatches;
 import com.pla.smart_npc.config.SmartNpcConfig;
-import com.pla.smart_npc.config.SmartNpcCompatConfig;
-import com.pla.smart_npc.config.SmartNpcEpicFightConfig;
 import com.pla.smart_npc.config.SmartNpcNamesConfig;
 import com.pla.smart_npc.event.NpcGearLoadEvent;
 import com.pla.smart_npc.init.SmartNpcModCreativeTabs;
@@ -18,17 +12,17 @@ import com.pla.smart_npc.init.SmartNpcModEntityRenderers;
 import com.pla.smart_npc.init.SmartNpcModItems;
 import com.pla.smart_npc.init.SmartNpcModMenus;
 import com.pla.smart_npc.network.SmartNpcNetwork;
+import com.pla.smart_npc.util.PlayerNpcForceTickManager;
 import com.pla.smart_npc.world.PlayerNpcMobSpawnBiomeModifier;
 import net.neoforged.neoforge.client.event.RegisterMenuScreensEvent;
 import net.neoforged.neoforge.common.NeoForge;
 import net.neoforged.neoforge.common.world.BiomeModifier;
+import net.neoforged.neoforge.common.world.chunk.RegisterTicketControllersEvent;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.fml.common.Mod;
 import net.neoforged.fml.config.ModConfig;
 import net.neoforged.fml.ModContainer;
-import net.neoforged.fml.ModList;
 import net.neoforged.fml.event.lifecycle.FMLClientSetupEvent;
-import net.neoforged.fml.event.lifecycle.FMLCommonSetupEvent;
 import net.neoforged.fml.loading.FMLEnvironment;
 import net.neoforged.neoforge.registries.DeferredRegister;
 import net.neoforged.neoforge.registries.DeferredHolder;
@@ -52,6 +46,7 @@ public class SmartNpc {
         modEventBus.register(SmartNpcModEntities.class);
         SmartNpcModCreativeTabs.register(modEventBus);
         modEventBus.addListener(SmartNpcNetwork::register);
+        modEventBus.addListener(this::registerTicketControllers);
 
         BIOME_MODIFIERS.register(modEventBus);
 
@@ -59,30 +54,18 @@ public class SmartNpc {
         modEventBus.addListener(SmartNpcNamesConfig::onConfigLoading);
         modEventBus.addListener(SmartNpcNamesConfig::onConfigReloading);
         modContainer.registerConfig(ModConfig.Type.COMMON, SmartNpcConfig.SPEC, "smart_npc-server.toml");
-        modContainer.registerConfig(ModConfig.Type.COMMON, SmartNpcCompatConfig.SPEC, "smart_npc-compat.toml");
         modContainer.registerConfig(ModConfig.Type.COMMON, SmartNpcNamesConfig.SPEC, "smart_npc-names.toml");
-        if (ModList.get().isLoaded("epicfight")) {
-            modContainer.registerConfig(ModConfig.Type.COMMON, SmartNpcEpicFightConfig.SPEC, "smart_npc-epicfight.toml");
-            modEventBus.register(EpicFightCloneAnimations.class);
-            modEventBus.register(EpicFightSmartNpcPatches.class);
-            EpicFightSmartNpcPatches.registerPatchHook();
-            if (FMLEnvironment.dist.isClient()) {
-                EpicFightSmartNpcPatchedRenderer.registerRendererHook();
-            }
-        }
 
-        if (FMLEnvironment.dist.isClient()) {
+
+        if (FMLEnvironment.getDist().isClient()) {
             modEventBus.register(SmartNpcModEntityRenderers.class);
             modEventBus.addListener(this::clientSetup);
             modEventBus.addListener(this::registerScreens);
         }
-        modEventBus.addListener(this::commonSetup);
     }
 
-    private void commonSetup(final FMLCommonSetupEvent event) {
-        if (ModList.get().isLoaded("epicfight")) {
-            event.enqueueWork(EpicFight::registerArmatures);
-        }
+    private void registerTicketControllers(final RegisterTicketControllersEvent event) {
+        event.register(PlayerNpcForceTickManager.PLAYER_NPC_TICKET);
     }
 
     private void clientSetup(final FMLClientSetupEvent event) {

@@ -1,5 +1,11 @@
 package com.pla.smart_npc.entity.goal;
 
+import com.pla.smart_npc.util.SmartNpcItemUtil;
+
+import net.minecraft.core.component.DataComponents;
+
+import net.minecraft.tags.ItemTags;
+
 import com.pla.smart_npc.clazz.PlayerNpcInterest;
 import com.pla.smart_npc.entity.PlayerNpcEntity;
 import com.pla.smart_npc.entity.ai.BreakingBlockAi;
@@ -107,7 +113,7 @@ public class ManageHomeBaseGoal extends Goal {
     public static boolean hasPendingCampBaseNightlyDeposit(PlayerNpcEntity playerNpc, ServerLevel serverLevel) {
         if (playerNpc == null
                 || serverLevel == null
-                || !serverLevel.isNight()
+                || !serverLevel.isDarkOutside()
                 || playerNpc.hasInterest(PlayerNpcInterest.BUILDING)
                 || hasAttemptedDepositThisNight(playerNpc, serverLevel)
                 || !inventoryMoreThanHalfFull(playerNpc)) {
@@ -252,7 +258,7 @@ public class ManageHomeBaseGoal extends Goal {
             return serverLevel.getBlockState(this.recoveryTablePos).is(Blocks.CRAFTING_TABLE);
         }
         return this.pendingCraftingTablePos != null
-                || serverLevel.isNight()
+                || serverLevel.isDarkOutside()
                 && this.depositChestPos != null
                 && !this.depositFinished
                 && serverLevel.getBlockState(this.depositChestPos).is(Blocks.CHEST);
@@ -660,7 +666,7 @@ public class ManageHomeBaseGoal extends Goal {
     }
 
     private boolean shouldDepositToChest(ServerLevel serverLevel) {
-        if (!serverLevel.isNight()
+        if (!serverLevel.isDarkOutside()
                 || hasAttemptedDepositThisNight(this.playerNpc, serverLevel)
                 || !this.inventoryMoreThanHalfFull()) {
             return false;
@@ -672,7 +678,7 @@ public class ManageHomeBaseGoal extends Goal {
     }
 
     private boolean shouldYieldToBuildMaterialGathering(ServerLevel serverLevel) {
-        return !serverLevel.isNight()
+        return !serverLevel.isDarkOutside()
                 && !serverLevel.isThundering()
                 && (PlayerNpcBuildMaterialUtil.needsLogsForCurrentBuild(serverLevel, this.playerNpc)
                 || PlayerNpcBuildMaterialUtil.needsStoneForCurrentBuild(serverLevel, this.playerNpc)
@@ -710,7 +716,7 @@ public class ManageHomeBaseGoal extends Goal {
     }
 
     private void tickDepositToChest(ServerLevel serverLevel) {
-        if (!serverLevel.isNight()) {
+        if (!serverLevel.isDarkOutside()) {
             if (this.depositChestOpen && this.depositChestPos != null) {
                 ChestAi.closeChest(serverLevel, this.depositChestPos);
                 this.depositChestOpen = false;
@@ -894,9 +900,9 @@ public class ManageHomeBaseGoal extends Goal {
             return true;
         }
 
-        return stack.getItem() instanceof SwordItem
-                || stack.getItem() instanceof DiggerItem
-                || stack.getItem() instanceof ArmorItem
+        return stack.is(ItemTags.SWORDS)
+                || stack.has(DataComponents.TOOL)
+                || SmartNpcItemUtil.isArmor(stack)
                 || stack.getItem() instanceof BowItem
                 || stack.getItem() instanceof ShieldItem
                 || (playerNpc.hasInterest(PlayerNpcInterest.FISHING)
@@ -977,7 +983,7 @@ public class ManageHomeBaseGoal extends Goal {
                 && serverLevel.getWorldBorder().isWithinBounds(pos)
                 && !this.isInsideBuildFootprint(pos)
                 && PlayerNpcHomeUtil.isReplaceableForNpcBuild(serverLevel, pos)
-                && serverLevel.getBlockState(pos.below()).isSolidRender(serverLevel, pos.below());
+                && serverLevel.getBlockState(pos.below()).isSolidRender();
     }
 
     private boolean isInsideBuildSiteCraftingTableSearchArea(BlockPos pos) {
@@ -1033,7 +1039,7 @@ public class ManageHomeBaseGoal extends Goal {
                 && serverLevel.getWorldBorder().isWithinBounds(pos)
                 && serverLevel.getBlockState(pos).isAir()
                 && serverLevel.getBlockState(pos.above()).isAir()
-                && serverLevel.getBlockState(pos.below()).isSolidRender(serverLevel, pos.below());
+                && serverLevel.getBlockState(pos.below()).isSolidRender();
     }
 
     private boolean isAtCraftingTableStand() {
@@ -1112,7 +1118,7 @@ public class ManageHomeBaseGoal extends Goal {
                 && serverLevel.getWorldBorder().isWithinBounds(pos)
                 && serverLevel.hasChunkAt(pos)
                 && PlayerNpcHomeUtil.isReplaceableForNpcBuild(serverLevel, pos)
-                && serverLevel.getBlockState(pos.below()).isSolidRender(serverLevel, pos.below())
+                && serverLevel.getBlockState(pos.below()).isSolidRender()
                 && !PlayerNpcHomeUtil.isInsideBuildFootprint(this.playerNpc, pos)
                 && !FarmAi.isProtectedFarmBlock(this.playerNpc, pos)
                 && !FarmAi.isInsideOwnedFarmWorkOrEntranceFootprint(this.playerNpc, pos);
@@ -1145,7 +1151,7 @@ public class ManageHomeBaseGoal extends Goal {
     private boolean canPlaceUtilityAt(ServerLevel serverLevel, BlockPos pos) {
         return PlayerNpcHomeUtil.isInside(this.homeArea, pos)
                 && PlayerNpcHomeUtil.isReplaceableForNpcBuild(serverLevel, pos)
-                && serverLevel.getBlockState(pos.below()).isSolidRender(serverLevel, pos.below());
+                && serverLevel.getBlockState(pos.below()).isSolidRender();
     }
 
     private BlockPos findBlock(ServerLevel serverLevel, Block block) {
@@ -1212,8 +1218,8 @@ public class ManageHomeBaseGoal extends Goal {
     }
 
     private static boolean hasAttemptedDepositThisNight(PlayerNpcEntity playerNpc, ServerLevel serverLevel) {
-        return playerNpc.getPersistentData().contains(LAST_HOME_CHEST_DEPOSIT_NIGHT, Tag.TAG_LONG)
-                && playerNpc.getPersistentData().getLong(LAST_HOME_CHEST_DEPOSIT_NIGHT) == currentNight(serverLevel);
+        return playerNpc.getPersistentData().contains(LAST_HOME_CHEST_DEPOSIT_NIGHT)
+                && playerNpc.getPersistentData().getLongOr(LAST_HOME_CHEST_DEPOSIT_NIGHT, 0L) == currentNight(serverLevel);
     }
 
     private static void markDepositAttemptedThisNight(PlayerNpcEntity playerNpc, ServerLevel serverLevel) {

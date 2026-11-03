@@ -1,5 +1,9 @@
 package com.pla.smart_npc.entity.goal;
 
+import com.pla.smart_npc.util.SmartNpcItemUtil;
+
+import net.minecraft.tags.ItemTags;
+
 import com.pla.smart_npc.clazz.PlayerNpcInterest;
 import com.pla.smart_npc.entity.PlayerNpcEntity;
 import com.pla.smart_npc.entity.ai.PathNavigationAi;
@@ -9,11 +13,10 @@ import com.pla.smart_npc.util.PlayerNpcPerformanceMonitor;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.ai.goal.Goal;
-import net.minecraft.world.item.ArmorItem;
 import net.minecraft.world.item.AxeItem;
 import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.item.SwordItem;
 import net.minecraft.world.level.pathfinder.Path;
 import net.minecraft.world.phys.Vec3;
 
@@ -274,8 +277,8 @@ public class RespondToNpcAlertGoal extends Goal {
         double score = entity.getHealth() * 0.4D + entity.getArmorValue();
         score += itemPower(entity.getMainHandItem()) * 1.4D;
         score += itemPower(entity.getOffhandItem()) * 0.5D;
-        for (ItemStack stack : entity.getArmorSlots()) {
-            score += itemPower(stack);
+        for (EquipmentSlot slot : new EquipmentSlot[] {EquipmentSlot.HEAD, EquipmentSlot.CHEST, EquipmentSlot.LEGS, EquipmentSlot.FEET}) {
+            score += itemPower(entity.getItemBySlot(slot));
         }
         return score;
     }
@@ -285,13 +288,11 @@ public class RespondToNpcAlertGoal extends Goal {
             return 0.0D;
         }
         double score = 0.0D;
-        if (stack.getItem() instanceof SwordItem swordItem) {
-            score += swordItem.getDamage(stack);
-        } else if (stack.getItem() instanceof AxeItem axeItem) {
-            score += axeItem.getDamage(stack);
+        if (stack.is(ItemTags.SWORDS) || stack.getItem() instanceof AxeItem) {
+            score += SmartNpcItemUtil.attackDamage(stack);
         }
-        if (stack.getItem() instanceof ArmorItem armorItem) {
-            score += armorItem.getDefense() + armorItem.getToughness();
+        if (SmartNpcItemUtil.isArmor(stack)) {
+            score += SmartNpcItemUtil.armor(stack) + SmartNpcItemUtil.toughness(stack);
         }
         if (stack.isEnchanted()) {
             score += 2.0D;

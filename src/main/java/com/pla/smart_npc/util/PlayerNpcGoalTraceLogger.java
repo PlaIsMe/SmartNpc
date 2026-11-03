@@ -77,7 +77,7 @@ public final class PlayerNpcGoalTraceLogger {
         tickAllNpcTrace(event.getServer(), serverTick);
         for (ServerPlayer player : event.getServer().getPlayerList().getPlayers()) {
             CompoundTag data = player.getPersistentData();
-            if (!data.getBoolean(ACTIVE_KEY)) {
+            if (!data.getBooleanOr(ACTIVE_KEY, false)) {
                 continue;
             }
 
@@ -90,10 +90,10 @@ public final class PlayerNpcGoalTraceLogger {
 
             String state = sanitize(tracedNpc.getCurrentAiState());
             String detail = effectiveTraceDetail(tracedNpc, state, sanitize(tracedNpc.getCurrentAiDetail()));
-            String previousState = sanitize(data.getString(LAST_STATE_KEY));
-            String previousDetail = sanitize(data.getString(LAST_DETAIL_KEY));
+            String previousState = sanitize(data.getStringOr(LAST_STATE_KEY, ""));
+            String previousDetail = sanitize(data.getStringOr(LAST_DETAIL_KEY, ""));
             boolean changed = !previousState.equals(state) || !previousDetail.equals(detail);
-            long lastLogTick = data.getLong(LAST_LOG_TICK_KEY);
+            long lastLogTick = data.getLongOr(LAST_LOG_TICK_KEY, 0L);
             if (lastLogTick > serverTick) {
                 lastLogTick = 0L;
                 data.putLong(LAST_LOG_TICK_KEY, 0L);
@@ -104,7 +104,7 @@ public final class PlayerNpcGoalTraceLogger {
             }
 
             data.putLong(LAST_LOG_TICK_KEY, serverTick);
-            logTraceLine(player.getGameProfile().getName(), tracedNpc, serverTick, state, detail, previousState);
+            logTraceLine(player.getGameProfile().name(), tracedNpc, serverTick, state, detail, previousState);
             data.putString(LAST_STATE_KEY, state);
             data.putString(LAST_DETAIL_KEY, detail);
         }
@@ -123,8 +123,8 @@ public final class PlayerNpcGoalTraceLogger {
         if (event.getEntity() instanceof ServerPlayer player) {
             stopTrace(player, "viewer disconnected");
             if (allTraceEnabled
-                    && allTraceViewer.equals(sanitize(player.getGameProfile().getName()))) {
-                setAllTraceEnabled(false, player.getGameProfile().getName());
+                    && allTraceViewer.equals(sanitize(player.getGameProfile().name()))) {
+                setAllTraceEnabled(false, player.getGameProfile().name());
             }
         }
     }
@@ -145,9 +145,9 @@ public final class PlayerNpcGoalTraceLogger {
         }
 
         CompoundTag data = player.getPersistentData();
-        boolean tracing = data.getBoolean(ACTIVE_KEY)
-                && data.hasUUID(ENTITY_UUID_KEY)
-                && data.getUUID(ENTITY_UUID_KEY).equals(playerNpc.getUUID());
+        boolean tracing = data.getBooleanOr(ACTIVE_KEY, false)
+                && SmartNpcNbt.hasUuid(data, ENTITY_UUID_KEY)
+                && SmartNpcNbt.getUuid(data, ENTITY_UUID_KEY).equals(playerNpc.getUUID());
         if (tracing && !canKeepTracing(player, playerNpc)) {
             stopTrace(player, "trace target unavailable");
             return false;
@@ -177,7 +177,7 @@ public final class PlayerNpcGoalTraceLogger {
 
         CompoundTag data = player.getPersistentData();
         data.putBoolean(ACTIVE_KEY, true);
-        data.putUUID(ENTITY_UUID_KEY, playerNpc.getUUID());
+        SmartNpcNbt.putUuid(data, ENTITY_UUID_KEY, playerNpc.getUUID());
         data.putInt(ENTITY_ID_KEY, playerNpc.getId());
         data.putLong(LAST_LOG_TICK_KEY, 0L);
         String state = sanitize(playerNpc.getCurrentAiState());
@@ -186,7 +186,7 @@ public final class PlayerNpcGoalTraceLogger {
 
         SmartNpc.LOGGER.info(
                 "Smart NPC goal trace enabled: viewer={} npc={}#{} dim={} pos={}",
-                player.getGameProfile().getName(),
+                player.getGameProfile().name(),
                 sanitize(playerNpc.getDisplayName().getString()),
                 playerNpc.getId(),
                 dimensionText(playerNpc),
@@ -200,16 +200,16 @@ public final class PlayerNpcGoalTraceLogger {
         }
 
         CompoundTag data = player.getPersistentData();
-        if (!data.getBoolean(ACTIVE_KEY)) {
+        if (!data.getBooleanOr(ACTIVE_KEY, false)) {
             clearTraceData(data);
             return;
         }
 
-        int entityId = data.getInt(ENTITY_ID_KEY);
+        int entityId = data.getIntOr(ENTITY_ID_KEY, 0);
         clearTraceData(data);
         SmartNpc.LOGGER.info(
                 "Smart NPC goal trace disabled: viewer={} npcId={} reason={}",
-                player.getGameProfile().getName(),
+                player.getGameProfile().name(),
                 entityId,
                 sanitize(reason)
         );
@@ -224,10 +224,10 @@ public final class PlayerNpcGoalTraceLogger {
             return;
         }
         CompoundTag data = player.getPersistentData();
-        if (!data.getBoolean(ACTIVE_KEY) || !data.hasUUID(ENTITY_UUID_KEY)) {
+        if (!data.getBooleanOr(ACTIVE_KEY, false) || !SmartNpcNbt.hasUuid(data, ENTITY_UUID_KEY)) {
             return;
         }
-        if (!data.getUUID(ENTITY_UUID_KEY).equals(playerNpc.getUUID())) {
+        if (!SmartNpcNbt.getUuid(data, ENTITY_UUID_KEY).equals(playerNpc.getUUID())) {
             stopTrace(player, "inspectator target changed");
         }
     }
@@ -473,11 +473,11 @@ public final class PlayerNpcGoalTraceLogger {
 
     private static PlayerNpcEntity getTracedNpc(ServerPlayer player) {
         CompoundTag data = player.getPersistentData();
-        if (!data.hasUUID(ENTITY_UUID_KEY) || !(player.level() instanceof ServerLevel level)) {
+        if (!SmartNpcNbt.hasUuid(data, ENTITY_UUID_KEY) || !(player.level() instanceof ServerLevel level)) {
             return null;
         }
 
-        UUID npcUuid = data.getUUID(ENTITY_UUID_KEY);
+        UUID npcUuid = SmartNpcNbt.getUuid(data, ENTITY_UUID_KEY);
         if (level.getEntity(npcUuid) instanceof PlayerNpcEntity playerNpc && playerNpc.isAlive()) {
             return playerNpc;
         }
@@ -716,7 +716,7 @@ public final class PlayerNpcGoalTraceLogger {
     }
 
     private static String dimensionText(PlayerNpcEntity playerNpc) {
-        return playerNpc.level().dimension().location().toString();
+        return playerNpc.level().dimension().identifier().toString();
     }
 
     private static String posText(BlockPos pos) {

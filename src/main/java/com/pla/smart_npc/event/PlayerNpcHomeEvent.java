@@ -1,5 +1,7 @@
 package com.pla.smart_npc.event;
 
+import net.neoforged.neoforge.event.level.BlockEvent.BreakEvent;
+
 import com.pla.smart_npc.SmartNpc;
 import com.pla.smart_npc.entity.PlayerNpcEntity;
 import com.pla.smart_npc.util.ChatUtil;
@@ -26,7 +28,7 @@ public final class PlayerNpcHomeEvent {
     }
 
     @SubscribeEvent
-    public static void onBlockBreak(BlockEvent.BreakEvent event) {
+    public static void onBlockBreak(BreakEvent event) {
         if (!(event.getLevel() instanceof ServerLevel serverLevel)
                 || !(event.getState().getBlock() instanceof BedBlock)
                 || event.getPlayer() == null) {

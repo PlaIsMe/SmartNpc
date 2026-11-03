@@ -4,7 +4,7 @@ import com.pla.smart_npc.client.gui.SmartNpcInspectorOverlay;
 import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.world.item.ItemStack;
 import net.neoforged.neoforge.network.handling.IPayloadContext;
 
@@ -12,7 +12,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class PlayerNpcInspectorPacket implements CustomPacketPayload {
-    public static final Type<PlayerNpcInspectorPacket> TYPE = new Type<>(ResourceLocation.fromNamespaceAndPath("smart_npc", "inspector"));
+    public static final Type<PlayerNpcInspectorPacket> TYPE = new Type<>(Identifier.fromNamespaceAndPath("smart_npc", "inspector"));
     public static final StreamCodec<RegistryFriendlyByteBuf, PlayerNpcInspectorPacket> STREAM_CODEC = StreamCodec.ofMember(PlayerNpcInspectorPacket::encode, PlayerNpcInspectorPacket::decode);
     public static final int OVERALL_ENTITY_ID = -2;
     private final int entityId;

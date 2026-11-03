@@ -20,7 +20,7 @@ import com.pla.smart_npc.util.PlayerNpcAiWorkBudget;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.nbt.CompoundTag;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.tags.BlockTags;
 import net.minecraft.tags.ItemTags;
@@ -231,7 +231,7 @@ public class BuildHouseGoal extends Goal {
         String layoutId = PlayerNpcHomeUtil.getHomeLayoutId(playerNpc).orElse("");
         HomeBuildWorkSearch search = HOME_BUILD_WORK_SEARCHES.get(playerNpc);
         return search != null && search.matches(
-                serverLevel.dimension().location(),
+                serverLevel.dimension().identifier(),
                 home.get(),
                 layoutId,
                 buildWorkInventoryHash(playerNpc)
@@ -263,7 +263,7 @@ public class BuildHouseGoal extends Goal {
         Optional<PlayerNpcBuildLayout> layout = PlayerNpcBuildLayoutLoader.getLayout(layoutId);
         if (home.isPresent()) {
             HomeFinishedCache cached = HOME_FINISHED_CACHE.get(playerNpc);
-            if (cached != null && cached.matches(playerNpc.tickCount, serverLevel.dimension().location(), home.get(), layoutId)) {
+            if (cached != null && cached.matches(playerNpc.tickCount, serverLevel.dimension().identifier(), home.get(), layoutId)) {
                 return cached.finished();
             }
         }
@@ -292,7 +292,7 @@ public class BuildHouseGoal extends Goal {
         }
         HOME_FINISHED_CACHE.put(playerNpc, HomeFinishedCache.create(
                 playerNpc,
-                serverLevel.dimension().location(),
+                serverLevel.dimension().identifier(),
                 home.get(),
                 layoutId,
                 finished
@@ -313,7 +313,7 @@ public class BuildHouseGoal extends Goal {
         if (cache != null
                 && cache.matches(
                 playerNpc.tickCount,
-                serverLevel.dimension().location(),
+                serverLevel.dimension().identifier(),
                 homeArea,
                 layoutId,
                 inventoryHash
@@ -327,7 +327,7 @@ public class BuildHouseGoal extends Goal {
             HOME_BUILD_WORK_SEARCHES.remove(playerNpc);
             HOME_BUILD_WORK_CACHE.put(playerNpc, HomeBuildWorkCache.create(
                     playerNpc,
-                    serverLevel.dimension().location(),
+                    serverLevel.dimension().identifier(),
                     homeArea,
                     layoutId,
                     inventoryHash,
@@ -340,7 +340,7 @@ public class BuildHouseGoal extends Goal {
             HOME_BUILD_WORK_SEARCHES.remove(playerNpc);
             HOME_BUILD_WORK_CACHE.put(playerNpc, HomeBuildWorkCache.create(
                     playerNpc,
-                    serverLevel.dimension().location(),
+                    serverLevel.dimension().identifier(),
                     homeArea,
                     layoutId,
                     inventoryHash,
@@ -351,13 +351,13 @@ public class BuildHouseGoal extends Goal {
 
         HomeBuildWorkSearch search = HOME_BUILD_WORK_SEARCHES.get(playerNpc);
         if (search == null || !search.matches(
-                serverLevel.dimension().location(),
+                serverLevel.dimension().identifier(),
                 homeArea,
                 layoutId,
                 inventoryHash
         )) {
             search = HomeBuildWorkSearch.create(
-                    serverLevel.dimension().location(),
+                    serverLevel.dimension().identifier(),
                     homeArea,
                     layoutId,
                     inventoryHash
@@ -371,7 +371,7 @@ public class BuildHouseGoal extends Goal {
             HOME_BUILD_WORK_SEARCHES.put(playerNpc, search);
             return cache != null
                     && cache.sameContext(
-                    serverLevel.dimension().location(),
+                    serverLevel.dimension().identifier(),
                     homeArea,
                     layoutId,
                     inventoryHash
@@ -408,7 +408,7 @@ public class BuildHouseGoal extends Goal {
             ));
             return cache != null
                     && cache.sameContext(
-                    serverLevel.dimension().location(),
+                    serverLevel.dimension().identifier(),
                     homeArea,
                     layoutId,
                     inventoryHash
@@ -419,7 +419,7 @@ public class BuildHouseGoal extends Goal {
         HOME_BUILD_WORK_SEARCHES.remove(playerNpc);
         HOME_BUILD_WORK_CACHE.put(playerNpc, HomeBuildWorkCache.create(
                 playerNpc,
-                serverLevel.dimension().location(),
+                serverLevel.dimension().identifier(),
                 homeArea,
                 layoutId,
                 inventoryHash,
@@ -442,7 +442,7 @@ public class BuildHouseGoal extends Goal {
         if (stack.isEmpty()) {
             return 0;
         }
-        ResourceLocation id = BuiltInRegistries.ITEM.getKey(stack.getItem());
+        Identifier id = BuiltInRegistries.ITEM.getKey(stack.getItem());
         int hash = id == null ? 0 : id.hashCode();
         hash = 31 * hash + stack.getCount();
         hash = 31 * hash + stack.getComponents().hashCode();
@@ -743,7 +743,7 @@ public class BuildHouseGoal extends Goal {
         // the default node budget so a later idle tick cannot recompute a stale build path.
         this.playerNpc.getNavigation().stop();
         this.playerNpc.getNavigation().resetMaxVisitedNodesMultiplier();
-        if (!this.playerNpc.level().isClientSide) {
+        if (!this.playerNpc.level().isClientSide()) {
             boolean canContinueBatch = this.playerNpc.level() instanceof ServerLevel serverLevel
                     && !this.ranOutOfMaterials
                     && !this.blockedBuildPass
@@ -883,8 +883,8 @@ public class BuildHouseGoal extends Goal {
             int x = (int) (packedFootprint >> 32);
             int z = (int) packedFootprint;
             BlockPos floor = origin.offset(x, 0, z);
-            if (!serverLevel.getBlockState(floor.below()).isSolidRender(serverLevel, floor.below())
-                    && !serverLevel.getBlockState(floor.below(2)).isSolidRender(serverLevel, floor.below(2))) {
+            if (!serverLevel.getBlockState(floor.below()).isSolidRender()
+                    && !serverLevel.getBlockState(floor.below(2)).isSolidRender()) {
                 return false;
             }
         }
@@ -918,7 +918,7 @@ public class BuildHouseGoal extends Goal {
     }
 
     private static boolean shouldBuildDuringShelter(ServerLevel serverLevel) {
-        return serverLevel.isNight() || serverLevel.isThundering();
+        return serverLevel.isDarkOutside() || serverLevel.isThundering();
     }
 
     private static boolean isConstructionWindow(PlayerNpcEntity playerNpc, ServerLevel serverLevel) {
@@ -931,7 +931,7 @@ public class BuildHouseGoal extends Goal {
     }
 
     private static boolean isBuildBatchActive(PlayerNpcEntity playerNpc) {
-        return playerNpc.getPersistentData().getBoolean(ACTIVE_BUILD_BATCH_KEY);
+        return playerNpc.getPersistentData().getBooleanOr(ACTIVE_BUILD_BATCH_KEY, false);
     }
 
     private static void setBuildBatchActive(PlayerNpcEntity playerNpc, boolean active) {
@@ -1106,7 +1106,7 @@ public class BuildHouseGoal extends Goal {
                 && serverLevel.getBlockState(pos).canBeReplaced()
                 && serverLevel.getFluidState(pos).isEmpty()
                 && serverLevel.getBlockEntity(pos) == null
-                && serverLevel.getBlockState(pos.below()).isSolidRender(serverLevel, pos.below());
+                && serverLevel.getBlockState(pos.below()).isSolidRender();
     }
 
     private boolean isInsideSelectedBuildFootprint(BlockPos pos) {
@@ -1555,7 +1555,8 @@ public class BuildHouseGoal extends Goal {
         tag.putInt("x", pos.getX());
         tag.putInt("y", pos.getY());
         tag.putInt("z", pos.getZ());
-        blockEntity.loadWithComponents(tag, serverLevel.registryAccess());
+        blockEntity.loadWithComponents(net.minecraft.world.level.storage.TagValueInput.create(
+                net.minecraft.util.ProblemReporter.DISCARDING, serverLevel.registryAccess(), tag));
         blockEntity.setChanged();
         serverLevel.sendBlockUpdated(pos, serverLevel.getBlockState(pos), serverLevel.getBlockState(pos), 3);
     }
@@ -1989,7 +1990,7 @@ public class BuildHouseGoal extends Goal {
         this.playerNpc.getJumpControl().jump();
         Vec3 motion = this.playerNpc.getDeltaMovement();
         this.playerNpc.setDeltaMovement(motion.x, Math.max(motion.y, 0.42D), motion.z);
-        this.playerNpc.hasImpulse = true;
+        this.playerNpc.hurtMarked = true;
         return true;
     }
 
@@ -2051,7 +2052,7 @@ public class BuildHouseGoal extends Goal {
                 || !serverLevel.getWorldBorder().isWithinBounds(standPos)
                 || !serverLevel.getBlockState(standPos).getCollisionShape(serverLevel, standPos).isEmpty()
                 || !serverLevel.getBlockState(standPos.above()).getCollisionShape(serverLevel, standPos.above()).isEmpty()
-                || !serverLevel.getBlockState(standPos.below()).isSolidRender(serverLevel, standPos.below())
+                || !serverLevel.getBlockState(standPos.below()).isSolidRender()
                 || !serverLevel.getFluidState(standPos).isEmpty()
                 || !serverLevel.getFluidState(standPos.above()).isEmpty()) {
             return false;
@@ -2199,7 +2200,7 @@ public class BuildHouseGoal extends Goal {
     }
 
     private static String describeTaskState(BlockState state) {
-        ResourceLocation blockId = BuiltInRegistries.BLOCK.getKey(state.getBlock());
+        Identifier blockId = BuiltInRegistries.BLOCK.getKey(state.getBlock());
         if (blockId == null) {
             return state.getBlock().getDescriptionId();
         }
@@ -2294,7 +2295,7 @@ public class BuildHouseGoal extends Goal {
 
     private record HomeBuildWorkCache(
             int tick,
-            ResourceLocation dimension,
+            Identifier dimension,
             BlockPos origin,
             int width,
             int depth,
@@ -2304,7 +2305,7 @@ public class BuildHouseGoal extends Goal {
     ) {
         static HomeBuildWorkCache create(
                 PlayerNpcEntity playerNpc,
-                ResourceLocation dimension,
+                Identifier dimension,
                 PlayerNpcHomeUtil.HomeArea homeArea,
                 String layoutId,
                 int inventoryHash,
@@ -2324,7 +2325,7 @@ public class BuildHouseGoal extends Goal {
 
         boolean matches(
                 int currentTick,
-                ResourceLocation currentDimension,
+                Identifier currentDimension,
                 PlayerNpcHomeUtil.HomeArea homeArea,
                 String currentLayoutId,
                 int currentInventoryHash
@@ -2336,7 +2337,7 @@ public class BuildHouseGoal extends Goal {
         }
 
         boolean sameContext(
-                ResourceLocation currentDimension,
+                Identifier currentDimension,
                 PlayerNpcHomeUtil.HomeArea homeArea,
                 String currentLayoutId,
                 int currentInventoryHash
@@ -2351,7 +2352,7 @@ public class BuildHouseGoal extends Goal {
     }
 
     private record HomeBuildWorkSearch(
-            ResourceLocation dimension,
+            Identifier dimension,
             BlockPos origin,
             int width,
             int depth,
@@ -2363,7 +2364,7 @@ public class BuildHouseGoal extends Goal {
             boolean hasMaterialForPlacement
     ) {
         private static HomeBuildWorkSearch create(
-                ResourceLocation dimension,
+                Identifier dimension,
                 PlayerNpcHomeUtil.HomeArea homeArea,
                 String layoutId,
                 int inventoryHash
@@ -2383,7 +2384,7 @@ public class BuildHouseGoal extends Goal {
         }
 
         private boolean matches(
-                ResourceLocation currentDimension,
+                Identifier currentDimension,
                 PlayerNpcHomeUtil.HomeArea homeArea,
                 String currentLayoutId,
                 int currentInventoryHash
@@ -2419,7 +2420,7 @@ public class BuildHouseGoal extends Goal {
 
     private record HomeFinishedCache(
             int tick,
-            ResourceLocation dimension,
+            Identifier dimension,
             BlockPos origin,
             int width,
             int depth,
@@ -2428,7 +2429,7 @@ public class BuildHouseGoal extends Goal {
     ) {
         static HomeFinishedCache create(
                 PlayerNpcEntity playerNpc,
-                ResourceLocation dimension,
+                Identifier dimension,
                 PlayerNpcHomeUtil.HomeArea homeArea,
                 String layoutId,
                 boolean finished
@@ -2446,7 +2447,7 @@ public class BuildHouseGoal extends Goal {
 
         boolean matches(
                 int currentTick,
-                ResourceLocation currentDimension,
+                Identifier currentDimension,
                 PlayerNpcHomeUtil.HomeArea homeArea,
                 String currentLayoutId
         ) {

@@ -4,20 +4,23 @@
   "compatibilityLevel": "JAVA_21",
   "mixins": [
     "DistanceManagerAccessor",
+    "TicketStorageAccessor",
+    "TicketTrackerAccessor",
+    "TicketOwnerAccessor",
     "ServerChunkCacheAccessor",
     "MonsterMixin",
     "BoatMixin",
-    "MinecartMixin",
-    "epicfight.WeaponCapabilityAccessor"
+    "MinecartMixin"
   ],
   "client": [
+    "ClientInputAccessor",
+    "EntityRenderDispatcherMixin",
+    "FishingRodCastMixin",
     "CameraMixin",
     "ClientPacketListenerMixin",
     "ClientSuggestionProviderMixin",
     "GuiMixin",
     "PlayerRendererMixin"
   ],
-  "refmap": "smart_npc.mixins.refmap.json",
-  "minVersion": "0.8",
-  "plugin": "com.pla.smart_npc.mixin.plugin.SmartNpcMixinPlugin"
+  "minVersion": "0.8"
 }

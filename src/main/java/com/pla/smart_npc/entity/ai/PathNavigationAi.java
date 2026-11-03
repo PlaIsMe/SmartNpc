@@ -820,7 +820,7 @@ public final class PathNavigationAi {
         }
         return serverLevel.getBlockState(pos).getCollisionShape(serverLevel, pos).isEmpty()
                 && serverLevel.getBlockState(pos.above()).getCollisionShape(serverLevel, pos.above()).isEmpty()
-                && serverLevel.getBlockState(pos.below()).isSolidRender(serverLevel, pos.below())
+                && serverLevel.getBlockState(pos.below()).isSolidRender()
                 && serverLevel.getFluidState(pos).isEmpty()
                 && serverLevel.getFluidState(pos.above()).isEmpty();
     }

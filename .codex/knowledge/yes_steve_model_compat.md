@@ -1,3 +1,5 @@
+> Historical 1.21.1 reference. This integration was removed from the 1.21.11 branch at the user's request.
+
 # Yes Steve Model compatibility (NeoForge 1.21.1)
 
 This branch targets Minecraft 1.21.1 / NeoForge 21.1.250 / Java 21, as verified in

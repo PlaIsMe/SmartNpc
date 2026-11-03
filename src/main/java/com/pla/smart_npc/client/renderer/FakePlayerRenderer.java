@@ -1,222 +1,216 @@
 package com.pla.smart_npc.client.renderer;
 
+import net.minecraft.core.component.DataComponents;
+
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.math.Axis;
 import com.pla.smart_npc.clazz.FakePlayer;
 import com.pla.smart_npc.client.compat.BetterCombatClientCompat;
-import com.pla.smart_npc.client.compat.YesSteveModelClientCompat;
 import com.pla.smart_npc.client.gui.SmartNpcInspectorOverlay;
 import com.pla.smart_npc.client.model.BetterCombatPlayerNpcModel;
 import com.pla.smart_npc.client.renderer.layer.BetterCombatItemInHandLayer;
 import com.pla.smart_npc.compat.BetterCombatCompat;
 import com.pla.smart_npc.entity.PlayerNpcEntity;
-import net.minecraft.client.model.HumanoidArmorModel;
 import net.minecraft.client.model.HumanoidModel;
-import net.minecraft.client.model.PlayerModel;
 import net.minecraft.client.model.geom.ModelLayers;
-import net.minecraft.client.renderer.MultiBufferSource;
+import net.minecraft.client.model.player.PlayerModel;
+import net.minecraft.client.renderer.SubmitNodeCollector;
+import net.minecraft.client.renderer.entity.ArmorModelSet;
 import net.minecraft.client.renderer.entity.EntityRendererProvider;
 import net.minecraft.client.renderer.entity.HumanoidMobRenderer;
 import net.minecraft.client.renderer.entity.layers.ArrowLayer;
 import net.minecraft.client.renderer.entity.layers.HumanoidArmorLayer;
 import net.minecraft.client.renderer.entity.layers.ItemInHandLayer;
 import net.minecraft.client.renderer.entity.layers.RenderLayer;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.client.renderer.entity.state.AvatarRenderState;
+import net.minecraft.client.renderer.state.CameraRenderState;
+import net.minecraft.resources.Identifier;
 import net.minecraft.util.Mth;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.entity.HumanoidArm;
+import net.minecraft.world.entity.Pose;
 import net.minecraft.world.item.BowItem;
 import net.minecraft.world.item.CrossbowItem;
-import net.minecraft.world.item.Items;
 import net.minecraft.world.item.ItemStack;
-import net.neoforged.neoforge.common.ItemAbilities;
-import org.jetbrains.annotations.NotNull;
+import net.minecraft.world.item.Items;
+import net.minecraft.world.item.ShieldItem;
+import net.minecraft.world.phys.Vec3;
 
-public class FakePlayerRenderer<T extends FakePlayer> extends HumanoidMobRenderer<T, PlayerModel<T>> {
-    private final PlayerModel<T> defaultModel;
-    private final PlayerModel<T> slimModel;
-    private final RenderLayer<T, PlayerModel<T>> defaultArmorLayer;
-    private final RenderLayer<T, PlayerModel<T>> slimArmorLayer;
+public class FakePlayerRenderer<T extends FakePlayer>
+        extends HumanoidMobRenderer<T, AvatarRenderState, PlayerModel> {
+    private final PlayerModel defaultModel;
+    private final PlayerModel slimModel;
+    private final RenderLayer<AvatarRenderState, PlayerModel> defaultArmorLayer;
+    private final RenderLayer<AvatarRenderState, PlayerModel> slimArmorLayer;
     private final int armorLayerIndex;
-    private final YesSteveModelClientCompat yesSteveModel;
 
     public FakePlayerRenderer(EntityRendererProvider.Context context) {
-        super(context, new BetterCombatPlayerNpcModel<>(context.bakeLayer(ModelLayers.PLAYER), false), 0.5F);
-        this.yesSteveModel = new YesSteveModelClientCompat(context);
+        super(context, new BetterCombatPlayerNpcModel(context.bakeLayer(ModelLayers.PLAYER), false), 0.5F);
         this.defaultModel = this.model;
-        this.slimModel = new BetterCombatPlayerNpcModel<>(context.bakeLayer(ModelLayers.PLAYER_SLIM), true);
+        this.slimModel = new BetterCombatPlayerNpcModel(context.bakeLayer(ModelLayers.PLAYER_SLIM), true);
         this.defaultArmorLayer = new HumanoidArmorLayer<>(
                 this,
-                new HumanoidArmorModel<>(context.bakeLayer(ModelLayers.PLAYER_INNER_ARMOR)),
-                new HumanoidArmorModel<>(context.bakeLayer(ModelLayers.PLAYER_OUTER_ARMOR)),
-                context.getModelManager());
+                ArmorModelSet.bake(ModelLayers.PLAYER_ARMOR, context.getModelSet(), part -> new BetterCombatPlayerNpcModel(part, false)),
+                context.getEquipmentRenderer());
         this.slimArmorLayer = new HumanoidArmorLayer<>(
                 this,
-                new HumanoidArmorModel<>(context.bakeLayer(ModelLayers.PLAYER_SLIM_INNER_ARMOR)),
-                new HumanoidArmorModel<>(context.bakeLayer(ModelLayers.PLAYER_SLIM_OUTER_ARMOR)),
-                context.getModelManager());
+                ArmorModelSet.bake(ModelLayers.PLAYER_SLIM_ARMOR, context.getModelSet(), part -> new BetterCombatPlayerNpcModel(part, true)),
+                context.getEquipmentRenderer());
 
-        // HumanoidMobRenderer installs vanilla ItemInHandLayer in its
-        // constructor. Only replace it when Better Combat is actually loaded,
-        // keeping the vanilla renderer completely untouched otherwise.
         if (BetterCombatCompat.isLoaded()) {
-            int vanillaHeldItemLayerIndex = -1;
+            int heldItemLayerIndex = -1;
             for (int index = 0; index < this.layers.size(); index++) {
                 if (this.layers.get(index) instanceof ItemInHandLayer<?, ?>) {
-                    vanillaHeldItemLayerIndex = index;
+                    heldItemLayerIndex = index;
                     break;
                 }
             }
-            if (vanillaHeldItemLayerIndex >= 0) {
-                this.layers.remove(vanillaHeldItemLayerIndex);
-                this.layers.add(
-                        vanillaHeldItemLayerIndex,
-                        new BetterCombatItemInHandLayer<>(this, context.getItemInHandRenderer()));
+            if (heldItemLayerIndex >= 0) {
+                this.layers.remove(heldItemLayerIndex);
+                this.layers.add(heldItemLayerIndex, new BetterCombatItemInHandLayer(this));
             } else {
-                this.addLayer(new BetterCombatItemInHandLayer<>(this, context.getItemInHandRenderer()));
+                this.addLayer(new BetterCombatItemInHandLayer(this));
             }
         }
 
-        ArrowLayer<T, PlayerModel<T>> arrowLayer = new ArrowLayer<>(context, this);
+        ArrowLayer<PlayerModel> arrowLayer = new ArrowLayer<>(this, context);
         this.addLayer(arrowLayer);
         this.armorLayerIndex = this.layers.indexOf(arrowLayer);
-        this.addLayer(new FakePlayerCapeLayer<>(this));
+        this.addLayer(new FakePlayerCapeLayer(this, context.getModelSet(), context.getEquipmentAssets()));
     }
 
     @Override
-    public void render(@NotNull T entity, float entityYaw, float partialTick, @NotNull PoseStack poseStack, @NotNull MultiBufferSource buffer, int packedLight) {
-        if (entity instanceof PlayerNpcEntity npc && this.yesSteveModel.render(npc, entityYaw, partialTick, poseStack, buffer, packedLight)) {
-            if (this.shouldShowName(entity)) {
-                this.renderNameTag(entity, entity.getDisplayName(), poseStack, buffer, packedLight, partialTick);
-            }
-            return;
-        }
-        boolean renderInspectatorBody = SmartNpcInspectorOverlay.shouldRenderInspectatorCameraTargetBody(entity);
-        boolean slim = FakePlayerTextureUtils.getPlayerSkinType(entity.getProfile()) == FakePlayerTextureUtils.SkinType.SLIM;
+    public void submit(AvatarRenderState state, PoseStack poseStack,
+                       SubmitNodeCollector collector, CameraRenderState camera) {
+        boolean slim = state instanceof FakePlayerRenderState npcState && npcState.slim;
         this.model = slim ? this.slimModel : this.defaultModel;
         this.layers.remove(this.defaultArmorLayer);
         this.layers.remove(this.slimArmorLayer);
         this.layers.add(Math.min(this.armorLayerIndex, this.layers.size()), slim ? this.slimArmorLayer : this.defaultArmorLayer);
-
-        this.model.crouching = entity.isShiftKeyDown() || entity.isCrouching();
-        this.model.leftArmPose = HumanoidModel.ArmPose.EMPTY;
-        this.model.rightArmPose = HumanoidModel.ArmPose.EMPTY;
-        ItemStack mainHand = entity.getMainHandItem();
-        if (!mainHand.isEmpty()) {
-            if (entity.isUsingItem() && entity.getUsedItemHand() == InteractionHand.MAIN_HAND && mainHand.canPerformAction(ItemAbilities.SHIELD_BLOCK)) {
-                setHandPose(entity, HumanoidModel.ArmPose.BLOCK);
-            } else if (mainHand.is(Items.SPYGLASS) && entity.isUsingItem()) {
-                setHandPose(entity, HumanoidModel.ArmPose.SPYGLASS);
-            } else if (mainHand.getItem() instanceof CrossbowItem) {
-                setHandPose(entity, entity.isUsingItem() ? HumanoidModel.ArmPose.CROSSBOW_CHARGE : HumanoidModel.ArmPose.CROSSBOW_HOLD);
-            } else if (mainHand.getItem() instanceof BowItem && entity.isAggressive()) {
-                setHandPose(entity, HumanoidModel.ArmPose.BOW_AND_ARROW);
-            } else if (isMainHandAttackAnimating(entity)) {
-                setHandPose(entity, HumanoidModel.ArmPose.EMPTY);
-            } else {
-                setHandPose(entity, HumanoidModel.ArmPose.ITEM);
-            }
-        }
-        ItemStack offhand = entity.getOffhandItem();
-        if (!offhand.isEmpty()
-                && offhand.canPerformAction(ItemAbilities.SHIELD_BLOCK)
-                && entity.isUsingItem()
-                && entity.getUsedItemHand() == InteractionHand.OFF_HAND) {
-            setOffhandPose(entity, HumanoidModel.ArmPose.BLOCK);
-        }
-
-        boolean headVisible = this.model.head.visible;
-        boolean hatVisible = this.model.hat.visible;
-        if (renderInspectatorBody) {
-            this.model.head.visible = false;
-            this.model.hat.visible = false;
-        }
-        try {
-            super.render(entity, entityYaw, partialTick, poseStack, buffer, packedLight);
-        } finally {
-            this.model.head.visible = headVisible;
-            this.model.hat.visible = hatVisible;
-        }
+        super.submit(state, poseStack, collector, camera);
     }
 
     @Override
-    protected float getAttackAnim(@NotNull T entity, float partialTick) {
-        if (entity instanceof PlayerNpcEntity npc && npc.isSocialNoticePausingWork()) {
-            return 0.0F;
+    protected HumanoidModel.ArmPose getArmPose(T entity, HumanoidArm arm) {
+        InteractionHand hand = entity.getMainArm() == arm ? InteractionHand.MAIN_HAND : InteractionHand.OFF_HAND;
+        ItemStack stack = entity.getItemInHand(hand);
+        if (stack.isEmpty()) return HumanoidModel.ArmPose.EMPTY;
+        if (stack.is(Items.SPYGLASS) && entity.isUsingItem() && entity.getUsedItemHand() == hand) {
+            return HumanoidModel.ArmPose.SPYGLASS;
         }
-        if (entity.isUsingItem() && entity.getUseItem().canPerformAction(ItemAbilities.SHIELD_BLOCK)) {
-            // A guard must not inherit the previous attack's swing and lower the blocking arm.
-            return 0.0F;
+        if (stack.getItem() instanceof CrossbowItem) {
+            return entity.isUsingItem() && entity.getUsedItemHand() == hand
+                    ? HumanoidModel.ArmPose.CROSSBOW_CHARGE : HumanoidModel.ArmPose.CROSSBOW_HOLD;
         }
-        if (entity instanceof PlayerNpcEntity playerNpc
-                && (playerNpc.isHealing() || BetterCombatClientCompat.hasActiveAttackAnimation(playerNpc))) {
-            return 0.0F;
+        if (stack.getItem() instanceof BowItem && entity.isAggressive()) {
+            return HumanoidModel.ArmPose.BOW_AND_ARROW;
         }
+        if (stack.has(DataComponents.BLOCKS_ATTACKS) && entity.isUsingItem() && entity.getUsedItemHand() == hand) {
+            return HumanoidModel.ArmPose.BLOCK;
+        }
+        if (hand == InteractionHand.MAIN_HAND && isMainHandAttackAnimating(entity)) {
+            return HumanoidModel.ArmPose.EMPTY;
+        }
+        return HumanoidModel.ArmPose.ITEM;
+    }
 
-        float attackAnim = super.getAttackAnim(entity, partialTick);
-        if (attackAnim > 0.0F) {
-            return attackAnim;
-        }
+    @Override
+    public FakePlayerRenderState createRenderState() {
+        return new FakePlayerRenderState();
+    }
 
+    @Override
+    public void extractRenderState(T entity, AvatarRenderState state, float partialTick) {
+        super.extractRenderState(entity, state, partialTick);
+        // Gesture goals toggle the synchronized sneak flag without changing the physical pose.
+        // Preserve swimming/sleeping poses while restoring the player model's crouch animation.
+        state.isCrouching = state.isCrouching || entity.isShiftKeyDown() && state.hasPose(Pose.STANDING);
+        state.skin = FakePlayerTextureUtils.getPlayerSkinData(entity);
+        state.isSpectator = false;
+        state.showHat = true;
+        state.showJacket = true;
+        state.showLeftPants = true;
+        state.showRightPants = true;
+        state.showLeftSleeve = true;
+        state.showRightSleeve = true;
+        state.showCape = true;
+        state.arrowCount = entity.getArrowCount();
+        state.id = entity.getId();
+
+        if (state instanceof FakePlayerRenderState npcState) {
+            npcState.slim = state.skin.model() == net.minecraft.world.entity.player.PlayerModelType.SLIM;
+            npcState.playerNpc = entity instanceof PlayerNpcEntity playerNpc ? playerNpc : null;
+            npcState.hideHead = SmartNpcInspectorOverlay.shouldRenderInspectatorCameraTargetBody(entity);
+            npcState.swimXRot = state.xRot;
+            if (npcState.playerNpc != null && state.isInWater && state.swimAmount > 0.0F) {
+                // The work target can be above water while the NPC dives. Tilt the body
+                // along its motion without replacing the goal's independent head look.
+                Vec3 motion = entity.getDeltaMovement();
+                npcState.swimXRot = motion.lengthSqr() > 1.0E-6D
+                        ? (float) Math.toDegrees(-Math.atan2(motion.y, motion.horizontalDistance())) : 0.0F;
+            }
+        }
         if (entity instanceof PlayerNpcEntity playerNpc) {
-            int ticks = playerNpc.getMainHandAttackAnimationTicks();
-            if (ticks > 0) {
+            if (playerNpc.isSocialNoticePausingWork() || playerNpc.isHealing()
+                    || entity.isUsingItem() && entity.getUseItem().has(DataComponents.BLOCKS_ATTACKS)
+                    || BetterCombatClientCompat.hasActiveAttackAnimation(playerNpc)) {
+                state.attackTime = 0.0F;
+            } else if (state.attackTime <= 0.0F && playerNpc.getMainHandAttackAnimationTicks() > 0) {
                 float duration = playerNpc.getMainHandAttackAnimationDuration();
-                return Mth.clamp(1.0F - ((float) ticks - partialTick) / duration, 0.0F, 1.0F);
+                state.attackTime = Mth.clamp(1.0F - ((float) playerNpc.getMainHandAttackAnimationTicks() - partialTick) / duration, 0.0F, 1.0F);
             }
         }
+        extractCapeState(entity, state, partialTick);
+        if (state instanceof FakePlayerRenderState npcState) {
+        }
+    }
 
-        return 0.0F;
+    private static void extractCapeState(FakePlayer entity, AvatarRenderState state, float partialTick) {
+        double deltaX = Mth.lerp(partialTick, entity.xCloakO, entity.xCloak) - Mth.lerp(partialTick, entity.xo, entity.getX());
+        double deltaY = Mth.lerp(partialTick, entity.yCloakO, entity.yCloak) - Mth.lerp(partialTick, entity.yo, entity.getY());
+        double deltaZ = Mth.lerp(partialTick, entity.zCloakO, entity.zCloak) - Mth.lerp(partialTick, entity.zo, entity.getZ());
+        float bodyRot = Mth.rotLerp(partialTick, entity.yBodyRotO, entity.yBodyRot);
+        double forwardX = Mth.sin(bodyRot * ((float) Math.PI / 180.0F));
+        double forwardZ = -Mth.cos(bodyRot * ((float) Math.PI / 180.0F));
+        state.capeFlap = Mth.clamp((float) deltaY * 10.0F, -6.0F, 32.0F);
+        state.capeLean = Mth.clamp((float) (deltaX * forwardX + deltaZ * forwardZ) * 100.0F, 0.0F, 150.0F);
+        state.capeLean2 = Mth.clamp((float) (deltaX * forwardZ - deltaZ * forwardX) * 100.0F, -20.0F, 20.0F);
+        if (state.isCrouching) state.capeFlap += 25.0F;
     }
 
     @Override
-    protected boolean shouldShowName(@NotNull T entity) {
-        if (entity instanceof PlayerNpcEntity playerNpc && playerNpc.isDisplayNameHiddenBySneakingAi()) {
-            return false;
-        }
-        return SmartNpcInspectorOverlay.shouldForceInspectatorTargetName(entity) || super.shouldShowName(entity);
+    protected boolean shouldShowName(T entity, double distanceToCameraSq) {
+        if (entity instanceof PlayerNpcEntity playerNpc && playerNpc.isDisplayNameHiddenBySneakingAi()) return false;
+        return SmartNpcInspectorOverlay.shouldForceInspectatorTargetName(entity)
+                || super.shouldShowName(entity, distanceToCameraSq);
     }
 
     private boolean isMainHandAttackAnimating(T entity) {
         return entity instanceof PlayerNpcEntity playerNpc && playerNpc.getMainHandAttackAnimationTicks() > 0;
     }
 
-    private void setHandPose(T entity, HumanoidModel.ArmPose pose) {
-        if (entity.getMainArm() == HumanoidArm.RIGHT) {
-            this.model.rightArmPose = pose;
-        } else {
-            this.model.leftArmPose = pose;
-        }
-    }
-
-    private void setOffhandPose(T entity, HumanoidModel.ArmPose pose) {
-        if (entity.getMainArm() == HumanoidArm.RIGHT) {
-            this.model.leftArmPose = pose;
-        } else {
-            this.model.rightArmPose = pose;
-        }
-    }
-
     @Override
-    protected void setupRotations(@NotNull T entity, @NotNull PoseStack poseStack, float ageInTicks, float rotationYaw, float partialTick, float scale) {
-        super.setupRotations(entity, poseStack, ageInTicks, rotationYaw, partialTick, scale);
-        float swimAmount = entity.getSwimAmount(partialTick);
-        if (!entity.isFallFlying() && swimAmount > 0.0F) {
-            float swimPitch = entity.isInWater() ? -90.0F - entity.getXRot() : -90.0F;
-            poseStack.mulPose(Axis.XP.rotationDegrees(Mth.lerp(swimAmount, 0.0F, swimPitch)));
-            if (entity.isVisuallySwimming()) {
+    protected void setupRotations(AvatarRenderState state, PoseStack poseStack, float bodyRot, float entityScale) {
+        super.setupRotations(state, poseStack, bodyRot, entityScale);
+        // HumanoidMobRenderer animates the limbs but does not apply AvatarRenderer's swim transform.
+        if (!state.isFallFlying && !state.isAutoSpinAttack && state.deathTime <= 0.0F
+                && !state.hasPose(Pose.SLEEPING) && state.swimAmount > 0.0F) {
+            float swimXRot = state instanceof FakePlayerRenderState npcState ? npcState.swimXRot : state.xRot;
+            float targetXRot = state.isInWater ? -90.0F - swimXRot : -90.0F;
+            poseStack.mulPose(Axis.XP.rotationDegrees(Mth.lerp(state.swimAmount, 0.0F, targetXRot)));
+            if (state.isVisuallySwimming) {
                 poseStack.translate(0.0F, -1.0F, 0.3F);
             }
         }
     }
 
     @Override
-    protected void scale(@NotNull T entity, @NotNull PoseStack poseStack, float partialTickTime) {
+    protected void scale(AvatarRenderState state, PoseStack poseStack) {
         poseStack.scale(0.9375F, 0.9375F, 0.9375F);
     }
 
     @Override
-    public @NotNull ResourceLocation getTextureLocation(@NotNull T entity) {
-        return FakePlayerTextureUtils.getPlayerSkin(entity);
+    public Identifier getTextureLocation(AvatarRenderState state) {
+        return state.skin.body().texturePath();
     }
 }

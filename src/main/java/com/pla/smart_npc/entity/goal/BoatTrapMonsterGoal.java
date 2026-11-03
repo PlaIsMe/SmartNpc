@@ -7,10 +7,12 @@ import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.EntitySpawnReason;
+import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.ai.goal.Goal;
 import net.minecraft.world.entity.monster.Monster;
 import net.minecraft.world.entity.player.Player;
-import net.minecraft.world.entity.vehicle.Boat;
+import net.minecraft.world.entity.vehicle.boat.Boat;
 import net.minecraft.world.item.BoatItem;
 import net.minecraft.world.item.ItemStack;
 
@@ -68,9 +70,14 @@ public class BoatTrapMonsterGoal extends Goal {
             return;
         }
 
-        Boat boat = new Boat(serverLevel, this.target.getX(), this.target.getY(), this.target.getZ());
+        Boat boat = EntityType.OAK_BOAT.create(serverLevel, EntitySpawnReason.TRIGGERED);
+        if (boat == null) {
+            InventoryUtils.addItem(this.playerNpc, boatStack);
+            this.target = null;
+            return;
+        }
+        boat.snapTo(this.target.getX(), this.target.getY(), this.target.getZ(), this.target.getYRot(), 0.0F);
         boat.setYRot(this.target.getYRot());
-        boat.setVariant(Boat.Type.OAK);
         if (!serverLevel.noCollision(boat, boat.getBoundingBox())) {
             if (!InventoryUtils.addItem(this.playerNpc, boatStack)) {
                 this.playerNpc.spawnAtLocation(boatStack);
@@ -80,7 +87,7 @@ public class BoatTrapMonsterGoal extends Goal {
         }
 
         serverLevel.addFreshEntity(boat);
-        this.target.startRiding(boat, true);
+        this.target.startRiding(boat);
         this.playerNpc.getLookControl().setLookAt(this.target, 40.0F, 40.0F);
         this.playerNpc.swing(InteractionHand.MAIN_HAND, true);
         this.playerNpc.setCurrentAiState("ai.player_npc.trapping_monster_boat");

@@ -124,7 +124,7 @@ public final class ChestAi {
                 && serverLevel.hasChunkAt(pos)
                 && serverLevel.getBlockState(pos).isAir()
                 && serverLevel.getBlockState(pos.above()).isAir()
-                && serverLevel.getBlockState(pos.below()).isSolidRender(serverLevel, pos.below());
+                && serverLevel.getBlockState(pos.below()).isSolidRender();
     }
 
     public static boolean isAtStand(PlayerNpcEntity playerNpc, BlockPos standPos) {

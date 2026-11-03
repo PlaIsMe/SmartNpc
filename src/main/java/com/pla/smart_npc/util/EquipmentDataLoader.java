@@ -1,23 +1,26 @@
 package com.pla.smart_npc.util;
 
+import net.minecraft.tags.ItemTags;
+
 import com.google.gson.Gson;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.pla.smart_npc.clazz.Difficulty;
 import com.pla.smart_npc.config.SmartNpcConfig;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
+import net.minecraft.resources.FileToIdConverter;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.packs.resources.ResourceManager;
 import net.minecraft.server.packs.resources.SimpleJsonResourceReloadListener;
 import net.minecraft.util.GsonHelper;
+import net.minecraft.util.ExtraCodecs;
 import net.minecraft.util.profiling.ProfilerFiller;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.item.AxeItem;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.ShieldItem;
-import net.minecraft.world.item.SwordItem;
 import net.minecraft.world.item.TridentItem;
 import net.neoforged.fml.ModList;
 import net.minecraft.core.registries.BuiltInRegistries;
@@ -32,7 +35,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Random;
 
-public class EquipmentDataLoader extends SimpleJsonResourceReloadListener {
+public class EquipmentDataLoader extends SimpleJsonResourceReloadListener<JsonElement> {
     private static final Gson GSON = new Gson();
     private static final Random RANDOM = new Random();
     private static final Map<String, List<EquipmentEntry>> EQUIP_ITEMS = new HashMap<>();
@@ -59,14 +62,14 @@ public class EquipmentDataLoader extends SimpleJsonResourceReloadListener {
     );
 
     public EquipmentDataLoader() {
-        super(GSON, "mobs_equipment");
+        super(ExtraCodecs.JSON, FileToIdConverter.json("mobs_equipment"));
     }
 
     @Override
-    protected void apply(Map<ResourceLocation, JsonElement> map, ResourceManager manager, ProfilerFiller profiler) {
+    protected void apply(Map<Identifier, JsonElement> map, ResourceManager manager, ProfilerFiller profiler) {
         EQUIP_ITEMS.clear();
-        for (Map.Entry<ResourceLocation, JsonElement> entry : map.entrySet()) {
-            ResourceLocation fileId = entry.getKey();
+        for (Map.Entry<Identifier, JsonElement> entry : map.entrySet()) {
+            Identifier fileId = entry.getKey();
             JsonObject root = GsonHelper.convertToJsonObject(entry.getValue(), "equipment");
             String modId = fileId.getPath().replace(".json", "");
 
@@ -136,12 +139,12 @@ public class EquipmentDataLoader extends SimpleJsonResourceReloadListener {
             return null;
         }
 
-        ResourceLocation id = ResourceLocation.fromNamespaceAndPath(parts[0], parts[1]);
-        return BuiltInRegistries.ITEM.containsKey(id) ? BuiltInRegistries.ITEM.get(id) : null;
+        Identifier id = Identifier.fromNamespaceAndPath(parts[0], parts[1]);
+        return BuiltInRegistries.ITEM.containsKey(id) ? BuiltInRegistries.ITEM.getValue(id) : null;
     }
 
     public static String getItemId(ItemStack stack) {
-        ResourceLocation key = BuiltInRegistries.ITEM.getKey(stack.getItem());
+        Identifier key = BuiltInRegistries.ITEM.getKey(stack.getItem());
         return key == null ? "" : key.toString();
     }
 
@@ -294,7 +297,7 @@ public class EquipmentDataLoader extends SimpleJsonResourceReloadListener {
 
     private static boolean canUseVanillaShield(ItemStack stack) {
         Item item = stack.getItem();
-        return item instanceof SwordItem || item instanceof AxeItem || item instanceof TridentItem;
+        return item.builtInRegistryHolder().is(ItemTags.SWORDS) || item instanceof AxeItem || item instanceof TridentItem;
     }
 
     public static boolean canUseCompatShield(ItemStack stack) {
@@ -329,7 +332,7 @@ public class EquipmentDataLoader extends SimpleJsonResourceReloadListener {
     }
 
     private static Difficulty getCurrentDifficulty(Entity entity) {
-        MinecraftServer server = entity != null ? entity.getServer() : ServerLifecycleHooks.getCurrentServer();
+        MinecraftServer server = entity != null ? entity.level().getServer() : ServerLifecycleHooks.getCurrentServer();
         return server != null ? ProgressionUtil.getDifficulty(server) : Difficulty.EASY;
     }
 
@@ -408,7 +411,7 @@ public class EquipmentDataLoader extends SimpleJsonResourceReloadListener {
             }
 
             String[] parts = itemId.split(":", 2);
-            Item item = BuiltInRegistries.ITEM.get(ResourceLocation.fromNamespaceAndPath(parts[0], parts[1]));
+            Item item = BuiltInRegistries.ITEM.getValue(Identifier.fromNamespaceAndPath(parts[0], parts[1]));
             if (item == null) continue;
 
             ItemStack itemStack = new ItemStack(item);
@@ -436,7 +439,7 @@ public class EquipmentDataLoader extends SimpleJsonResourceReloadListener {
 
         String itemId = pool.get(RANDOM.nextInt(pool.size()));
         String[] parts = itemId.split(":", 2);
-        Item item = BuiltInRegistries.ITEM.get(ResourceLocation.fromNamespaceAndPath(parts[0], parts[1]));
+        Item item = BuiltInRegistries.ITEM.getValue(Identifier.fromNamespaceAndPath(parts[0], parts[1]));
         if (item == null) return Optional.empty();
 
         ItemStack itemStack = new ItemStack(item);

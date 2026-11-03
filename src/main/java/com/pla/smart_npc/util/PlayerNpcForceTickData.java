@@ -7,11 +7,12 @@ import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.Tag;
 import net.minecraft.resources.ResourceKey;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.saveddata.SavedData;
+import net.minecraft.world.level.saveddata.SavedDataType;
 
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -22,6 +23,11 @@ import java.util.UUID;
 
 public final class PlayerNpcForceTickData extends SavedData {
     private static final String DATA_NAME = SmartNpc.MODID + "_player_npc_force_tick";
+    private static final SavedDataType<PlayerNpcForceTickData> TYPE = new SavedDataType<>(
+            DATA_NAME,
+            PlayerNpcForceTickData::new,
+            CompoundTag.CODEC.xmap(tag -> load(tag, null), data -> data.save(new CompoundTag(), null))
+    );
     private static final String NPCS_TAG = "Npcs";
     private static final String ID_TAG = "Id";
     private static final String DIMENSION_TAG = "Dimension";
@@ -32,42 +38,40 @@ public final class PlayerNpcForceTickData extends SavedData {
     private final Map<UUID, Entry> entries = new LinkedHashMap<>();
 
     public static PlayerNpcForceTickData get(MinecraftServer server) {
-        return server.overworld().getDataStorage().computeIfAbsent(
-                new SavedData.Factory<>(PlayerNpcForceTickData::new, PlayerNpcForceTickData::load), DATA_NAME);
+        return server.overworld().getDataStorage().computeIfAbsent(TYPE);
     }
 
     public static PlayerNpcForceTickData load(CompoundTag tag, HolderLookup.Provider registries) {
         PlayerNpcForceTickData data = new PlayerNpcForceTickData();
-        ListTag npcs = tag.getList(NPCS_TAG, Tag.TAG_COMPOUND);
+        ListTag npcs = tag.getListOrEmpty(NPCS_TAG);
         for (int i = 0; i < npcs.size(); i++) {
-            CompoundTag npcTag = npcs.getCompound(i);
-            if (!npcTag.hasUUID(ID_TAG) || !npcTag.contains(DIMENSION_TAG, Tag.TAG_STRING)) {
+            CompoundTag npcTag = npcs.getCompoundOrEmpty(i);
+            if (!SmartNpcNbt.hasUuid(npcTag, ID_TAG) || !npcTag.contains(DIMENSION_TAG)) {
                 continue;
             }
 
-            ResourceLocation dimensionId = ResourceLocation.tryParse(npcTag.getString(DIMENSION_TAG));
+            Identifier dimensionId = Identifier.tryParse(npcTag.getStringOr(DIMENSION_TAG, ""));
             if (dimensionId == null) {
                 continue;
             }
 
-            UUID npcId = npcTag.getUUID(ID_TAG);
+            UUID npcId = SmartNpcNbt.getUuid(npcTag, ID_TAG);
             ResourceKey<Level> levelKey = ResourceKey.create(Registries.DIMENSION, dimensionId);
-            ChunkPos centerChunk = new ChunkPos(npcTag.getInt(CHUNK_X_TAG), npcTag.getInt(CHUNK_Z_TAG));
-            String username = npcTag.contains(USERNAME_TAG, Tag.TAG_STRING)
-                    ? npcTag.getString(USERNAME_TAG)
+            ChunkPos centerChunk = new ChunkPos(npcTag.getIntOr(CHUNK_X_TAG, 0), npcTag.getIntOr(CHUNK_Z_TAG, 0));
+            String username = npcTag.contains(USERNAME_TAG)
+                    ? npcTag.getStringOr(USERNAME_TAG, "")
                     : "";
             data.entries.put(npcId, new Entry(npcId, levelKey, centerChunk, username));
         }
         return data;
     }
 
-    @Override
     public CompoundTag save(CompoundTag tag, HolderLookup.Provider registries) {
         ListTag npcs = new ListTag();
         for (Entry entry : this.entries.values()) {
             CompoundTag npcTag = new CompoundTag();
-            npcTag.putUUID(ID_TAG, entry.npcId());
-            npcTag.putString(DIMENSION_TAG, entry.levelKey().location().toString());
+            SmartNpcNbt.putUuid(npcTag, ID_TAG, entry.npcId());
+            npcTag.putString(DIMENSION_TAG, entry.levelKey().identifier().toString());
             npcTag.putInt(CHUNK_X_TAG, entry.centerChunk().x);
             npcTag.putInt(CHUNK_Z_TAG, entry.centerChunk().z);
             if (!entry.username().isBlank()) {

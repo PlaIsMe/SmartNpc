@@ -1,5 +1,7 @@
 package com.pla.smart_npc.entity.goal;
 
+import net.minecraft.tags.ItemTags;
+
 import com.pla.smart_npc.clazz.PlayerNpcInterest;
 import com.pla.smart_npc.entity.PlayerNpcEntity;
 import com.pla.smart_npc.entity.ai.BreakingBlockAi;
@@ -21,7 +23,6 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.tags.FluidTags;
 import net.minecraft.world.level.ClipContext;
 import net.minecraft.world.entity.ai.goal.Goal;
-import net.minecraft.world.item.PickaxeItem;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.HitResult;
@@ -150,7 +151,7 @@ public class GatherStoneGoal extends Goal implements GatheringGoal {
             return false;
         }
         BlockPos feet = playerNpc.blockPosition();
-        String dimension = serverLevel.dimension().location().toString();
+        String dimension = serverLevel.dimension().identifier().toString();
         NearbyStoneTargetCache cached = NEARBY_STONE_TARGET_CACHE.get(playerNpc);
         if (cached != null
                 && playerNpc.tickCount < cached.expiresAtTick()
@@ -181,7 +182,7 @@ public class GatherStoneGoal extends Goal implements GatheringGoal {
         return cached != null
                 && cached.result()
                 && playerNpc.tickCount < cached.expiresAtTick()
-                && cached.dimension().equals(serverLevel.dimension().location().toString())
+                && cached.dimension().equals(serverLevel.dimension().identifier().toString())
                 && cached.origin().distSqr(playerNpc.blockPosition()) <= NEARBY_STONE_TARGET_CACHE_DISTANCE_SQR;
     }
 
@@ -192,7 +193,7 @@ public class GatherStoneGoal extends Goal implements GatheringGoal {
     ) {
         NEARBY_STONE_TARGET_CACHE.put(playerNpc, new NearbyStoneTargetCache(
                 playerNpc.blockPosition().immutable(),
-                serverLevel.dimension().location().toString(),
+                serverLevel.dimension().identifier().toString(),
                 playerNpc.tickCount + NEARBY_STONE_TARGET_CACHE_TICKS,
                 result
         ));
@@ -345,7 +346,7 @@ public class GatherStoneGoal extends Goal implements GatheringGoal {
         if (this.playerNpc.getHoleEscapeCooldown() > 0) {
             return this.traceStoneStop("hole cooldown=" + this.playerNpc.getHoleEscapeCooldown());
         }
-        if (!this.toolAi.hasTool(PickaxeItem.class)) {
+        if (!this.toolAi.hasTool(ItemTags.PICKAXES)) {
             return this.traceStoneStop("missing pickaxe");
         }
         if (!(this.playerNpc.level() instanceof ServerLevel serverLevel)) {
@@ -361,7 +362,7 @@ public class GatherStoneGoal extends Goal implements GatheringGoal {
                 return this.traceStoneStop("actionable owned farm crop work");
             }
             if (MiningNightCampGoal.shouldPauseMiningForNightCamp(this.playerNpc, serverLevel)) {
-                return this.traceStoneStop("night camp pause night=" + serverLevel.isNight()
+                return this.traceStoneStop("night camp pause night=" + serverLevel.isDarkOutside()
                         + " thunder=" + serverLevel.isThundering()
                         + " sky=" + serverLevel.canSeeSky(this.playerNpc.blockPosition().above()));
             }
@@ -392,7 +393,7 @@ public class GatherStoneGoal extends Goal implements GatheringGoal {
         this.nextStoneEgressPathAttemptTick = this.playerNpc.tickCount;
         this.clearedAccessForTarget = false;
         this.playerNpc.setCurrentAiState("ai.player_npc.gathering_stone");
-        this.toolAi.equipTool(PickaxeItem.class);
+        this.toolAi.equipTool(ItemTags.PICKAXES);
         this.resetDetailRefresh();
         this.updateDetail();
         if (this.playerNpc.level() instanceof ServerLevel serverLevel) {
@@ -548,7 +549,7 @@ public class GatherStoneGoal extends Goal implements GatheringGoal {
         this.clearBlockAi.stop();
         this.breakingBlockAi.stop();
         this.waterEscapeAi.stop();
-        if (!this.playerNpc.level().isClientSide) {
+        if (!this.playerNpc.level().isClientSide()) {
             this.playerNpc.setGatherCooldown(20);
         }
         this.targetPos = null;
@@ -638,7 +639,7 @@ public class GatherStoneGoal extends Goal implements GatheringGoal {
                 this.clearedAccessForTarget = false;
                 this.clearBlockAi.stop();
                 this.breakingBlockAi.stop();
-                this.toolAi.equipTool(PickaxeItem.class);
+                this.toolAi.equipTool(ItemTags.PICKAXES);
                 return true;
             }
             Optional<BlockPos> stand = findStandPos(
@@ -660,7 +661,7 @@ public class GatherStoneGoal extends Goal implements GatheringGoal {
             this.clearedAccessForTarget = false;
             this.clearBlockAi.stop();
             this.breakingBlockAi.stop();
-            this.toolAi.equipTool(PickaxeItem.class);
+            this.toolAi.equipTool(ItemTags.PICKAXES);
             return true;
         }
 
@@ -677,7 +678,7 @@ public class GatherStoneGoal extends Goal implements GatheringGoal {
 
     private boolean shouldStayHomeForWeather(ServerLevel serverLevel) {
         return PlayerNpcHomeUtil.getHome(this.playerNpc).isPresent()
-                && (serverLevel.isNight() || serverLevel.isThundering());
+                && (serverLevel.isDarkOutside() || serverLevel.isThundering());
     }
 
     private static Optional<BlockPos> findStoneTarget(PlayerNpcEntity playerNpc, ServerLevel serverLevel, int radius) {
@@ -837,12 +838,12 @@ public class GatherStoneGoal extends Goal implements GatheringGoal {
     private static boolean isSafeCurrentStoneStand(PlayerNpcEntity playerNpc, ServerLevel serverLevel) {
         return playerNpc != null
                 && isSafeStoneStandAt(playerNpc, serverLevel, playerNpc.blockPosition())
-                && !playerNpc.isInWaterOrBubble();
+                && !playerNpc.isInWater();
     }
 
     private static boolean isUnsafeStoneWorkLocation(PlayerNpcEntity playerNpc, ServerLevel serverLevel, BlockPos pos) {
         return playerNpc != null
-                && (playerNpc.isInWaterOrBubble()
+                && (playerNpc.isInWater()
                 || isWetStoneStand(serverLevel, pos)
                 || isInsideProtectedStoneWorkFootprint(playerNpc, pos));
     }
@@ -864,7 +865,7 @@ public class GatherStoneGoal extends Goal implements GatheringGoal {
             return false;
         }
 
-        return serverLevel.getBlockState(pos.below()).isSolidRender(serverLevel, pos.below())
+        return serverLevel.getBlockState(pos.below()).isSolidRender()
                 && canClearBodySpace(serverLevel, pos)
                 && canClearBodySpace(serverLevel, pos.above());
     }
@@ -924,7 +925,7 @@ public class GatherStoneGoal extends Goal implements GatheringGoal {
     }
 
     private static boolean hasPickaxe(PlayerNpcEntity playerNpc) {
-        return playerNpc != null && playerNpc.hasCarriedTool(PickaxeItem.class);
+        return playerNpc != null && playerNpc.hasCarriedTool(ItemTags.PICKAXES);
     }
 
     private static boolean isInsideProtectedStoneTarget(PlayerNpcEntity playerNpc, BlockPos pos) {
@@ -1731,7 +1732,7 @@ public class GatherStoneGoal extends Goal implements GatheringGoal {
         boolean farmingSupportJob = isFarmingSupportJob(this.playerNpc);
         boolean exploringSupplyJob = isExploringSupplyJob(this.playerNpc);
         boolean supplyPhaseActive = isStoneSupplyPhaseActive(this.playerNpc, serverLevel)
-                || (this.toolAi.hasTool(PickaxeItem.class)
+                || (this.toolAi.hasTool(ItemTags.PICKAXES)
                 && isStoneSupplyPhaseActiveWithAvailablePickaxe(this.playerNpc, serverLevel));
         boolean stayHomeForWeather = this.shouldStayHomeForWeather(serverLevel);
         boolean preparedBase = hasPreparedBaseForStone(this.playerNpc, serverLevel);
@@ -1755,7 +1756,7 @@ public class GatherStoneGoal extends Goal implements GatheringGoal {
                     + ",stoneAccess=" + this.playerNpc.getStoneAccessClearCooldown()
                     + ",stayHome=" + stayHomeForWeather
                     + ",miningJob=" + miningJob
-                    + ",night=" + serverLevel.isNight()
+                    + ",night=" + serverLevel.isDarkOutside()
                     + ",thunder=" + serverLevel.isThundering();
         }
         return phaseStillActive;

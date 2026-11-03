@@ -6,13 +6,13 @@ import com.pla.smart_npc.util.PlayerNpcGoalTraceLogger;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.server.level.ServerPlayer;
 import net.neoforged.neoforge.network.handling.IPayloadContext;
 import net.neoforged.neoforge.network.PacketDistributor;
 
 public class PlayerNpcInspectatorCyclePacket implements CustomPacketPayload {
-    public static final Type<PlayerNpcInspectatorCyclePacket> TYPE = new Type<>(ResourceLocation.fromNamespaceAndPath("smart_npc", "inspectator_cycle"));
+    public static final Type<PlayerNpcInspectatorCyclePacket> TYPE = new Type<>(Identifier.fromNamespaceAndPath("smart_npc", "inspectator_cycle"));
     public static final StreamCodec<FriendlyByteBuf, PlayerNpcInspectatorCyclePacket> STREAM_CODEC = StreamCodec.ofMember(PlayerNpcInspectatorCyclePacket::encode, PlayerNpcInspectatorCyclePacket::decode);
     private final int currentEntityId;
     private final int direction;
@@ -56,7 +56,7 @@ public class PlayerNpcInspectatorCyclePacket implements CustomPacketPayload {
                 return;
             }
             var nextNpc = PlayerNpcForceTickManager.findNextForInspectator(
-                    sender.server,
+                    sender.level().getServer(),
                     currentNpc,
                     packet.direction
             );

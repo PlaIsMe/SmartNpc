@@ -424,7 +424,7 @@ public class BreakTargetObstructionGoal extends Goal {
                 && serverLevel.getBlockState(pos.above()).getCollisionShape(serverLevel, pos.above()).isEmpty()
                 && serverLevel.getFluidState(pos).isEmpty()
                 && serverLevel.getFluidState(pos.above()).isEmpty()
-                && serverLevel.getBlockState(pos.below()).isSolidRender(serverLevel, pos.below());
+                && serverLevel.getBlockState(pos.below()).isSolidRender();
     }
 
     private boolean isProtectedHomeBlock(BlockPos pos) {

@@ -1,5 +1,7 @@
 package com.pla.smart_npc.entity.goal;
 
+import com.pla.smart_npc.util.SmartNpcNbt;
+
 import com.pla.smart_npc.clazz.PlayerNpcInterest;
 import com.pla.smart_npc.entity.PlayerNpcEntity;
 import com.pla.smart_npc.entity.ai.BreakingBlockAi;
@@ -22,7 +24,7 @@ import net.minecraft.core.Direction;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.resources.ResourceKey;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
@@ -117,7 +119,6 @@ public class MiningNightCampGoal extends Goal {
     private BlockPos resourcelessWalkProgressPos;
     private FurnaceMode furnaceMode = FurnaceMode.NONE;
     private ActivityMode activityMode = ActivityMode.LOOK;
-    private boolean relaxingForYsm;
     private ItemStack previousMainHand = ItemStack.EMPTY;
     private int actionDelayTicks;
     private int furnaceCooldownTicks;
@@ -183,7 +184,7 @@ public class MiningNightCampGoal extends Goal {
         }
 
         if (PlayerNpcBaseUtil.hasCampBaseJobs(playerNpc)) {
-            return serverLevel.isNight()
+            return serverLevel.isDarkOutside()
                     && (PlayerNpcBaseUtil.getCampBase(playerNpc, serverLevel).isPresent()
                     || !PlayerNpcBaseUtil.hasStoredCampBase(playerNpc));
         }
@@ -192,16 +193,16 @@ public class MiningNightCampGoal extends Goal {
         boolean fishingJob = isFishingNightCampJob(playerNpc);
         boolean farmingJob = farmingEligibleAtNight && farmingHasPlan;
         return miningJob
-                && (serverLevel.isNight() || serverLevel.isThundering())
+                && (serverLevel.isDarkOutside() || serverLevel.isThundering())
                 && !serverLevel.canSeeSky(playerNpc.blockPosition().above())
-                || fishingJob && serverLevel.isNight()
-                || farmingJob && serverLevel.isNight();
+                || fishingJob && serverLevel.isDarkOutside()
+                || farmingJob && serverLevel.isDarkOutside();
     }
 
     private static boolean isBuildingBootstrapNightCamp(PlayerNpcEntity playerNpc, ServerLevel serverLevel) {
         return playerNpc != null
                 && serverLevel != null
-                && serverLevel.isNight()
+                && serverLevel.isDarkOutside()
                 && playerNpc.hasInterest(PlayerNpcInterest.BUILDING)
                 && PlayerNpcHomeUtil.getHome(playerNpc).isEmpty()
                 && PlayerNpcHomeUtil.getHomeLayoutId(playerNpc).isEmpty()
@@ -243,7 +244,7 @@ public class MiningNightCampGoal extends Goal {
     private static boolean isFarmingNightInterestEligible(PlayerNpcEntity playerNpc, ServerLevel serverLevel) {
         if (playerNpc == null
                 || serverLevel == null
-                || !serverLevel.isNight()
+                || !serverLevel.isDarkOutside()
                 || !playerNpc.hasInterest(PlayerNpcInterest.FARMING)) {
             return false;
         }
@@ -261,7 +262,7 @@ public class MiningNightCampGoal extends Goal {
                 || this.playerNpc.isPassenger()
                 || this.playerNpc.isHealing()
                 || this.playerNpc.getTarget() != null
-                || this.playerNpc.isInWaterOrBubble()
+                || this.playerNpc.isInWater()
                 || this.playerNpc.getUpwardEscapeTarget() != null) {
             return false;
         }
@@ -288,7 +289,7 @@ public class MiningNightCampGoal extends Goal {
         this.persistentBaseCamp = !this.buildingBootstrapCamp
                 && !this.farmingBootstrapCamp
                 && !this.farmingCamp
-                && serverLevel.isNight()
+                && serverLevel.isDarkOutside()
                 && PlayerNpcBaseUtil.hasCampBaseJobs(this.playerNpc)
                 && (PlayerNpcBaseUtil.getCampBase(this.playerNpc, serverLevel).isPresent()
                 || !PlayerNpcBaseUtil.hasStoredCampBase(this.playerNpc));
@@ -342,7 +343,7 @@ public class MiningNightCampGoal extends Goal {
                 && !this.playerNpc.isPassenger()
                 && !this.playerNpc.isHealing()
                 && this.playerNpc.getTarget() == null
-                && !this.playerNpc.isInWaterOrBubble()
+                && !this.playerNpc.isInWater()
                 && this.playerNpc.getUpwardEscapeTarget() == null
                 && this.playerNpc.level() instanceof ServerLevel serverLevel
                 && this.hasCachedContinueContext(serverLevel);
@@ -387,7 +388,6 @@ public class MiningNightCampGoal extends Goal {
 
     @Override
     public void tick() {
-        this.relaxingForYsm = false;
         if (!(this.playerNpc.level() instanceof ServerLevel serverLevel)) {
             this.finished = true;
             return;
@@ -512,7 +512,6 @@ public class MiningNightCampGoal extends Goal {
 
     @Override
     public void stop() {
-        this.relaxingForYsm = false;
         this.stopResourcelessMiningNightWalk();
         this.stopFarmFenceClear();
         this.restorePreviousMainHand();
@@ -780,16 +779,11 @@ public class MiningNightCampGoal extends Goal {
             this.playerNpc.setCurrentAiDetail("sneaking around " + this.campActivityContext());
             this.lookAroundCamp();
         } else {
-            this.relaxingForYsm = true;
             this.playerNpc.getNavigation().stop();
             this.sneakingAi.setSneaking(false);
             this.playerNpc.setCurrentAiDetail("watching " + this.campActivityContext());
             this.lookAroundCamp();
         }
-    }
-
-    public boolean isRelaxingForYsm() {
-        return this.relaxingForYsm;
     }
 
     private boolean shouldUseResourcelessMiningNightWalk() {
@@ -1187,7 +1181,7 @@ public class MiningNightCampGoal extends Goal {
                 && !this.isInsideOwnedFarmFurnaceExclusion(pos)
                 && serverLevel.getBlockState(pos).canBeReplaced()
                 && serverLevel.getFluidState(pos).isEmpty()
-                && serverLevel.getBlockState(pos.below()).isSolidRender(serverLevel, pos.below())
+                && serverLevel.getBlockState(pos.below()).isSolidRender()
                 && this.placingBlockAi.canPlaceWithoutClipping(serverLevel, pos, furnaceState);
     }
 
@@ -1564,7 +1558,7 @@ public class MiningNightCampGoal extends Goal {
                 .orElse(false)) {
             return false;
         }
-        return serverLevel.getBlockState(pos.below()).isSolidRender(serverLevel, pos.below())
+        return serverLevel.getBlockState(pos.below()).isSolidRender()
                 && serverLevel.getFluidState(pos).isEmpty()
                 && serverLevel.getFluidState(pos.above()).isEmpty()
                 && serverLevel.getBlockEntity(pos) == null
@@ -1936,15 +1930,15 @@ public class MiningNightCampGoal extends Goal {
 
     private BlockPos getTemporaryFurnacePos() {
         if (FurnaceAi.TEMP_FURNACE_KIND_COOKING.equals(
-                this.playerNpc.getPersistentData().getString(FurnaceAi.TEMP_FURNACE_KIND))
+                this.playerNpc.getPersistentData().getStringOr(FurnaceAi.TEMP_FURNACE_KIND, ""))
                 || !this.playerNpc.getPersistentData().contains(FurnaceAi.TEMP_FURNACE_X)) {
             return null;
         }
 
         return new BlockPos(
-                this.playerNpc.getPersistentData().getInt(FurnaceAi.TEMP_FURNACE_X),
-                this.playerNpc.getPersistentData().getInt(FurnaceAi.TEMP_FURNACE_Y),
-                this.playerNpc.getPersistentData().getInt(FurnaceAi.TEMP_FURNACE_Z)
+                this.playerNpc.getPersistentData().getIntOr(FurnaceAi.TEMP_FURNACE_X, 0),
+                this.playerNpc.getPersistentData().getIntOr(FurnaceAi.TEMP_FURNACE_Y, 0),
+                this.playerNpc.getPersistentData().getIntOr(FurnaceAi.TEMP_FURNACE_Z, 0)
         );
     }
 
@@ -1953,7 +1947,7 @@ public class MiningNightCampGoal extends Goal {
             return false;
         }
 
-        furnace.getPersistentData().putUUID(CAMP_FURNACE_OWNER, this.playerNpc.getUUID());
+        SmartNpcNbt.putUuid(furnace.getPersistentData(), CAMP_FURNACE_OWNER, this.playerNpc.getUUID());
         furnace.setChanged();
 
         CompoundTag data = this.playerNpc.getPersistentData();
@@ -1964,7 +1958,7 @@ public class MiningNightCampGoal extends Goal {
         data.putInt(CAMP_FURNACE_X, pos.getX());
         data.putInt(CAMP_FURNACE_Y, pos.getY());
         data.putInt(CAMP_FURNACE_Z, pos.getZ());
-        data.putString(CAMP_FURNACE_DIMENSION, serverLevel.dimension().location().toString());
+        data.putString(CAMP_FURNACE_DIMENSION, serverLevel.dimension().identifier().toString());
         return true;
     }
 
@@ -1990,11 +1984,11 @@ public class MiningNightCampGoal extends Goal {
 
         CompoundTag data = this.playerNpc.getPersistentData();
         BlockPos pos = new BlockPos(
-                data.getInt(CAMP_FURNACE_X),
-                data.getInt(CAMP_FURNACE_Y),
-                data.getInt(CAMP_FURNACE_Z)
+                data.getIntOr(CAMP_FURNACE_X, 0),
+                data.getIntOr(CAMP_FURNACE_Y, 0),
+                data.getIntOr(CAMP_FURNACE_Z, 0)
         );
-        ResourceLocation dimensionId = ResourceLocation.tryParse(data.getString(CAMP_FURNACE_DIMENSION));
+        Identifier dimensionId = Identifier.tryParse(data.getStringOr(CAMP_FURNACE_DIMENSION, ""));
         if (dimensionId == null || this.playerNpc.getServer() == null) {
             this.clearCampFurnaceOwnership(pos);
             return null;
@@ -2016,8 +2010,8 @@ public class MiningNightCampGoal extends Goal {
             return false;
         }
         CompoundTag furnaceData = furnace.getPersistentData();
-        return furnaceData.hasUUID(CAMP_FURNACE_OWNER)
-                && this.playerNpc.getUUID().equals(furnaceData.getUUID(CAMP_FURNACE_OWNER));
+        return SmartNpcNbt.hasUuid(furnaceData, CAMP_FURNACE_OWNER)
+                && this.playerNpc.getUUID().equals(SmartNpcNbt.getUuid(furnaceData, CAMP_FURNACE_OWNER));
     }
 
     private boolean canReuseOwnedFurnace(ServerLevel currentLevel, CampFurnaceRef ownedFurnace) {
@@ -2043,7 +2037,7 @@ public class MiningNightCampGoal extends Goal {
         if (this.hasOwnedCampFurnaceReference()) {
             return;
         }
-        String temporaryKind = this.playerNpc.getPersistentData().getString(FurnaceAi.TEMP_FURNACE_KIND);
+        String temporaryKind = this.playerNpc.getPersistentData().getStringOr(FurnaceAi.TEMP_FURNACE_KIND, "");
         boolean explicitCamp = FurnaceAi.TEMP_FURNACE_KIND_NIGHT_CAMP.equals(temporaryKind);
         // Kindless records may be genuine old camp furnaces, but adopting them in
         // daytime also steals old CookFoodGoal furnaces. Migrate only while camping.
@@ -2062,8 +2056,8 @@ public class MiningNightCampGoal extends Goal {
         }
 
         CompoundTag furnaceData = furnace.getPersistentData();
-        if (furnaceData.hasUUID(CAMP_FURNACE_OWNER)
-                && !this.playerNpc.getUUID().equals(furnaceData.getUUID(CAMP_FURNACE_OWNER))) {
+        if (SmartNpcNbt.hasUuid(furnaceData, CAMP_FURNACE_OWNER)
+                && !this.playerNpc.getUUID().equals(SmartNpcNbt.getUuid(furnaceData, CAMP_FURNACE_OWNER))) {
             return;
         }
         this.saveTemporaryFurnace(currentLevel, legacyPos);

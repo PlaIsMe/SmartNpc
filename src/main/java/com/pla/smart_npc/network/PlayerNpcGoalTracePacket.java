@@ -5,14 +5,14 @@ import com.pla.smart_npc.util.PlayerNpcGoalTraceLogger;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.Entity;
 import net.neoforged.neoforge.network.handling.IPayloadContext;
 import net.neoforged.neoforge.network.PacketDistributor;
 
 public class PlayerNpcGoalTracePacket implements CustomPacketPayload {
-    public static final Type<PlayerNpcGoalTracePacket> TYPE = new Type<>(ResourceLocation.fromNamespaceAndPath("smart_npc", "goal_trace"));
+    public static final Type<PlayerNpcGoalTracePacket> TYPE = new Type<>(Identifier.fromNamespaceAndPath("smart_npc", "goal_trace"));
     public static final StreamCodec<FriendlyByteBuf, PlayerNpcGoalTracePacket> STREAM_CODEC = StreamCodec.ofMember(PlayerNpcGoalTracePacket::encode, PlayerNpcGoalTracePacket::decode);
     private static final double MAX_TRACE_DISTANCE_SQR = 64.0D * 64.0D;
 
@@ -48,7 +48,7 @@ public class PlayerNpcGoalTracePacket implements CustomPacketPayload {
             }
 
             if (!packet.enabled && PlayerNpcGoalTraceLogger.isAllTraceEnabled()) {
-                PlayerNpcGoalTraceLogger.setAllTraceEnabled(false, sender.getGameProfile().getName());
+                PlayerNpcGoalTraceLogger.setAllTraceEnabled(false, sender.getGameProfile().name());
                 PlayerNpcGoalTraceLogger.stopTrace(sender, "all trace disabled by viewer");
             } else {
                 PlayerNpcGoalTraceLogger.setTraceEnabled(sender, playerNpc, packet.enabled);

@@ -1,6 +1,6 @@
 package com.pla.smart_npc.util;
 
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.core.NonNullList;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.tags.ItemTags;
@@ -17,6 +17,7 @@ import net.minecraft.world.level.ItemLike;
 import net.minecraft.core.registries.BuiltInRegistries;
 
 import java.util.Arrays;
+import java.util.List;
 import java.util.Optional;
 import java.util.function.Predicate;
 
@@ -140,9 +141,6 @@ public final class PlayerNpcCraftingUtil {
         CraftingPlan craftingPlan = plan.get();
         ItemStack crafted = craftingPlan.recipe().assemble(craftingPlan.grid(), serverLevel.registryAccess());
         if (crafted.isEmpty()) {
-            crafted = craftingPlan.recipe().getResultItem(serverLevel.registryAccess()).copy();
-        }
-        if (crafted.isEmpty()) {
             return Optional.empty();
         }
 
@@ -210,20 +208,19 @@ public final class PlayerNpcCraftingUtil {
     ) {
         int width = craftingTable ? 3 : 2;
         int height = craftingTable ? 3 : 2;
-        for (var recipeHolder : serverLevel.getRecipeManager().getAllRecipesFor(RecipeType.CRAFTING)) {
-            CraftingRecipe recipe = recipeHolder.value();
-            ItemStack recipeResult = recipe.getResultItem(serverLevel.registryAccess());
-            if (recipeResult.isEmpty()
-                    || !resultMatcher.test(recipeResult)
-                    || recipe.isIncomplete()
-                    || !recipe.canCraftInDimensions(width, height)) {
+        for (var recipeHolder : serverLevel.getServer().getRecipeManager().getRecipes()) {
+            if (!(recipeHolder.value() instanceof CraftingRecipe recipe)
+                    || recipe.placementInfo().isImpossibleToPlace()
+                    || recipe.placementInfo().slotsToIngredientIndex().size() > width * height
+                    || recipe instanceof ShapedRecipe shaped
+                    && (shaped.getWidth() > width || shaped.getHeight() > height)) {
                 continue;
             }
 
             Optional<CraftingPlan> plan = recipe instanceof ShapedRecipe shapedRecipe
                     ? createShapedPlan(serverLevel, inventory, shapedRecipe, width, height)
                     : createIngredientPlan(serverLevel, inventory, recipe, width, height);
-            if (plan.isPresent()) {
+            if (plan.isPresent() && resultMatcher.test(recipe.assemble(plan.get().grid(), serverLevel.registryAccess()))) {
                 return plan;
             }
         }
@@ -239,14 +236,15 @@ public final class PlayerNpcCraftingUtil {
         int[] inventorySlots = new int[gridWidth * gridHeight];
         Arrays.fill(inventorySlots, -1);
         int[] remainingCounts = copyInventoryCounts(inventory);
-        NonNullList<Ingredient> ingredients = recipe.getIngredients();
+        List<Optional<Ingredient>> ingredients = recipe.getIngredients();
 
         for (int y = 0; y < recipe.getHeight(); y++) {
             for (int x = 0; x < recipe.getWidth(); x++) {
-                Ingredient ingredient = ingredients.get(x + y * recipe.getWidth());
-                if (ingredient.isEmpty()) {
+                Optional<Ingredient> optionalIngredient = ingredients.get(x + y * recipe.getWidth());
+                if (optionalIngredient.isEmpty()) {
                     continue;
                 }
+                Ingredient ingredient = optionalIngredient.get();
 
                 int inventorySlot = findIngredientSlot(inventory, remainingCounts, ingredient);
                 if (inventorySlot < 0) {
@@ -264,7 +262,7 @@ public final class PlayerNpcCraftingUtil {
     }
 
     private static Optional<CraftingPlan> createIngredientPlan(ServerLevel serverLevel, SimpleContainer inventory, CraftingRecipe recipe, int gridWidth, int gridHeight) {
-        NonNullList<Ingredient> ingredients = recipe.getIngredients();
+        List<Ingredient> ingredients = recipe.placementInfo().ingredients();
         if (ingredients.size() > gridWidth * gridHeight) {
             return Optional.empty();
         }
@@ -703,7 +701,7 @@ public final class PlayerNpcCraftingUtil {
     }
 
     private static Item getPlanksForLog(ItemStack stack) {
-        ResourceLocation key = BuiltInRegistries.ITEM.getKey(stack.getItem());
+        Identifier key = BuiltInRegistries.ITEM.getKey(stack.getItem());
         if (key == null) {
             return null;
         }
@@ -730,17 +728,17 @@ public final class PlayerNpcCraftingUtil {
             return null;
         }
 
-        return BuiltInRegistries.ITEM.get(ResourceLocation.fromNamespaceAndPath(key.getNamespace(), plankPath));
+        return BuiltInRegistries.ITEM.getValue(Identifier.fromNamespaceAndPath(key.getNamespace(), plankPath));
     }
 
     private static Item getBedForWool(Item wool) {
-        ResourceLocation key = BuiltInRegistries.ITEM.getKey(wool);
+        Identifier key = BuiltInRegistries.ITEM.getKey(wool);
         if (key == null || !key.getPath().endsWith("_wool")) {
             return null;
         }
 
         String bedPath = key.getPath().substring(0, key.getPath().length() - "_wool".length()) + "_bed";
-        return BuiltInRegistries.ITEM.get(ResourceLocation.fromNamespaceAndPath(key.getNamespace(), bedPath));
+        return BuiltInRegistries.ITEM.getValue(Identifier.fromNamespaceAndPath(key.getNamespace(), bedPath));
     }
 
     private record CraftingPlan(CraftingRecipe recipe, CraftingInput grid, int[] inventorySlots) {

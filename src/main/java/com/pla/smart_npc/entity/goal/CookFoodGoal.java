@@ -168,7 +168,7 @@ public class CookFoodGoal extends Goal {
         if (GatherLogsGoal.isLogGatheringEpisodeActive(this.playerNpc)) {
             return true;
         }
-        return !serverLevel.isNight()
+        return !serverLevel.isDarkOutside()
                 && !serverLevel.isThundering()
                 && (GatherLogsGoal.hasLogSupplyDemand(this.playerNpc, serverLevel)
                 || GatherStoneGoal.isStoneSupplyPhaseActive(this.playerNpc, serverLevel));
@@ -629,7 +629,7 @@ public class CookFoodGoal extends Goal {
         }
         return serverLevel.getBlockState(pos).canBeReplaced()
                 && serverLevel.getFluidState(pos).isEmpty()
-                && serverLevel.getBlockState(pos.below()).isSolidRender(serverLevel, pos.below());
+                && serverLevel.getBlockState(pos.below()).isSolidRender();
     }
 
     private boolean canUseExistingFurnace(ServerLevel serverLevel, BlockPos pos) {
@@ -705,7 +705,7 @@ public class CookFoodGoal extends Goal {
                 && serverLevel.getWorldBorder().isWithinBounds(pos)
                 && serverLevel.getBlockState(pos).isAir()
                 && serverLevel.getBlockState(pos.above()).isAir()
-                && serverLevel.getBlockState(pos.below()).isSolidRender(serverLevel, pos.below());
+                && serverLevel.getBlockState(pos.below()).isSolidRender();
     }
 
     private boolean isAtFurnaceStand() {
@@ -870,20 +870,20 @@ public class CookFoodGoal extends Goal {
     }
 
     private boolean isFuel(ItemStack stack) {
-        return !stack.isEmpty() && AbstractFurnaceBlockEntity.isFuel(stack);
+        return !stack.isEmpty() && this.playerNpc.level().fuelValues().isFuel(stack);
     }
 
     private BlockPos getTemporaryFurnacePos() {
         if (FurnaceAi.TEMP_FURNACE_KIND_NIGHT_CAMP.equals(
-                this.playerNpc.getPersistentData().getString(FurnaceAi.TEMP_FURNACE_KIND))
+                this.playerNpc.getPersistentData().getStringOr(FurnaceAi.TEMP_FURNACE_KIND, ""))
                 || !this.playerNpc.getPersistentData().contains(FurnaceAi.TEMP_FURNACE_X)) {
             return null;
         }
 
         return new BlockPos(
-                this.playerNpc.getPersistentData().getInt(FurnaceAi.TEMP_FURNACE_X),
-                this.playerNpc.getPersistentData().getInt(FurnaceAi.TEMP_FURNACE_Y),
-                this.playerNpc.getPersistentData().getInt(FurnaceAi.TEMP_FURNACE_Z)
+                this.playerNpc.getPersistentData().getIntOr(FurnaceAi.TEMP_FURNACE_X, 0),
+                this.playerNpc.getPersistentData().getIntOr(FurnaceAi.TEMP_FURNACE_Y, 0),
+                this.playerNpc.getPersistentData().getIntOr(FurnaceAi.TEMP_FURNACE_Z, 0)
         );
     }
 

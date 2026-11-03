@@ -156,7 +156,7 @@ public class ExploreBiomeForLogsGoal extends Goal {
 
     @Override
     public void stop() {
-        if (!this.playerNpc.level().isClientSide) {
+        if (!this.playerNpc.level().isClientSide()) {
             int cooldown = this.foundLog ? FOUND_LOG_COOLDOWN_TICKS : COOLDOWN_TICKS + this.playerNpc.getRandom().nextInt(20 * 6);
             this.playerNpc.setBiomeExploreCooldown(cooldown);
         }
@@ -307,7 +307,7 @@ public class ExploreBiomeForLogsGoal extends Goal {
                 && head.getCollisionShape(serverLevel, pos.above()).isEmpty()
                 && feet.getFluidState().isEmpty()
                 && head.getFluidState().isEmpty()
-                && serverLevel.getBlockState(floorPos).isSolidRender(serverLevel, floorPos);
+                && serverLevel.getBlockState(floorPos).isSolidRender();
     }
 
     private void updateTaskDetail() {

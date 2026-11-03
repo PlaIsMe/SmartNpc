@@ -33,7 +33,7 @@ public class UseSpyglassGoal extends Goal {
 
     @Override
     public boolean canUse() {
-        if (this.playerNpc.level().isClientSide
+        if (this.playerNpc.level().isClientSide()
                 || !this.playerNpc.isAlive()
                 || this.playerNpc.isNoAi()
                 || this.playerNpc.isPassenger()

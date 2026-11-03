@@ -74,9 +74,9 @@ public class ReturnHomeGoal extends Goal {
         if (hasActiveSupplyRoute(playerNpc)) {
             // A selected supply route owns movement until completion. Crossing the home work-area
             // boundary must not turn ready build work into a higher-priority return-home loop.
-            return serverLevel.isNight() || serverLevel.isThundering();
+            return serverLevel.isDarkOutside() || serverLevel.isThundering();
         }
-        if (!serverLevel.isNight()
+        if (!serverLevel.isDarkOutside()
                 && !serverLevel.isThundering()
                 && (PlayerNpcBuildMaterialUtil.findMissingBuildMaterialNeed(serverLevel, playerNpc).isPresent()
                 || PlayerNpcBuildMaterialUtil.isMissingBuildMaterialSearchPending(playerNpc))) {
@@ -95,12 +95,12 @@ public class ReturnHomeGoal extends Goal {
             return !miningShelterOnly;
         }
         if (miningShelterOnly) {
-            return serverLevel.isNight() || serverLevel.isThundering();
+            return serverLevel.isDarkOutside() || serverLevel.isThundering();
         }
         if (playerNpc.shouldPrioritizeLogGathering() || playerNpc.shouldPrioritizeCobblestoneGathering()) {
-            return serverLevel.isNight() || serverLevel.isThundering();
+            return serverLevel.isDarkOutside() || serverLevel.isThundering();
         }
-        return serverLevel.isNight()
+        return serverLevel.isDarkOutside()
                 || serverLevel.isThundering()
                 || (playerNpc.getReturnHomeCooldown() <= 0
                     && BuildHouseGoal.hasReadyHomeBuildWork(playerNpc, serverLevel))
@@ -131,7 +131,7 @@ public class ReturnHomeGoal extends Goal {
             return false;
         }
         return "ai.player_npc.returning_home".equals(playerNpc.getCurrentAiState())
-                || serverLevel.isNight()
+                || serverLevel.isDarkOutside()
                 || serverLevel.isThundering()
                 || playerNpc.hasExplorationReturnHomeRequest()
                 || shouldReturnAfterCompletedStoneTrip(playerNpc, serverLevel, homeArea)
@@ -542,7 +542,7 @@ public class ReturnHomeGoal extends Goal {
         // that must not masquerade as an underground/home-floor failure: ReturnHome has a higher
         // priority than gathering and would otherwise cancel a valid river crossing, request an
         // upward escape which the water safety code clears, then repeat from the same water cell.
-        if (playerNpc.isInWaterOrBubble()
+        if (playerNpc.isInWater()
                 || serverLevel.getFluidState(pos).is(FluidTags.WATER)
                 || serverLevel.getFluidState(pos.above()).is(FluidTags.WATER)
                 || !playerNpc.onGround() && serverLevel.getFluidState(pos.below()).is(FluidTags.WATER)) {
@@ -622,7 +622,7 @@ public class ReturnHomeGoal extends Goal {
                 && serverLevel.getBlockState(feet).getFluidState().isEmpty()
                 && serverLevel.getBlockState(head).canBeReplaced()
                 && serverLevel.getBlockState(head).getFluidState().isEmpty()
-                && serverLevel.getBlockState(floor).isSolidRender(serverLevel, floor);
+                && serverLevel.getBlockState(floor).isSolidRender();
     }
 
     private boolean hasReachedHomeCenter() {
@@ -720,7 +720,7 @@ public class ReturnHomeGoal extends Goal {
     }
 
     private boolean shouldShelterAtHome(ServerLevel serverLevel) {
-        return serverLevel.isNight() || serverLevel.isThundering();
+        return serverLevel.isDarkOutside() || serverLevel.isThundering();
     }
 
     private static boolean hasActiveSupplyRoute(PlayerNpcEntity playerNpc) {
@@ -862,7 +862,7 @@ public class ReturnHomeGoal extends Goal {
     }
 
     private boolean hasSleepWork(ServerLevel serverLevel, PlayerNpcHomeUtil.HomeArea homeArea) {
-        return serverLevel.isNight()
+        return serverLevel.isDarkOutside()
                 && this.playerNpc.getSleepCooldown() <= 0
                 && this.findBed(serverLevel, homeArea) != null;
     }
@@ -960,7 +960,7 @@ public class ReturnHomeGoal extends Goal {
     }
 
     private boolean isFuel(ItemStack stack) {
-        return !stack.isEmpty() && AbstractFurnaceBlockEntity.isFuel(stack);
+        return !stack.isEmpty() && this.playerNpc.level().fuelValues().isFuel(stack);
     }
 
     private BlockPos findBlock(ServerLevel serverLevel, PlayerNpcHomeUtil.HomeArea homeArea, Block block) {

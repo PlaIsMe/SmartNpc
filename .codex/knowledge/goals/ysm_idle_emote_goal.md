@@ -1,3 +1,5 @@
+> Historical 1.21.1 reference. This integration was removed from the 1.21.11 branch at the user's request.
+
 # YSM idle emote goal
 
 `YsmIdleEmoteGoal` is a flagless, startup/worker-gated priority-8 animation observer.

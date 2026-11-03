@@ -514,7 +514,7 @@ public final class PlayerNpcPerformanceMonitor {
                 "%s#%d dim=%s pos=%d,%d,%d state=%s detail=\"%s\" target=%s navDone=%s navStuck=%s",
                 sanitize(playerNpc.getDisplayName().getString()),
                 playerNpc.getId(),
-                level.dimension().location(),
+                level.dimension().identifier(),
                 pos.getX(),
                 pos.getY(),
                 pos.getZ(),

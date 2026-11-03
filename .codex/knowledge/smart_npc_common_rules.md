@@ -6,12 +6,9 @@ The user requested removal of `src/test` and the GameTest Gradle run configurati
 
 ## Project Baseline
 
-- Smart NPC targets Minecraft `1.21.1` with NeoForge `21.1.250`, Parchment `2024.11.17`, and Java `21`.
+- Smart NPC targets Minecraft `1.21.11` with NeoForge `21.11.48`, official Mojang mappings, and Java `21`.
 - Production Java packages use `com.pla.smart_npc`. Some older knowledge notes still mention the pre-rename `annoyingvillagers` package; verify paths against the current source tree before editing.
-- Epic Fight is an optional compatibility boundary. Generic Smart NPC code may call the small
-  static API in `compat.epicfight.EpicFight` directly, but every such call and all Epic Fight event
-  registration must first pass `ModList.get().isLoaded("epicfight")`. Do not restore reflection,
-  cached `Method` fields, or an `EpicFightCompat` invocation layer.
+- Epic Fight and Yes Steve Model compatibility have been removed on this branch at the user's request. Do not restore their dependencies, registration, goals, config, or rendering hooks. Better Combat remains optional, using Player Animation Library 1.1.x on the client.
 
 ## AI Design Pattern
 
@@ -42,21 +39,16 @@ The user requested removal of `src/test` and the GameTest Gradle run configurati
 ## Inventory, Tools, And Durability
 
 - Use `ToolAi` for temporary work-tool swaps and restoration. Use guarded Player NPC hand setters so a work tool does not overwrite cached combat gear.
-- Use `BreakingBlockAi` for ordinary timed breaking when its semantics fit; it owns tool selection, hardness timing, crack progress, sounds, vanilla swing, Epic Fight digging, durability, and optional work sneaking.
+- Use `BreakingBlockAi` for ordinary timed breaking when its semantics fit; it owns tool selection, hardness timing, crack progress, sounds, vanilla swing, durability, and optional work sneaking.
 - When returning an item to a potentially full inventory, preserve the actual remainder. `InventoryUtils.addItem(...)` returns only success/failure and can partially mutate the inventory; do not drop the original stack after a partial insertion. Use an API that returns the remaining stack or simulate capacity first.
 - Apply durability to the item actually used for the work. Restore temporary hands on every normal, failed, or preempted stop path.
 
 ## Animation Compatibility
 
-- Route visible work through one renderer-appropriate action signal. Atomic actions must not start both the vanilla swing and a separate Epic Fight animation for the same commit.
-- Distinguish timed continuous work from atomic commits. Breaking may keep the repeating Epic Fight digging motion alive across progress ticks and must clear it on abort. Block placement, bucket use, hoe tilling, planting, and bone meal keep their delay animation-free, then emit exactly one normal NPC use swing or one dedicated non-repeating Epic Fight use animation only after the world mutation succeeds.
-- Optional compatibility must be a no-op when the external mod is absent and must not introduce external classes into generally loaded code.
-
-## Combat Evolution Execution Eligibility (NeoForge 1.21.1)
-
-- `compat.epicfight.advancedmobpatch.AdvancedMobPatch.canBeExecuted` is called through the optional Combat Evolution `ExecutionHandlerMixin`. It must not return unconditional support: require a live, unfinished `NEUTRALIZE` animation. Idle, ordinary hit stun, knockdown, and completed/interrupted neutralize animations do not qualify.
-- Server execution checks also require depleted stamina and `AdvancedStaminaStatus.BREAK`; recovery closes the execution window. The patch's stamina fields are server-only, so client prompts use the synchronized animation rather than reading those unsynchronized fields.
-- Keep this check free of Combat Evolution classes so Epic Fight compatibility still loads when Combat Evolution is absent. Mirror behavior changes in the Annoying Villagers Epic Fight addon's advanced patch.
+- Work uses the vanilla swing signal; clear crack/animation state on interruption.
+- Atomic placement/use actions emit their swing only after the world mutation succeeds.
+- Better Combat uses an optional client bridge and Player Animation Library. External animation classes must stay behind the optional-mod gate.
+- Epic Fight / Combat Evolution execution and YSM notes elsewhere describe older branches, not implemented compatibility in 1.21.11.
 
 ## Persistence And Cooldowns
 

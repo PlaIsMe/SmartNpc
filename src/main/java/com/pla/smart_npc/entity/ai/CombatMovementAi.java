@@ -39,7 +39,7 @@ public final class CombatMovementAi {
         double separation = (this.mob.getBbWidth() + target.getBbWidth()) * 0.5D + 0.25D;
         boolean inReach = distanceSqr <= attackRange * attackRange && this.mob.getSensing().hasLineOfSight(target);
         if (this.mob instanceof PlayerNpcEntity npc && this.mob.level() instanceof ServerLevel
-                && this.mob.isInWaterOrBubble() && !inReach) {
+                && this.mob.isInWater() && !inReach) {
             npc.getWaterTravelAi().request(this, target.blockPosition(), speed, true);
         } else if (this.mob instanceof PlayerNpcEntity npc) {
             npc.getWaterTravelAi().release(this);

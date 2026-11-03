@@ -95,8 +95,8 @@ public final class PlayerNpcTeamUpManager {
     @Nullable
     private static PendingInvitation getInvitation(LivingEntity participant) {
         PendingInvitation invitation = INVITATIONS.get(participant.getUUID());
-        if (invitation != null && (participant.getServer() == null
-                || participant.getServer().getTickCount() >= invitation.expiresAtTick()
+        if (invitation != null && (participant.level().getServer() == null
+                || participant.level().getServer().getTickCount() >= invitation.expiresAtTick()
                 || invitation.initiator().isRemoved() || invitation.target().isRemoved())) {
             cancelInvitation(invitation.initiator(), invitation.target());
             return null;
@@ -173,7 +173,7 @@ public final class PlayerNpcTeamUpManager {
     }
 
     public static boolean acceptPlayerGesture(PlayerNpcEntity npc, ServerPlayer player) {
-        MinecraftServer server = player.getServer();
+        MinecraftServer server = player.level().getServer();
         if (server == null || npc.isTeamMember() || !npc.isTeamUpRequestPending()
                 || !canContinueInvitation(npc, player)) {
             return false;
@@ -334,7 +334,7 @@ public final class PlayerNpcTeamUpManager {
     }
 
     public static void onPlayerLeaderDeath(ServerPlayer player) {
-        MinecraftServer server = player.getServer();
+        MinecraftServer server = player.level().getServer();
         if (server == null) {
             return;
         }

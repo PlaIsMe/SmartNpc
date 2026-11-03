@@ -105,7 +105,7 @@ public class CautiousAvoidThreatGoal extends AvoidEntityGoal<LivingEntity> {
     }
 
     private boolean canMove() {
-        return !this.playerNpc.level().isClientSide
+        return !this.playerNpc.level().isClientSide()
                 && this.playerNpc.isAlive()
                 && !this.playerNpc.isNoAi()
                 && !this.playerNpc.isPassenger();

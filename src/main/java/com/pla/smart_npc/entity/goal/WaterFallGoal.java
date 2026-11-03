@@ -1,5 +1,7 @@
 package com.pla.smart_npc.entity.goal;
 
+import net.minecraft.world.attribute.EnvironmentAttributes;
+
 import com.pla.smart_npc.entity.PlayerNpcEntity;
 import com.pla.smart_npc.util.InventoryUtils;
 import net.minecraft.core.BlockPos;
@@ -63,8 +65,9 @@ public class WaterFallGoal extends Goal {
                 || this.playerNpc.isNoAi()
                 || this.playerNpc.isPassenger()
                 || this.playerNpc.onGround()
-                || this.playerNpc.isInWaterOrBubble()
-                || serverLevel.dimensionType().ultraWarm()
+                || this.playerNpc.isInWater()
+                || serverLevel.environmentAttributes().getValue(
+                        EnvironmentAttributes.WATER_EVAPORATES, this.playerNpc.position())
                 || this.playerNpc.getDeltaMovement().y >= MIN_FALLING_Y_VELOCITY
                 || this.playerNpc.fallDistance <= FALL_DAMAGE_DISTANCE
                 || this.playerNpc.getBucketCooldown() > 0
@@ -82,7 +85,7 @@ public class WaterFallGoal extends Goal {
                 && !this.playerNpc.isRemoved()
                 && this.playerNpc.level() instanceof ServerLevel
                 && (this.placedWaterPos != null
-                || !this.playerNpc.onGround() && !this.playerNpc.isInWaterOrBubble());
+                || !this.playerNpc.onGround() && !this.playerNpc.isInWater());
     }
 
     @Override
@@ -110,7 +113,7 @@ public class WaterFallGoal extends Goal {
 
         if (this.placedWaterPos == null) {
             if (this.playerNpc.onGround()
-                    || this.playerNpc.isInWaterOrBubble()
+                    || this.playerNpc.isInWater()
                     || this.playerNpc.getDeltaMovement().y >= 0.0D) {
                 this.finished = true;
                 return;
@@ -244,7 +247,7 @@ public class WaterFallGoal extends Goal {
         if (!serverLevel.isInWorldBounds(pos)
                 || !serverLevel.getWorldBorder().isWithinBounds(pos)
                 || !serverLevel.hasChunkAt(pos)
-                || serverLevel.dimensionType().ultraWarm()) {
+                || serverLevel.environmentAttributes().getValue(EnvironmentAttributes.WATER_EVAPORATES, pos)) {
             return false;
         }
 
@@ -274,7 +277,7 @@ public class WaterFallGoal extends Goal {
         FluidState fluidState = serverLevel.getFluidState(this.placedWaterPos);
         return fluidState.is(FluidTags.WATER)
                 && fluidState.isSource()
-                && this.playerNpc.isInWaterOrBubble()
+                && this.playerNpc.isInWater()
                 && this.playerNpc.getBoundingBox().intersects(new AABB(this.placedWaterPos).inflate(0.01D));
     }
 

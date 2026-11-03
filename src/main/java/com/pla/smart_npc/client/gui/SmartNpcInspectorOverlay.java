@@ -10,7 +10,7 @@ import com.pla.smart_npc.network.PlayerNpcInspectorPacket;
 import com.pla.smart_npc.network.PlayerNpcInspectorRequestPacket;
 import com.mojang.blaze3d.platform.InputConstants;
 import net.minecraft.ChatFormatting;
-import net.minecraft.Util;
+import net.minecraft.util.Util;
 import net.minecraft.client.CameraType;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
@@ -22,7 +22,7 @@ import net.minecraft.network.protocol.Packet;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.network.protocol.game.ServerboundMovePlayerPacket;
 import net.minecraft.network.chat.Component;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
@@ -34,7 +34,10 @@ import net.neoforged.neoforge.client.event.RenderGuiLayerEvent;
 import net.neoforged.neoforge.client.event.ScreenEvent;
 import net.neoforged.neoforge.client.gui.VanillaGuiLayers;
 import net.neoforged.neoforge.client.event.ClientTickEvent;
-import net.neoforged.neoforge.network.PacketDistributor;
+import net.neoforged.neoforge.client.network.ClientPacketDistributor;
+import net.minecraft.world.entity.player.Input;
+import net.minecraft.world.phys.Vec2;
+import com.pla.smart_npc.mixin.ClientInputAccessor;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.Mod;
 import net.neoforged.fml.common.EventBusSubscriber;
@@ -272,20 +275,14 @@ public class SmartNpcInspectorOverlay {
         }
 
         if (inspectatorActive) {
-            event.getInput().leftImpulse = 0.0F;
-            event.getInput().forwardImpulse = 0.0F;
-            event.getInput().up = false;
-            event.getInput().down = false;
-            event.getInput().left = false;
-            event.getInput().right = false;
-            event.getInput().jumping = false;
-            event.getInput().shiftKeyDown = false;
+            event.getInput().keyPresses = Input.EMPTY;
+            ((ClientInputAccessor) event.getInput()).smartNpc$setMoveVector(Vec2.ZERO);
         }
     }
 
     @SubscribeEvent
     public static void onRenderGuiOverlayPre(RenderGuiLayerEvent.Pre event) {
-        if (inspectatorActive && VanillaGuiLayers.JUMP_METER.equals(event.getName())) {
+        if (inspectatorActive && VanillaGuiLayers.CONTEXTUAL_INFO_BAR.equals(event.getName())) {
             event.setCanceled(true);
         }
     }
@@ -880,12 +877,12 @@ public class SmartNpcInspectorOverlay {
                 continue;
             }
 
-            ResourceLocation itemId = ResourceLocation.tryParse(parts[1]);
+            Identifier itemId = Identifier.tryParse(parts[1]);
             if (itemId == null) {
                 continue;
             }
 
-            Item item = BuiltInRegistries.ITEM.get(itemId);
+            Item item = BuiltInRegistries.ITEM.getValue(itemId);
             if (item == null) {
                 continue;
             }
@@ -1021,7 +1018,7 @@ public class SmartNpcInspectorOverlay {
             return Component.translatable("gui.player_npc.inspector.empty");
         }
 
-        ResourceLocation id = BuiltInRegistries.ITEM.getKey(stack.getItem());
+        Identifier id = BuiltInRegistries.ITEM.getKey(stack.getItem());
         return id == null ? Component.literal("unknown") : Component.literal(id.toString());
     }
 
@@ -1334,7 +1331,7 @@ public class SmartNpcInspectorOverlay {
     }
 
     private static boolean isPhysicalKeyDown(Minecraft minecraft, int key) {
-        return InputConstants.isKeyDown(minecraft.getWindow().getWindow(), key);
+        return InputConstants.isKeyDown(minecraft.getWindow(), key);
     }
 
     private static void requestInspectatorCycle(PlayerNpcEntity currentNpc, int direction) {
@@ -1449,10 +1446,8 @@ public class SmartNpcInspectorOverlay {
         minecraft.options.keyJump.setDown(false);
         minecraft.options.keyInventory.setDown(false);
         if (minecraft.player != null && minecraft.player.input != null) {
-            minecraft.player.input.forwardImpulse = 0.0F;
-            minecraft.player.input.leftImpulse = 0.0F;
-            minecraft.player.input.jumping = false;
-            minecraft.player.input.shiftKeyDown = false;
+            minecraft.player.input.keyPresses = Input.EMPTY;
+            ((ClientInputAccessor) minecraft.player.input).smartNpc$setMoveVector(Vec2.ZERO);
         }
     }
 
@@ -1470,14 +1465,14 @@ public class SmartNpcInspectorOverlay {
             int requirementsX = Math.max(4, panelX - REQUIREMENTS_PANEL_WIDTH - 8);
             ItemStack hoveredRequirement = getHoveredRequirementItem(requirementsX, panelY, mouseX, mouseY);
             if (!hoveredRequirement.isEmpty()) {
-                guiGraphics.renderTooltip(minecraft.font, hoveredRequirement, mouseX, mouseY);
+                guiGraphics.setTooltipForNextFrame(minecraft.font, hoveredRequirement, mouseX, mouseY);
                 return;
             }
         }
 
         ItemStack hovered = getHoveredItem(panelX, panelY, mouseX, mouseY);
         if (!hovered.isEmpty()) {
-            guiGraphics.renderTooltip(minecraft.font, hovered, mouseX, mouseY);
+            guiGraphics.setTooltipForNextFrame(minecraft.font, hovered, mouseX, mouseY);
         }
     }
 
@@ -1589,7 +1584,7 @@ public class SmartNpcInspectorOverlay {
             return;
         }
 
-        PacketDistributor.sendToServer(packet);
+        ClientPacketDistributor.sendToServer(packet);
     }
 
     private record RequirementPayload(boolean structured, Component layout, List<RequirementRow> rows, int more) {

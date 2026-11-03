@@ -49,8 +49,8 @@ public final class PlayerNpcFarmPlan {
         }
 
         CompoundTag persistentData = playerNpc.getPersistentData();
-        if (persistentData.contains(PLAN_TAG, Tag.TAG_COMPOUND)) {
-            Optional<Plan> read = read(persistentData.getCompound(PLAN_TAG));
+        if (persistentData.contains(PLAN_TAG)) {
+            Optional<Plan> read = read(persistentData.getCompoundOrEmpty(PLAN_TAG));
             read.ifPresent(plan -> PLAN_CACHE.put(playerNpc, plan));
             return read;
         }
@@ -102,7 +102,7 @@ public final class PlayerNpcFarmPlan {
     public static boolean isOwnedFarmIrrigationWater(PlayerNpcEntity playerNpc, BlockPos pos) {
         return pos != null && get(playerNpc)
                 .filter(plan -> plan.dimension().isBlank()
-                        || playerNpc.level().dimension().location().toString().equals(plan.dimension()))
+                        || playerNpc.level().dimension().identifier().toString().equals(plan.dimension()))
                 .map(plan -> plan.waterPos().equals(pos))
                 .orElse(false);
     }
@@ -117,24 +117,24 @@ public final class PlayerNpcFarmPlan {
     }
 
     private static Optional<Plan> read(CompoundTag tag) {
-        if (tag.contains(VERSION, Tag.TAG_INT) && tag.getInt(VERSION) > CURRENT_VERSION
-                || !tag.contains(ORIGIN, Tag.TAG_LONG)
-                || !tag.contains(WIDTH, Tag.TAG_INT)
-                || !tag.contains(DEPTH, Tag.TAG_INT)
-                || !tag.contains(WATER, Tag.TAG_LONG)
-                || !tag.contains(GATE, Tag.TAG_LONG)) {
+        if (tag.contains(VERSION) && tag.getIntOr(VERSION, 0) > CURRENT_VERSION
+                || !tag.contains(ORIGIN)
+                || !tag.contains(WIDTH)
+                || !tag.contains(DEPTH)
+                || !tag.contains(WATER)
+                || !tag.contains(GATE)) {
             return Optional.empty();
         }
         try {
-            String dimension = tag.contains(DIMENSION, Tag.TAG_STRING) ? tag.getString(DIMENSION) : "";
+            String dimension = tag.contains(DIMENSION) ? tag.getStringOr(DIMENSION, "") : "";
             return Optional.of(new Plan(
-                    BlockPos.of(tag.getLong(ORIGIN)),
-                    Math.max(1, tag.getInt(WIDTH)),
-                    Math.max(1, tag.getInt(DEPTH)),
-                    parseShape(tag.getString(SHAPE)),
-                    parsePhase(tag.getString(PHASE)),
-                    BlockPos.of(tag.getLong(WATER)),
-                    BlockPos.of(tag.getLong(GATE)),
+                    BlockPos.of(tag.getLongOr(ORIGIN, 0L)),
+                    Math.max(1, tag.getIntOr(WIDTH, 0)),
+                    Math.max(1, tag.getIntOr(DEPTH, 0)),
+                    parseShape(tag.getStringOr(SHAPE, "")),
+                    parsePhase(tag.getStringOr(PHASE, "")),
+                    BlockPos.of(tag.getLongOr(WATER, 0L)),
+                    BlockPos.of(tag.getLongOr(GATE, 0L)),
                     dimension
             ));
         } catch (RuntimeException exception) {
@@ -143,22 +143,22 @@ public final class PlayerNpcFarmPlan {
     }
 
     private static Optional<Plan> readLegacy(CompoundTag tag, PlayerNpcEntity playerNpc) {
-        if (!tag.contains(LEGACY_X, Tag.TAG_INT)
-                || !tag.contains(LEGACY_Y, Tag.TAG_INT)
-                || !tag.contains(LEGACY_Z, Tag.TAG_INT)
-                || !tag.contains(LEGACY_WIDTH, Tag.TAG_INT)
-                || !tag.contains(LEGACY_DEPTH, Tag.TAG_INT)) {
+        if (!tag.contains(LEGACY_X)
+                || !tag.contains(LEGACY_Y)
+                || !tag.contains(LEGACY_Z)
+                || !tag.contains(LEGACY_WIDTH)
+                || !tag.contains(LEGACY_DEPTH)) {
             return Optional.empty();
         }
-        BlockPos origin = new BlockPos(tag.getInt(LEGACY_X), tag.getInt(LEGACY_Y), tag.getInt(LEGACY_Z));
-        int width = Math.max(1, tag.getInt(LEGACY_WIDTH));
-        int depth = Math.max(1, tag.getInt(LEGACY_DEPTH));
+        BlockPos origin = new BlockPos(tag.getIntOr(LEGACY_X, 0), tag.getIntOr(LEGACY_Y, 0), tag.getIntOr(LEGACY_Z, 0));
+        int width = Math.max(1, tag.getIntOr(LEGACY_WIDTH, 0));
+        int depth = Math.max(1, tag.getIntOr(LEGACY_DEPTH, 0));
         BlockPos water = origin.offset(width / 2, 0, depth / 2);
         BlockPos anchor = PlayerNpcHomeUtil.getHome(playerNpc)
                 .map(PlayerNpcHomeUtil::center)
                 .orElseGet(playerNpc::blockPosition);
         BlockPos gate = chooseLegacyGate(origin, width, depth, anchor);
-        String dimension = playerNpc.level().dimension().location().toString();
+        String dimension = playerNpc.level().dimension().identifier().toString();
         return Optional.of(new Plan(origin, width, depth, Shape.RECTANGLE, Phase.CLEAR, water, gate, dimension));
     }
 

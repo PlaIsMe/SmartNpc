@@ -9,7 +9,7 @@ import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.entity.ai.goal.Goal;
-import net.minecraft.world.entity.animal.IronGolem;
+import net.minecraft.world.entity.animal.golem.IronGolem;
 import net.minecraft.world.item.BedItem;
 import net.minecraft.world.item.BlockItem;
 import net.minecraft.world.item.ItemStack;
@@ -87,7 +87,7 @@ public class IronGolemTrollGoal extends Goal {
             }
         }
 
-        this.playerNpc.moveTo(this.pillarBase.getX() + 0.5D, this.pillarBase.getY() + 3.0D, this.pillarBase.getZ() + 0.5D, this.playerNpc.getYRot(), this.playerNpc.getXRot());
+        this.playerNpc.snapTo(this.pillarBase.getX() + 0.5D, this.pillarBase.getY() + 3.0D, this.pillarBase.getZ() + 0.5D, this.playerNpc.getYRot(), this.playerNpc.getXRot());
         this.playerNpc.setTarget(this.golem);
         this.playerNpc.setCurrentAiState("ai.player_npc.trolling_golem");
         this.playerNpc.setCurrentAiDetail(this.golem.getDisplayName().getString());
@@ -116,7 +116,7 @@ public class IronGolemTrollGoal extends Goal {
         BlockPos center = this.playerNpc.blockPosition();
         for (BlockPos pos : BlockPos.betweenClosed(center.offset(-3, 0, -3), center.offset(3, 1, 3))) {
             BlockPos base = pos.immutable();
-            if (serverLevel.getBlockState(base.below()).isSolidRender(serverLevel, base.below())
+            if (serverLevel.getBlockState(base.below()).isSolidRender()
                     && serverLevel.getBlockState(base).isAir()
                     && serverLevel.getBlockState(base.above()).isAir()
                     && serverLevel.getBlockState(base.above(2)).isAir()

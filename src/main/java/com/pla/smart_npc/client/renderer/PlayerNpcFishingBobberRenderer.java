@@ -2,123 +2,132 @@ package com.pla.smart_npc.client.renderer;
 
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexConsumer;
-import com.mojang.math.Axis;
 import com.pla.smart_npc.entity.PlayerNpcEntity;
 import com.pla.smart_npc.entity.PlayerNpcFishingBobberEntity;
-import net.minecraft.client.renderer.MultiBufferSource;
-import net.minecraft.client.renderer.RenderType;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.renderer.SubmitNodeCollector;
+import net.minecraft.client.renderer.culling.Frustum;
 import net.minecraft.client.renderer.entity.EntityRenderer;
 import net.minecraft.client.renderer.entity.EntityRendererProvider;
+import net.minecraft.client.renderer.entity.state.FishingHookRenderState;
+import net.minecraft.client.renderer.rendertype.RenderType;
+import net.minecraft.client.renderer.rendertype.RenderTypes;
+import net.minecraft.client.renderer.state.CameraRenderState;
 import net.minecraft.client.renderer.texture.OverlayTexture;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.util.Mth;
 import net.minecraft.world.entity.HumanoidArm;
-import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.phys.Vec3;
-import net.neoforged.api.distmarker.Dist;
-import net.neoforged.api.distmarker.OnlyIn;
 import net.neoforged.neoforge.common.ItemAbilities;
-import org.jetbrains.annotations.NotNull;
 
-@OnlyIn(Dist.CLIENT)
-public class PlayerNpcFishingBobberRenderer extends EntityRenderer<PlayerNpcFishingBobberEntity> {
-    private static final ResourceLocation TEXTURE_LOCATION = ResourceLocation.fromNamespaceAndPath("minecraft", "textures/entity/fishing_hook.png");
-    private static final RenderType RENDER_TYPE = RenderType.entityCutout(TEXTURE_LOCATION);
+public class PlayerNpcFishingBobberRenderer
+        extends EntityRenderer<PlayerNpcFishingBobberEntity, FishingHookRenderState> {
+    private static final Identifier TEXTURE = Identifier.withDefaultNamespace("textures/entity/fishing/fishing_hook.png");
+    private static final RenderType RENDER_TYPE = RenderTypes.entityCutout(TEXTURE);
 
     public PlayerNpcFishingBobberRenderer(EntityRendererProvider.Context context) {
         super(context);
     }
 
     @Override
-    public void render(@NotNull PlayerNpcFishingBobberEntity entity, float entityYaw, float partialTicks, @NotNull PoseStack poseStack, @NotNull MultiBufferSource buffer, int packedLight) {
-        PlayerNpcEntity angler = entity.getAngler();
-        if (angler == null) {
-            return;
-        }
-
+    public void submit(FishingHookRenderState state, PoseStack poseStack,
+                       SubmitNodeCollector collector, CameraRenderState camera) {
         poseStack.pushPose();
         poseStack.pushPose();
         poseStack.scale(0.5F, 0.5F, 0.5F);
-        poseStack.mulPose(this.entityRenderDispatcher.cameraOrientation());
-        poseStack.mulPose(Axis.YP.rotationDegrees(180.0F));
-        PoseStack.Pose pose = poseStack.last();
-        VertexConsumer hookConsumer = buffer.getBuffer(RENDER_TYPE);
-        vertex(hookConsumer, pose, packedLight, 0.0F, 0, 0, 1);
-        vertex(hookConsumer, pose, packedLight, 1.0F, 0, 1, 1);
-        vertex(hookConsumer, pose, packedLight, 1.0F, 1, 1, 0);
-        vertex(hookConsumer, pose, packedLight, 0.0F, 1, 0, 0);
+        poseStack.mulPose(camera.orientation);
+        collector.submitCustomGeometry(poseStack, RENDER_TYPE, (pose, buffer) -> {
+            vertex(buffer, pose, state.lightCoords, 0.0F, 0, 0, 1);
+            vertex(buffer, pose, state.lightCoords, 1.0F, 0, 1, 1);
+            vertex(buffer, pose, state.lightCoords, 1.0F, 1, 1, 0);
+            vertex(buffer, pose, state.lightCoords, 0.0F, 1, 0, 0);
+        });
         poseStack.popPose();
 
-        Vec3 handPosition = getHandPosition(angler, partialTicks);
-        double bobberX = Mth.lerp((double) partialTicks, entity.xo, entity.getX());
-        double bobberY = Mth.lerp((double) partialTicks, entity.yo, entity.getY()) + 0.25D;
-        double bobberZ = Mth.lerp((double) partialTicks, entity.zo, entity.getZ());
-        float xOffset = (float) (handPosition.x - bobberX);
-        float yOffset = (float) (handPosition.y - bobberY) + (angler.isCrouching() ? -0.1875F : 0.0F);
-        float zOffset = (float) (handPosition.z - bobberZ);
-        VertexConsumer lineConsumer = buffer.getBuffer(RenderType.lineStrip());
-        PoseStack.Pose linePose = poseStack.last();
-
-        for (int i = 0; i <= 16; i++) {
-            stringVertex(xOffset, yOffset, zOffset, lineConsumer, linePose, fraction(i, 16), fraction(i + 1, 16));
-        }
-
+        float x = (float) state.lineOriginOffset.x;
+        float y = (float) state.lineOriginOffset.y;
+        float z = (float) state.lineOriginOffset.z;
+        float width = Minecraft.getInstance().getWindow().getAppropriateLineWidth();
+        collector.submitCustomGeometry(poseStack, RenderTypes.lines(), (pose, buffer) -> {
+            for (int i = 0; i < 16; i++) {
+                float from = fraction(i, 16);
+                float to = fraction(i + 1, 16);
+                stringVertex(x, y, z, buffer, pose, from, to, width);
+                stringVertex(x, y, z, buffer, pose, to, from, width);
+            }
+        });
         poseStack.popPose();
-        super.render(entity, entityYaw, partialTicks, poseStack, buffer, packedLight);
-    }
-
-    private static Vec3 getHandPosition(PlayerNpcEntity angler, float partialTicks) {
-        int handSide = getLineHandSide(angler);
-        float bodyYaw = Mth.lerp(partialTicks, angler.yBodyRotO, angler.yBodyRot) * ((float) Math.PI / 180F);
-        double bodySin = Mth.sin(bodyYaw);
-        double bodyCos = Mth.cos(bodyYaw);
-        double sideOffset = handSide * 0.35D;
-        double x = Mth.lerp((double) partialTicks, angler.xo, angler.getX()) - bodyCos * sideOffset - bodySin * 0.8D;
-        double y = angler.yo + angler.getEyeHeight() + (angler.getY() - angler.yo) * partialTicks - 0.45D;
-        double z = Mth.lerp((double) partialTicks, angler.zo, angler.getZ()) - bodySin * sideOffset + bodyCos * 0.8D;
-        return new Vec3(x, y, z);
-    }
-
-    private static int getLineHandSide(PlayerNpcEntity angler) {
-        int handSide = angler.getMainArm() == HumanoidArm.RIGHT ? 1 : -1;
-        ItemStack mainHand = angler.getMainHandItem();
-        if (!mainHand.canPerformAction(ItemAbilities.FISHING_ROD_CAST)) {
-            handSide = -handSide;
-        }
-        return handSide;
-    }
-
-    private static float fraction(int numerator, int denominator) {
-        return (float) numerator / (float) denominator;
-    }
-
-    private static void vertex(VertexConsumer consumer, PoseStack.Pose pose, int lightmapUv, float x, int y, int u, int v) {
-        consumer.addVertex(pose, x - 0.5F, y - 0.5F, 0.0F)
-                .setColor(-1)
-                .setUv(u, v)
-                .setOverlay(OverlayTexture.NO_OVERLAY)
-                .setLight(lightmapUv)
-                .setNormal(pose, 0.0F, 1.0F, 0.0F);
-    }
-
-    private static void stringVertex(float x, float y, float z, VertexConsumer consumer, PoseStack.Pose pose, float fromStep, float toStep) {
-        float fromX = x * fromStep;
-        float fromY = y * (fromStep * fromStep + fromStep) * 0.5F + 0.25F;
-        float fromZ = z * fromStep;
-        float normalX = x * toStep - fromX;
-        float normalY = y * (toStep * toStep + toStep) * 0.5F + 0.25F - fromY;
-        float normalZ = z * toStep - fromZ;
-        float normalLength = Mth.sqrt(normalX * normalX + normalY * normalY + normalZ * normalZ);
-        normalX /= normalLength;
-        normalY /= normalLength;
-        normalZ /= normalLength;
-        consumer.addVertex(pose, fromX, fromY, fromZ)
-                .setColor(-16777216)
-                .setNormal(pose, normalX, normalY, normalZ);
+        super.submit(state, poseStack, collector, camera);
     }
 
     @Override
-    public @NotNull ResourceLocation getTextureLocation(@NotNull PlayerNpcFishingBobberEntity entity) {
-        return TEXTURE_LOCATION;
+    public FishingHookRenderState createRenderState() {
+        return new FishingHookRenderState();
+    }
+
+    @Override
+    public void extractRenderState(PlayerNpcFishingBobberEntity entity,
+                                   FishingHookRenderState state, float partialTicks) {
+        super.extractRenderState(entity, state, partialTicks);
+        PlayerNpcEntity angler = entity.getAngler();
+        if (angler == null) {
+            state.lineOriginOffset = Vec3.ZERO;
+            return;
+        }
+        Vec3 hand = getHandPosition(angler, partialTicks);
+        Vec3 bobber = entity.getPosition(partialTicks).add(0.0D, 0.25D, 0.0D);
+        state.lineOriginOffset = hand.subtract(bobber);
+    }
+
+    private static Vec3 getHandPosition(PlayerNpcEntity angler, float partialTicks) {
+        int side = getLineHandSide(angler);
+        float yaw = Mth.lerp(partialTicks, angler.yBodyRotO, angler.yBodyRot) * ((float) Math.PI / 180.0F);
+        double sin = Mth.sin(yaw);
+        double cos = Mth.cos(yaw);
+        double sideOffset = side * 0.35D;
+        return angler.getEyePosition(partialTicks)
+                .add(-cos * sideOffset - sin * 0.8D,
+                        (angler.isCrouching() ? -0.1875D : 0.0D) - 0.45D,
+                        -sin * sideOffset + cos * 0.8D);
+    }
+
+    private static int getLineHandSide(PlayerNpcEntity angler) {
+        int side = angler.getMainArm() == HumanoidArm.RIGHT ? 1 : -1;
+        return angler.getMainHandItem().canPerformAction(ItemAbilities.FISHING_ROD_CAST) ? side : -side;
+    }
+
+    private static float fraction(int numerator, int denominator) {
+        return (float) numerator / denominator;
+    }
+
+    private static void vertex(VertexConsumer consumer, PoseStack.Pose pose, int light,
+                               float x, int y, int u, int v) {
+        consumer.addVertex(pose, x - 0.5F, y - 0.5F, 0.0F)
+                .setColor(-1).setUv(u, v).setOverlay(OverlayTexture.NO_OVERLAY)
+                .setLight(light).setNormal(pose, 0.0F, 1.0F, 0.0F);
+    }
+
+    private static void stringVertex(float xa, float ya, float za, VertexConsumer consumer,
+                                     PoseStack.Pose pose, float step, float next, float width) {
+        float x = xa * step;
+        float y = ya * (step * step + step) * 0.5F + 0.25F;
+        float z = za * step;
+        float nx = xa * next - x;
+        float ny = ya * (next * next + next) * 0.5F + 0.25F - y;
+        float nz = za * next - z;
+        float length = Mth.sqrt(nx * nx + ny * ny + nz * nz);
+        consumer.addVertex(pose, x, y, z).setColor(-16777216)
+                .setNormal(pose, nx / length, ny / length, nz / length).setLineWidth(width);
+    }
+
+    @Override
+    public boolean shouldRender(PlayerNpcFishingBobberEntity entity, Frustum culler,
+                                double camX, double camY, double camZ) {
+        return entity.getAngler() != null && super.shouldRender(entity, culler, camX, camY, camZ);
+    }
+
+    @Override
+    protected boolean affectedByCulling(PlayerNpcFishingBobberEntity entity) {
+        return false;
     }
 }

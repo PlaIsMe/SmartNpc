@@ -6,7 +6,7 @@ import com.pla.smart_npc.util.PlayerNpcCraftingUtil;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.tags.ItemTags;
 import net.minecraft.world.entity.ai.goal.Goal;
-import net.minecraft.world.entity.animal.Sheep;
+import net.minecraft.world.entity.animal.sheep.Sheep;
 import net.minecraft.world.item.BedItem;
 
 import java.util.Comparator;

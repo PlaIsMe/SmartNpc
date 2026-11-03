@@ -43,7 +43,7 @@ public class UseLavaBucketGoal extends Goal {
         if (target == null
                 || !target.isAlive()
                 || this.playerNpc.distanceToSqr(target) > MAX_PLACE_DISTANCE_SQR
-                || target.isInWaterOrBubble()) {
+                || target.isInWater()) {
             return false;
         }
 

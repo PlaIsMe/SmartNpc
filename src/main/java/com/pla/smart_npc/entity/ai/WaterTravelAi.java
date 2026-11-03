@@ -81,7 +81,7 @@ public final class WaterTravelAi {
 
     public void tick(ServerLevel level) {
         if (!this.npc.isAlive() || this.npc.isNoAi() || this.npc.isPassenger() || this.npc.isSleeping()
-                || !this.npc.isInWaterOrBubble() || this.npc.isInLava() || this.isInBubbleColumn()) {
+                || !this.npc.isInWater() || this.npc.isInLava() || this.isInBubbleColumn()) {
             this.resetMotion();
             return;
         }
@@ -179,7 +179,6 @@ public final class WaterTravelAi {
             }
         }
         this.npc.setDeltaMovement(nextX, vertical, nextZ);
-        this.npc.hasImpulse = true;
         this.setSwimmingPose(this.npc.isUnderWater() && distance > 2.0D);
         if (this.diving) {
             this.npc.setJumping(false);
@@ -190,7 +189,7 @@ public final class WaterTravelAi {
         this.diving = false;
         this.setSwimmingPose(false);
         this.nextDiveTick = 0;
-        if (!this.npc.isInWaterOrBubble()) {
+        if (!this.npc.isInWater()) {
             this.recoveringAir = false;
         }
     }

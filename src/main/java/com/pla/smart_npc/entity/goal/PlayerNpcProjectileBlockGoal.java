@@ -13,7 +13,7 @@ import net.minecraft.tags.ItemTags;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.ai.goal.Goal;
 import net.minecraft.world.entity.projectile.Projectile;
-import net.minecraft.world.entity.projectile.ThrownPotion;
+import net.minecraft.world.entity.projectile.throwableitemprojectile.AbstractThrownPotion;
 import net.minecraft.world.item.BedItem;
 import net.minecraft.world.item.BlockItem;
 import net.minecraft.world.item.ItemStack;
@@ -207,7 +207,7 @@ public class PlayerNpcProjectileBlockGoal extends Goal {
             return false;
         }
 
-        if (projectile instanceof ThrownPotion thrownPotion) {
+        if (projectile instanceof AbstractThrownPotion thrownPotion) {
             Iterable<net.minecraft.world.effect.MobEffectInstance> effects = thrownPotion.getItem()
                     .getOrDefault(DataComponents.POTION_CONTENTS, PotionContents.EMPTY)
                     .getAllEffects();

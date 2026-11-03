@@ -1,12 +1,17 @@
 package com.pla.smart_npc.entity.ai;
 
+import net.minecraft.core.component.DataComponents;
+
+import com.pla.smart_npc.util.SmartNpcItemUtil;
+
+import net.minecraft.tags.ItemTags;
+
 import com.pla.smart_npc.entity.PlayerNpcEntity;
 import com.pla.smart_npc.util.InventoryUtils;
 import net.minecraft.world.SimpleContainer;
 import net.minecraft.world.item.AxeItem;
 import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.item.SwordItem;
-import net.minecraft.world.item.TieredItem;
+import net.minecraft.world.level.block.Blocks;
 
 public final class WeaponAi {
     private final PlayerNpcEntity playerNpc;
@@ -168,17 +173,17 @@ public final class WeaponAi {
         if (stack.isEmpty()) {
             return 0.0D;
         }
-        if (stack.getItem() instanceof SwordItem sword) {
-            return 100.0D + sword.getDamage(stack) + tierBonus(stack);
+        if (stack.is(ItemTags.SWORDS)) {
+            return 100.0D + SmartNpcItemUtil.attackDamage(stack) + tierBonus(stack);
         }
-        if (stack.getItem() instanceof AxeItem axe) {
-            return 90.0D + axe.getDamage(stack) + tierBonus(stack);
+        if (stack.getItem() instanceof AxeItem) {
+            return 90.0D + SmartNpcItemUtil.attackDamage(stack) + tierBonus(stack);
         }
         return 0.0D;
     }
 
     private static double tierBonus(ItemStack stack) {
-        return stack.getItem() instanceof TieredItem tieredItem ? tieredItem.getTier().getAttackDamageBonus() * 0.25D : 0.0D;
+        return stack.has(DataComponents.TOOL) ? stack.getDestroySpeed(Blocks.STONE.defaultBlockState()) * 0.05D : 0.0D;
     }
 
     private enum MainHandSource {

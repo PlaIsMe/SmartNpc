@@ -30,6 +30,8 @@ import net.minecraft.world.level.storage.loot.LootParams;
 import net.minecraft.world.level.storage.loot.LootTable;
 import net.minecraft.world.level.storage.loot.parameters.LootContextParamSets;
 import net.minecraft.world.level.storage.loot.parameters.LootContextParams;
+import net.minecraft.world.level.storage.ValueInput;
+import net.minecraft.world.level.storage.ValueOutput;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.EntityHitResult;
 import net.minecraft.world.phys.HitResult;
@@ -77,7 +79,6 @@ public class PlayerNpcFishingBobberEntity extends Projectile implements IEntityW
 
     public PlayerNpcFishingBobberEntity(EntityType<? extends PlayerNpcFishingBobberEntity> entityType, Level level) {
         super(entityType, level);
-        this.noCulling = true;
     }
 
     public void castFrom(PlayerNpcEntity angler, BlockPos waterPos, int luck, int lureSpeed) {
@@ -100,7 +101,7 @@ public class PlayerNpcFishingBobberEntity extends Projectile implements IEntityW
         angler.setYHeadRot(yaw);
         angler.yBodyRot = yaw;
         angler.setXRot(pitch);
-        this.moveTo(start.x, start.y, start.z, yaw, pitch);
+        this.snapTo(start.x, start.y, start.z, yaw, pitch);
 
         double arc = Mth.nextDouble(angler.getRandom(), CAST_ARC_MIN, CAST_ARC_MAX);
         Vec3 castVector = new Vec3(toTarget.x, toTarget.y + horizontalDistance * arc, toTarget.z);
@@ -146,10 +147,6 @@ public class PlayerNpcFishingBobberEntity extends Projectile implements IEntityW
     }
 
     @Override
-    public void lerpTo(double x, double y, double z, float yaw, float pitch, int positionRotationIncrements) {
-    }
-
-    @Override
     public void tick() {
         this.synchronizedRandom.setSeed(this.getUUID().getLeastSignificantBits() ^ this.level().getGameTime());
         super.tick();
@@ -159,11 +156,11 @@ public class PlayerNpcFishingBobberEntity extends Projectile implements IEntityW
             this.discard();
             return;
         }
-        if (!this.level().isClientSide && --this.keepAliveTicks <= 0) {
+        if (!this.level().isClientSide() && --this.keepAliveTicks <= 0) {
             this.discard();
             return;
         }
-        if (!this.level().isClientSide && this.shouldStopFishing(currentAngler)) {
+        if (!this.level().isClientSide() && this.shouldStopFishing(currentAngler)) {
             return;
         }
 
@@ -216,7 +213,7 @@ public class PlayerNpcFishingBobberEntity extends Projectile implements IEntityW
                 if (this.getEntityData().get(DATA_BITING)) {
                     this.setDeltaMovement(this.getDeltaMovement().add(0.0D, -0.1D * this.synchronizedRandom.nextFloat() * this.synchronizedRandom.nextFloat(), 0.0D));
                 }
-                if (!this.level().isClientSide) {
+                if (!this.level().isClientSide()) {
                     this.tickFishBite(blockPos);
                 }
             } else {
@@ -271,7 +268,7 @@ public class PlayerNpcFishingBobberEntity extends Projectile implements IEntityW
     @Override
     protected void onHitEntity(@NotNull EntityHitResult result) {
         super.onHitEntity(result);
-        if (!this.level().isClientSide) {
+        if (!this.level().isClientSide()) {
             this.setHookedEntity(result.getEntity());
         }
     }
@@ -442,7 +439,7 @@ public class PlayerNpcFishingBobberEntity extends Projectile implements IEntityW
 
     public int retrieve(ItemStack rod) {
         PlayerNpcEntity currentAngler = this.getAngler();
-        if (this.level().isClientSide || currentAngler == null || this.shouldStopFishing(currentAngler)) {
+        if (this.level().isClientSide() || currentAngler == null || this.shouldStopFishing(currentAngler)) {
             return 0;
         }
 
@@ -491,7 +488,7 @@ public class PlayerNpcFishingBobberEntity extends Projectile implements IEntityW
 
     @Override
     public void handleEntityEvent(byte id) {
-        if (id == 31 && this.level().isClientSide && this.hookedIn != null) {
+        if (id == 31 && this.level().isClientSide() && this.hookedIn != null) {
             this.pullEntity(this.hookedIn);
         }
 
@@ -512,14 +509,13 @@ public class PlayerNpcFishingBobberEntity extends Projectile implements IEntityW
     }
 
     @Override
-    protected void addAdditionalSaveData(@NotNull CompoundTag tag) {
+    protected void addAdditionalSaveData(@NotNull ValueOutput output) {
     }
 
     @Override
-    protected void readAdditionalSaveData(@NotNull CompoundTag tag) {
+    protected void readAdditionalSaveData(@NotNull ValueInput input) {
     }
 
-    @Override
     public boolean canChangeDimensions(Level oldLevel, Level newLevel) {
         return false;
     }

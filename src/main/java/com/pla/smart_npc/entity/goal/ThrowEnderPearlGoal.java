@@ -8,7 +8,7 @@ import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.ai.goal.Goal;
-import net.minecraft.world.entity.projectile.ThrownEnderpearl;
+import net.minecraft.world.entity.projectile.throwableitemprojectile.ThrownEnderpearl;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.phys.Vec3;
@@ -165,7 +165,7 @@ public class ThrowEnderPearlGoal extends Goal {
         heldPearl.shrink(1);
         this.threwPearl = true;
         this.playerNpc.swing(InteractionHand.OFF_HAND, true);
-        ThrownEnderpearl pearl = new ThrownEnderpearl(serverLevel, this.playerNpc);
+        ThrownEnderpearl pearl = new ThrownEnderpearl(serverLevel, this.playerNpc, new ItemStack(Items.ENDER_PEARL));
         pearl.setPos(this.playerNpc.getX(), this.playerNpc.getEyeY() - 0.1D, this.playerNpc.getZ());
         double x = this.pearlTarget.x - pearl.getX();
         double y = this.pearlTarget.y - pearl.getY();

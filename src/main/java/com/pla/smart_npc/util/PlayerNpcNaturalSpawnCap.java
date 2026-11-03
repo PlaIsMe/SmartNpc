@@ -9,8 +9,8 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.entity.Entity;
-import net.minecraft.world.entity.MobSpawnType;
-import net.minecraft.world.level.GameRules;
+import net.minecraft.world.entity.EntitySpawnReason;
+import net.minecraft.world.level.gamerules.GameRules;
 import net.minecraft.world.level.levelgen.Heightmap;
 import net.neoforged.neoforge.event.tick.ServerTickEvent;
 import net.neoforged.neoforge.event.entity.EntityJoinLevelEvent;
@@ -54,15 +54,15 @@ public final class PlayerNpcNaturalSpawnCap {
     private PlayerNpcNaturalSpawnCap() {
     }
 
-    public static boolean isNaturalSpawnType(MobSpawnType spawnType) {
-        return spawnType != MobSpawnType.SPAWN_EGG
-                && spawnType != MobSpawnType.COMMAND
-                && spawnType != MobSpawnType.STRUCTURE;
+    public static boolean isNaturalSpawnType(EntitySpawnReason spawnType) {
+        return spawnType != EntitySpawnReason.SPAWN_ITEM_USE
+                && spawnType != EntitySpawnReason.COMMAND
+                && spawnType != EntitySpawnReason.STRUCTURE;
     }
 
     /** Custom automatic spawning must obey the same world rule as vanilla natural spawning. */
     public static boolean isNaturalSpawningEnabled(ServerLevel level) {
-        return level != null && level.getGameRules().getBoolean(GameRules.RULE_DOMOBSPAWNING);
+        return level != null && level.getGameRules().get(GameRules.SPAWN_MOBS);
     }
 
     /**
@@ -262,34 +262,34 @@ public final class PlayerNpcNaturalSpawnCap {
                 return;
             }
             this.nextLoadedWorldSpawnTick = tick + LOADED_WORLD_SPAWN_INTERVAL_TICKS;
-            if (level.isNight() || level.players().isEmpty()) {
+            if (level.isDarkOutside() || level.players().isEmpty()) {
                 return;
             }
-            ServerPlayer player = level.players().get(level.random.nextInt(level.players().size()));
+            ServerPlayer player = level.players().get(level.getRandom().nextInt(level.players().size()));
             for (int attempt = 0; attempt < 8; attempt++) {
-                double angle = level.random.nextDouble() * Math.PI * 2.0D;
-                int distance = 24 + level.random.nextInt(25);
+                double angle = level.getRandom().nextDouble() * Math.PI * 2.0D;
+                int distance = 24 + level.getRandom().nextInt(25);
                 int x = player.getBlockX() + (int) Math.round(Math.cos(angle) * distance);
                 int z = player.getBlockZ() + (int) Math.round(Math.sin(angle) * distance);
-                BlockPos column = new BlockPos(x, level.getMinBuildHeight(), z);
+                BlockPos column = new BlockPos(x, level.getMinY(), z);
                 if (!level.hasChunkAt(column)) {
                     continue;
                 }
                 int y = level.getHeight(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, x, z);
                 BlockPos pos = new BlockPos(x, y, z);
                 if (!PlayerNpcEntity.canSpawn(SmartNpcModEntities.PLAYER_NPC.get(), level,
-                        MobSpawnType.NATURAL, pos, level.random)) {
+                        EntitySpawnReason.NATURAL, pos, level.getRandom())) {
                     continue;
                 }
-                PlayerNpcEntity npc = SmartNpcModEntities.PLAYER_NPC.get().create(level);
+                PlayerNpcEntity npc = SmartNpcModEntities.PLAYER_NPC.get().create(level, EntitySpawnReason.NATURAL);
                 if (npc == null) {
                     return;
                 }
-                npc.moveTo(x + 0.5D, y, z + 0.5D, level.random.nextFloat() * 360.0F, 0.0F);
+                npc.snapTo(x + 0.5D, y, z + 0.5D, level.getRandom().nextFloat() * 360.0F, 0.0F);
                 if (!level.noCollision(npc)) {
                     return;
                 }
-                npc.finalizeSpawn(level, level.getCurrentDifficultyAt(pos), MobSpawnType.NATURAL, null);
+                npc.finalizeSpawn(level, level.getCurrentDifficultyAt(pos), EntitySpawnReason.NATURAL, null);
                 level.addFreshEntityWithPassengers(npc);
                 return;
             }

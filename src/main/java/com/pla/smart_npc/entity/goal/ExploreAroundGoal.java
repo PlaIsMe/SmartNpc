@@ -267,7 +267,7 @@ public class ExploreAroundGoal extends Goal {
     }
 
     public static void requestSafeWalkAfterFailedClimb(PlayerNpcEntity playerNpc, BlockPos failedTarget) {
-        if (playerNpc == null || failedTarget == null || playerNpc.level().isClientSide) {
+        if (playerNpc == null || failedTarget == null || playerNpc.level().isClientSide()) {
             return;
         }
         ExplorationClimbOwner owner = EXPLORATION_CLIMB_OWNERS.get(playerNpc);
@@ -959,7 +959,7 @@ public class ExploreAroundGoal extends Goal {
 
     private boolean isInWater(ServerLevel serverLevel) {
         BlockPos feet = this.playerNpc.blockPosition();
-        return this.playerNpc.isInWaterOrBubble()
+        return this.playerNpc.isInWater()
                 || serverLevel.getFluidState(feet).is(FluidTags.WATER)
                 || serverLevel.getFluidState(feet.above()).is(FluidTags.WATER)
                 || !this.playerNpc.onGround()
@@ -1328,7 +1328,7 @@ public class ExploreAroundGoal extends Goal {
                 && this.forcedDropTargetPos == null
                 && !this.playerNpc.isShiftKeyDown()
                 && !this.playerNpc.isCrouching()
-                && !this.playerNpc.isInWaterOrBubble()
+                && !this.playerNpc.isInWater()
                 && !this.playerNpc.isInLava()
                 && this.distanceToTargetSqr() >= MIN_SPRINT_DISTANCE_SQR;
     }
@@ -1821,7 +1821,7 @@ public class ExploreAroundGoal extends Goal {
         for (Direction direction : Direction.Plane.HORIZONTAL) {
             BlockPos side = floor.relative(direction);
             if (serverLevel.hasChunkAt(side)
-                    && serverLevel.getBlockState(side).isSolidRender(serverLevel, side)) {
+                    && serverLevel.getBlockState(side).isSolidRender()) {
                 solidSides++;
             }
         }
@@ -2244,7 +2244,7 @@ public class ExploreAroundGoal extends Goal {
         return this.stopForHomeNow
                 && PlayerNpcHomeUtil.getHome(this.playerNpc).isPresent()
                 && (this.playerNpc.hasExplorationReturnHomeRequest()
-                || serverLevel.isNight()
+                || serverLevel.isDarkOutside()
                 || serverLevel.isThundering());
     }
 

@@ -1,6 +1,5 @@
 package com.pla.smart_npc.entity.goal;
 
-import com.pla.smart_npc.compat.epicfight.EpicFight;
 import com.pla.smart_npc.entity.PlayerNpcEntity;
 import com.pla.smart_npc.entity.ai.BreakingBlockAi;
 import com.pla.smart_npc.entity.ai.ClearBlockAi;
@@ -39,7 +38,6 @@ import net.minecraft.world.level.levelgen.Heightmap;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.HitResult;
 import net.minecraft.world.phys.Vec3;
-import net.neoforged.fml.ModList;
 
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -148,7 +146,7 @@ public final class FarmSetupGoal extends Goal {
                 && !FarmAi.isPlanSearchPending(playerNpc, serverLevel)
                 && !playerNpc.shouldPrioritizeLogGathering()
                 && playerNpc.getGatherCooldown() <= 0
-                && !serverLevel.isNight()
+                && !serverLevel.isDarkOutside()
                 && !serverLevel.isThundering();
     }
 
@@ -164,7 +162,7 @@ public final class FarmSetupGoal extends Goal {
                 || GatherLogsGoal.isLogGatheringEpisodeActive(this.playerNpc)
                 || this.playerNpc.getUpwardEscapeTarget() != null
                 || this.playerNpc.getHoleEscapeCooldown() > 0
-                || serverLevel.isNight()
+                || serverLevel.isDarkOutside()
                 || serverLevel.isThundering()
                 || !this.canUseThrottle.canCheck(this.playerNpc)) {
             return false;
@@ -508,9 +506,7 @@ public final class FarmSetupGoal extends Goal {
         this.toolAi.restoreMainHand();
         this.restoreActionItem();
         this.placingBlockAi.resetDelay();
-        if (this.playerNpc.isEpicFightDigging()) {
-            if (ModList.get().isLoaded("epicfight")) EpicFight.stopDiggingAnimation(this.playerNpc);
-        }
+        // Epic Fight compatibility is disabled.
         this.playerNpc.getNavigation().stop();
         this.playerNpc.setCurrentAiState(PlayerNpcEntity.AI_IDLE);
         this.playerNpc.setCurrentAiDetail("");
@@ -1517,7 +1513,7 @@ public final class FarmSetupGoal extends Goal {
                 || !(fence.getItem() instanceof BlockItem blockItem)
                 || !(blockItem.getBlock() instanceof FenceBlock)
                 || !serverLevel.getBlockState(this.targetPos).canBeReplaced()
-                || !serverLevel.getBlockState(this.targetPos.below()).isSolidRender(serverLevel, this.targetPos.below())) {
+                || !serverLevel.getBlockState(this.targetPos.below()).isSolidRender()) {
             this.returnStack(fence);
             return false;
         }
@@ -1540,7 +1536,7 @@ public final class FarmSetupGoal extends Goal {
                 || !(gate.getItem() instanceof BlockItem blockItem)
                 || !(blockItem.getBlock() instanceof FenceGateBlock gateBlock)
                 || !serverLevel.getBlockState(this.targetPos).canBeReplaced()
-                || !serverLevel.getBlockState(this.targetPos.below()).isSolidRender(serverLevel, this.targetPos.below())) {
+                || !serverLevel.getBlockState(this.targetPos.below()).isSolidRender()) {
             this.returnStack(gate);
             return false;
         }
@@ -1562,7 +1558,7 @@ public final class FarmSetupGoal extends Goal {
                 || facing == null
                 || !this.gateSidesReady(serverLevel)
                 || !serverLevel.getBlockState(this.plan.gatePos().below())
-                .isSolidRender(serverLevel, this.plan.gatePos().below())) {
+                .isSolidRender()) {
             return false;
         }
         BlockState repaired = state
@@ -1860,7 +1856,7 @@ public final class FarmSetupGoal extends Goal {
 
     private boolean isInWater(ServerLevel serverLevel) {
         BlockPos feet = this.playerNpc.blockPosition();
-        return this.playerNpc.isInWaterOrBubble()
+        return this.playerNpc.isInWater()
                 || serverLevel.getFluidState(feet).is(FluidTags.WATER)
                 || serverLevel.getFluidState(feet.above()).is(FluidTags.WATER)
                 || !this.playerNpc.onGround() && serverLevel.getFluidState(feet.below()).is(FluidTags.WATER);

@@ -4,11 +4,13 @@ import com.google.gson.Gson;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
+import net.minecraft.resources.FileToIdConverter;
 import net.minecraft.server.packs.resources.Resource;
 import net.minecraft.server.packs.resources.ResourceManager;
 import net.minecraft.server.packs.resources.SimpleJsonResourceReloadListener;
 import net.minecraft.util.GsonHelper;
+import net.minecraft.util.ExtraCodecs;
 import net.minecraft.util.RandomSource;
 import net.minecraft.util.profiling.ProfilerFiller;
 import net.minecraft.world.level.block.Block;
@@ -26,24 +28,24 @@ import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
-public class PlayerNpcBuildLayoutLoader extends SimpleJsonResourceReloadListener {
+public class PlayerNpcBuildLayoutLoader extends SimpleJsonResourceReloadListener<JsonElement> {
     public static final String FORMAT = "smart_npc:structure_v1";
     private static final Gson GSON = new Gson();
     private static final Logger LOGGER = LogManager.getLogger();
     private static List<PlayerNpcBuildLayout> layouts = List.of();
 
     public PlayerNpcBuildLayoutLoader() {
-        super(GSON, "builds");
+        super(ExtraCodecs.JSON, FileToIdConverter.json("builds"));
     }
 
     @Override
     protected void apply(
-            java.util.Map<ResourceLocation, JsonElement> map,
+            java.util.Map<Identifier, JsonElement> map,
             ResourceManager resourceManager,
             ProfilerFiller profilerFiller
     ) {
         List<PlayerNpcBuildLayout> parsedLayouts = new ArrayList<>();
-        for (java.util.Map.Entry<ResourceLocation, JsonElement> entry : map.entrySet()) {
+        for (java.util.Map.Entry<Identifier, JsonElement> entry : map.entrySet()) {
             try {
                 parseLayout(entry.getKey(), GsonHelper.convertToJsonObject(entry.getValue(), "build layout"))
                         .ifPresent(parsedLayouts::add);
@@ -96,7 +98,7 @@ public class PlayerNpcBuildLayoutLoader extends SimpleJsonResourceReloadListener
         return Optional.of(candidates.get(randomSource.nextInt(candidates.size())));
     }
 
-    private static Optional<PlayerNpcBuildLayout> parseLayout(ResourceLocation id, JsonObject root) {
+    private static Optional<PlayerNpcBuildLayout> parseLayout(Identifier id, JsonObject root) {
         String format = GsonHelper.getAsString(root, "format", FORMAT);
         if (!FORMAT.equals(format)) {
             throw new IllegalArgumentException("expected format " + FORMAT + ", got " + format);
@@ -141,12 +143,12 @@ public class PlayerNpcBuildLayoutLoader extends SimpleJsonResourceReloadListener
     }
 
     private static void loadBlueprintLayouts(ResourceManager resourceManager, List<PlayerNpcBuildLayout> parsedLayouts) {
-        java.util.Map<ResourceLocation, Resource> blueprintResources = resourceManager.listResources(
+        java.util.Map<Identifier, Resource> blueprintResources = resourceManager.listResources(
                 "builds",
                 resourceLocation -> resourceLocation.getPath().endsWith(".blueprint")
         );
-        for (java.util.Map.Entry<ResourceLocation, Resource> entry : blueprintResources.entrySet()) {
-            ResourceLocation layoutId = normalizeBlueprintId(entry.getKey());
+        for (java.util.Map.Entry<Identifier, Resource> entry : blueprintResources.entrySet()) {
+            Identifier layoutId = normalizeBlueprintId(entry.getKey());
             try (InputStream inputStream = entry.getValue().open()) {
                 PlayerNpcBlueprintLayoutReader.read(layoutId, inputStream).ifPresent(parsedLayouts::add);
             } catch (IOException | RuntimeException exception) {
@@ -155,7 +157,7 @@ public class PlayerNpcBuildLayoutLoader extends SimpleJsonResourceReloadListener
         }
     }
 
-    private static ResourceLocation normalizeBlueprintId(ResourceLocation resourceLocation) {
+    private static Identifier normalizeBlueprintId(Identifier resourceLocation) {
         String path = resourceLocation.getPath();
         if (path.startsWith("builds/")) {
             path = path.substring("builds/".length());
@@ -163,7 +165,7 @@ public class PlayerNpcBuildLayoutLoader extends SimpleJsonResourceReloadListener
         if (path.endsWith(".blueprint")) {
             path = path.substring(0, path.length() - ".blueprint".length());
         }
-        return ResourceLocation.fromNamespaceAndPath(resourceLocation.getNamespace(), path);
+        return Identifier.fromNamespaceAndPath(resourceLocation.getNamespace(), path);
     }
 
     private static BlockState parseBlockState(JsonObject block) {
@@ -176,12 +178,12 @@ public class PlayerNpcBuildLayoutLoader extends SimpleJsonResourceReloadListener
             blockName = blockName.substring(0, propertiesStart);
         }
 
-        ResourceLocation blockId = ResourceLocation.tryParse(blockName);
+        Identifier blockId = Identifier.tryParse(blockName);
         if (blockId == null) {
             throw new IllegalArgumentException("invalid block id " + blockName);
         }
 
-        Block parsedBlock = BuiltInRegistries.BLOCK.get(blockId);
+        Block parsedBlock = BuiltInRegistries.BLOCK.getValue(blockId);
         if (parsedBlock == null) {
             throw new IllegalArgumentException("unknown block " + blockName);
         }

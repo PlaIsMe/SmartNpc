@@ -1,5 +1,9 @@
 package com.pla.smart_npc.entity.ai;
 
+import com.pla.smart_npc.util.SmartNpcItemUtil;
+
+import net.minecraft.tags.ItemTags;
+
 import com.pla.smart_npc.entity.PlayerNpcEntity;
 import com.pla.smart_npc.util.InventoryUtils;
 import net.minecraft.tags.BlockTags;
@@ -8,7 +12,6 @@ import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.item.AxeItem;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
-import net.minecraft.world.item.PickaxeItem;
 import net.minecraft.world.item.ShovelItem;
 import net.minecraft.world.level.ItemLike;
 import net.minecraft.world.level.block.Blocks;
@@ -25,7 +28,7 @@ public final class ToolAi {
     }
 
     public boolean equipBestToolFor(BlockState state) {
-        Class<?> toolClass = preferredToolFor(state);
+        Object toolClass = preferredToolFor(state);
         if (toolClass == null) {
             return true;
         }
@@ -39,16 +42,16 @@ public final class ToolAi {
     }
 
     public boolean hasPreferredToolFor(BlockState state) {
-        Class<?> toolClass = preferredToolFor(state);
+        Object toolClass = preferredToolFor(state);
         return toolClass == null || this.hasTool(toolClass);
     }
 
-    public boolean hasTool(Class<?> toolClass) {
+    public boolean hasTool(Object toolClass) {
         return this.playerNpc.hasCarriedTool(toolClass)
-                || (this.swappedMainHand && toolClass.isInstance(this.previousMainHand.getItem()));
+                || (this.swappedMainHand && SmartNpcItemUtil.matches(toolClass, this.previousMainHand.getItem()));
     }
 
-    public static Class<?> preferredToolFor(BlockState state) {
+    public static Object preferredToolFor(BlockState state) {
         if (state.is(BlockTags.LOGS)
                 || state.is(BlockTags.LEAVES)
                 || state.is(BlockTags.MINEABLE_WITH_AXE)) {
@@ -62,18 +65,18 @@ public final class ToolAi {
             return ShovelItem.class;
         }
         if (state.is(BlockTags.MINEABLE_WITH_PICKAXE)) {
-            return PickaxeItem.class;
+            return ItemTags.PICKAXES;
         }
         return null;
     }
 
-    public boolean equipTool(Class<?> toolClass) {
-        if (toolClass.isInstance(this.playerNpc.getMainHandItem().getItem())) {
+    public boolean equipTool(Object toolClass) {
+        if (SmartNpcItemUtil.matches(toolClass, this.playerNpc.getMainHandItem().getItem())) {
             return true;
         }
         for (int i = 0; i < this.playerNpc.getInventory().getContainerSize(); i++) {
             ItemStack stack = this.playerNpc.getInventory().getItem(i);
-            if (stack.isEmpty() || !toolClass.isInstance(stack.getItem())) {
+            if (stack.isEmpty() || !SmartNpcItemUtil.matches(toolClass, stack.getItem())) {
                 continue;
             }
 
@@ -82,18 +85,18 @@ public final class ToolAi {
         }
 
         ItemStack offhandTool = this.playerNpc.getOffhandItem();
-        if (!offhandTool.isEmpty() && toolClass.isInstance(offhandTool.getItem())) {
+        if (!offhandTool.isEmpty() && SmartNpcItemUtil.matches(toolClass, offhandTool.getItem())) {
             this.swapMainHandWithOffhand(offhandTool);
             return true;
         }
 
-        ItemStack mainWeaponTool = this.playerNpc.takeMainWeaponItem(stack -> toolClass.isInstance(stack.getItem()));
+        ItemStack mainWeaponTool = this.playerNpc.takeMainWeaponItem(stack -> SmartNpcItemUtil.matches(toolClass, stack.getItem()));
         if (!mainWeaponTool.isEmpty()) {
             this.swapMainHandWithReserved(mainWeaponTool, MainHandSource.MAIN_WEAPON);
             return true;
         }
 
-        ItemStack offWeaponTool = this.playerNpc.takeOffWeaponItem(stack -> toolClass.isInstance(stack.getItem()));
+        ItemStack offWeaponTool = this.playerNpc.takeOffWeaponItem(stack -> SmartNpcItemUtil.matches(toolClass, stack.getItem()));
         if (!offWeaponTool.isEmpty()) {
             this.swapMainHandWithReserved(offWeaponTool, MainHandSource.OFF_WEAPON);
             return true;

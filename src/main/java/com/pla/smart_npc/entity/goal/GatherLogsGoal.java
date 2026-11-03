@@ -645,7 +645,7 @@ public class GatherLogsGoal extends Goal implements GatheringGoal {
         this.pathStuckFallbackAi.stop();
         this.pillarUpAi.clear();
         this.waterEscapeAi.stop();
-        if (!this.playerNpc.level().isClientSide) {
+        if (!this.playerNpc.level().isClientSide()) {
             this.playerNpc.setGatherCooldown(20);
         }
         this.logQueue.clear();
@@ -1078,7 +1078,7 @@ public class GatherLogsGoal extends Goal implements GatheringGoal {
 
     private boolean shouldStayHomeForWeather(ServerLevel serverLevel) {
         return PlayerNpcHomeUtil.getHome(this.playerNpc).isPresent()
-                && (serverLevel.isNight() || serverLevel.isThundering());
+                && (serverLevel.isDarkOutside() || serverLevel.isThundering());
     }
 
     private void traceCanUseBlocked(String detail) {
@@ -2492,11 +2492,11 @@ public class GatherLogsGoal extends Goal implements GatheringGoal {
         }
         int playerY = playerNpc.blockPosition().getY();
         int minY = Math.max(
-                serverLevel.getMinBuildHeight() + 1,
+                serverLevel.getMinY() + 1,
                 Math.min(playerY, side.getY()) - STAND_SCAN_BELOW_TARGET
         );
         int maxY = Math.min(
-                serverLevel.getMaxBuildHeight() - 2,
+                serverLevel.getMaxY() - 1,
                 Math.max(playerY, side.getY()) + STAND_SCAN_ABOVE_TARGET
         );
         for (int y = maxY; y >= minY; y--) {

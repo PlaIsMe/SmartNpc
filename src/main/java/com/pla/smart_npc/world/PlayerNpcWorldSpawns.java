@@ -3,7 +3,7 @@ package com.pla.smart_npc.world;
 import com.pla.smart_npc.SmartNpc;
 import com.pla.smart_npc.config.SmartNpcConfig;
 import com.pla.smart_npc.init.SmartNpcModEntities;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.Mob;
 import net.minecraft.world.level.biome.MobSpawnSettings;
@@ -18,15 +18,15 @@ public final class PlayerNpcWorldSpawns {
     private PlayerNpcWorldSpawns() {}
     public static void addBiomeSpawns(ModifiableBiomeInfo.BiomeInfo.Builder builder) {
         SmartNpcConfig.SpawnConfig spawnConfig = SmartNpcConfig.getPlayerNpcSpawnConfig();
-        addSpawn(builder, ResourceLocation.fromNamespaceAndPath(SmartNpc.MODID, SmartNpcModEntities.PLAYER_NPC_ID), spawnConfig);
+        addSpawn(builder, Identifier.fromNamespaceAndPath(SmartNpc.MODID, SmartNpcModEntities.PLAYER_NPC_ID), spawnConfig);
     }
 
     private static void addSpawn(ModifiableBiomeInfo.BiomeInfo.Builder builder,
-                                 ResourceLocation entityId,
+                                 Identifier entityId,
                                  SmartNpcConfig.SpawnConfig spawnConfig) {
 
         if (spawnConfig.weight() <= 0) return;
-        EntityType<?> rawType = BuiltInRegistries.ENTITY_TYPE.get(entityId);
+        EntityType<?> rawType = BuiltInRegistries.ENTITY_TYPE.getValue(entityId);
         if (rawType == null) {
             LOGGER.warn("Spawn config refers to missing entity type: {}", entityId);
             return;
@@ -37,6 +37,6 @@ public final class PlayerNpcWorldSpawns {
 
         builder.getMobSpawnSettings()
                 .getSpawner(mobType.getCategory())
-                .add(new MobSpawnSettings.SpawnerData(mobType, spawnConfig.weight(), spawnConfig.minCount(), spawnConfig.maxCount()));
+                .add(new MobSpawnSettings.SpawnerData(mobType, spawnConfig.minCount(), spawnConfig.maxCount()), spawnConfig.weight());
     }
 }

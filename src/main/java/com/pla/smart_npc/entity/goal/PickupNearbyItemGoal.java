@@ -28,7 +28,6 @@ import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.item.BlockItem;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
-import net.minecraft.world.item.PickaxeItem;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.pathfinder.Path;
@@ -406,7 +405,7 @@ public class PickupNearbyItemGoal extends Goal implements GatheringGoal {
     }
 
     private boolean canCollectRightNow() {
-        if (playerNpc.level().isClientSide || playerNpc.isItemPickupSuppressed()) {
+        if (playerNpc.level().isClientSide() || playerNpc.isItemPickupSuppressed()) {
             return false;
         }
         if (!playerNpc.isAlive() || playerNpc.isRemoved() || playerNpc.isDeadOrDying()) {
@@ -426,7 +425,7 @@ public class PickupNearbyItemGoal extends Goal implements GatheringGoal {
     private boolean shouldDeferPickupForHomeShelter() {
         return !playerNpc.hasAnimalLootPriority()
                 && playerNpc.level() instanceof ServerLevel serverLevel
-                && (serverLevel.isNight() || serverLevel.isThundering())
+                && (serverLevel.isDarkOutside() || serverLevel.isThundering())
                 && PlayerNpcHomeUtil.getHome(playerNpc).isPresent();
     }
 
@@ -709,7 +708,7 @@ public class PickupNearbyItemGoal extends Goal implements GatheringGoal {
                     motion.y,
                     motion.z * 0.35D + pushZ
             );
-            playerNpc.hasImpulse = true;
+            playerNpc.hurtMarked = true;
 
             float yaw = (float) (Mth.atan2(dz, dx) * Mth.RAD_TO_DEG) - 90.0F;
             playerNpc.setYRot(yaw);
@@ -719,7 +718,7 @@ public class PickupNearbyItemGoal extends Goal implements GatheringGoal {
         if (shouldJumpTowardPickup(dy, horizontalSqr)) {
             Vec3 motion = playerNpc.getDeltaMovement();
             playerNpc.setDeltaMovement(motion.x, Math.max(motion.y, ACTIVE_APPROACH_JUMP_Y), motion.z);
-            playerNpc.hasImpulse = true;
+            playerNpc.hurtMarked = true;
             activeApproachJumpCooldown = ACTIVE_APPROACH_JUMP_COOLDOWN_TICKS;
         }
 
@@ -951,7 +950,7 @@ public class PickupNearbyItemGoal extends Goal implements GatheringGoal {
         BlockPos itemPos = item.blockPosition();
         BlockPos bestBase = null;
         double bestDistance = Double.MAX_VALUE;
-        int minY = Math.max(serverLevel.getMinBuildHeight() + 1, currentFeet.getY() - 2);
+        int minY = Math.max(serverLevel.getMinY() + 1, currentFeet.getY() - 2);
         int maxY = Math.min(itemPos.getY(), currentFeet.getY() + 2);
         for (int y = maxY; y >= minY; y--) {
             for (int x = itemPos.getX() - PICKUP_PILLAR_SEARCH_RADIUS; x <= itemPos.getX() + PICKUP_PILLAR_SEARCH_RADIUS; x++) {
@@ -1638,7 +1637,7 @@ public class PickupNearbyItemGoal extends Goal implements GatheringGoal {
                 && head.getCollisionShape(serverLevel, pos.above()).isEmpty()
                 && feet.getFluidState().isEmpty()
                 && head.getFluidState().isEmpty()
-                && serverLevel.getBlockState(floorPos).isSolidRender(serverLevel, floorPos);
+                && serverLevel.getBlockState(floorPos).isSolidRender();
     }
 
     private boolean isProtectedHomeBlock(BlockPos pos) {
@@ -1648,7 +1647,7 @@ public class PickupNearbyItemGoal extends Goal implements GatheringGoal {
     }
 
     private boolean hasRequiredToolFor(BlockState state) {
-        return !isPickaxeBlock(state) || helperToolAi.hasTool(PickaxeItem.class);
+        return !isPickaxeBlock(state) || helperToolAi.hasTool(ItemTags.PICKAXES);
     }
 
     private boolean isPickaxeBlock(BlockState state) {

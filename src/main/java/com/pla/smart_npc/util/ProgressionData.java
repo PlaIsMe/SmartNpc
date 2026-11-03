@@ -1,13 +1,21 @@
 package com.pla.smart_npc.util;
 
+import com.pla.smart_npc.SmartNpc;
 import com.pla.smart_npc.clazz.Difficulty;
 import net.minecraft.core.HolderLookup;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.world.level.saveddata.SavedData;
+import net.minecraft.world.level.saveddata.SavedDataType;
+import net.minecraft.resources.Identifier;
 
 public class ProgressionData extends SavedData {
     private static final String DATA_NAME = "player_npc_progression";
+    private static final SavedDataType<ProgressionData> TYPE = new SavedDataType<>(
+            DATA_NAME,
+            ProgressionData::new,
+            CompoundTag.CODEC.xmap(tag -> load(tag, null), data -> data.save(new CompoundTag(), null))
+    );
     private static final String DIFFICULTY_TAG = "Difficulty";
     private static final String MANUAL_DIFFICULTY_TAG = "ManualDifficulty";
 
@@ -15,18 +23,16 @@ public class ProgressionData extends SavedData {
     private boolean manualDifficulty;
 
     public static ProgressionData get(MinecraftServer server) {
-        return server.overworld().getDataStorage().computeIfAbsent(
-                new SavedData.Factory<>(ProgressionData::new, ProgressionData::load), DATA_NAME);
+        return server.overworld().getDataStorage().computeIfAbsent(TYPE);
     }
 
     public static ProgressionData load(CompoundTag tag, HolderLookup.Provider registries) {
         ProgressionData data = new ProgressionData();
-        data.difficulty = Difficulty.byName(tag.getString(DIFFICULTY_TAG));
-        data.manualDifficulty = tag.getBoolean(MANUAL_DIFFICULTY_TAG);
+        data.difficulty = Difficulty.byName(tag.getStringOr(DIFFICULTY_TAG, ""));
+        data.manualDifficulty = tag.getBooleanOr(MANUAL_DIFFICULTY_TAG, false);
         return data;
     }
 
-    @Override
     public CompoundTag save(CompoundTag tag, HolderLookup.Provider registries) {
         tag.putString(DIFFICULTY_TAG, this.difficulty.id());
         tag.putBoolean(MANUAL_DIFFICULTY_TAG, this.manualDifficulty);

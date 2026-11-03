@@ -1,5 +1,11 @@
 package com.pla.smart_npc.entity.goal;
 
+import com.pla.smart_npc.util.SmartNpcItemUtil;
+
+import net.minecraft.core.component.DataComponents;
+
+import net.minecraft.tags.ItemTags;
+
 import com.pla.smart_npc.clazz.PlayerNpcInterest;
 import com.pla.smart_npc.entity.PlayerNpcEntity;
 import com.pla.smart_npc.util.InventoryUtils;
@@ -10,18 +16,15 @@ import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.entity.ai.goal.target.TargetGoal;
 import net.minecraft.world.entity.ai.targeting.TargetingConditions;
 import net.minecraft.world.entity.animal.Animal;
-import net.minecraft.world.entity.monster.AbstractIllager;
+import net.minecraft.world.entity.monster.illager.AbstractIllager;
 import net.minecraft.world.entity.monster.Monster;
-import net.minecraft.world.entity.npc.Villager;
+import net.minecraft.world.entity.npc.villager.Villager;
 import net.minecraft.world.entity.player.Player;
-import net.minecraft.world.item.ArmorItem;
 import net.minecraft.world.item.AxeItem;
 import net.minecraft.world.item.BowItem;
 import net.minecraft.world.item.CrossbowItem;
-import net.minecraft.world.item.DiggerItem;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.ProjectileWeaponItem;
-import net.minecraft.world.item.SwordItem;
 import net.minecraft.world.item.TridentItem;
 import net.minecraft.world.phys.AABB;
 
@@ -55,7 +58,7 @@ public class PlayerNpcSmartTargetGoal extends TargetGoal {
 
     @Override
     public boolean canUse() {
-        if (this.playerNpc.level().isClientSide
+        if (this.playerNpc.level().isClientSide()
                 || this.playerNpc.isNoAi()
                 || this.playerNpc.isHealing()) {
             return false;
@@ -288,11 +291,9 @@ public class PlayerNpcSmartTargetGoal extends TargetGoal {
         }
 
         double score = 0.0D;
-        if (stack.getItem() instanceof SwordItem swordItem) {
-            score += swordItem.getDamage(stack);
-        } else if (stack.getItem() instanceof AxeItem axeItem) {
-            score += axeItem.getDamage(stack);
-        } else if (stack.getItem() instanceof DiggerItem) {
+        if (stack.is(ItemTags.SWORDS) || stack.getItem() instanceof AxeItem) {
+            score += SmartNpcItemUtil.attackDamage(stack);
+        } else if (stack.has(DataComponents.TOOL)) {
             score += 3.0D;
         } else if (stack.getItem() instanceof TridentItem) {
             score += 8.0D;
@@ -300,9 +301,9 @@ public class PlayerNpcSmartTargetGoal extends TargetGoal {
             score += 5.0D;
         }
 
-        if (stack.getItem() instanceof ArmorItem armorItem) {
-            score += armorItem.getDefense() * 1.2D;
-            score += armorItem.getToughness();
+        if (SmartNpcItemUtil.isArmor(stack)) {
+            score += SmartNpcItemUtil.armor(stack) * 1.2D;
+            score += SmartNpcItemUtil.toughness(stack);
         }
         if (stack.isEnchanted()) {
             score += 2.0D;

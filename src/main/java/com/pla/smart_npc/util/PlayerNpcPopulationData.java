@@ -7,6 +7,8 @@ import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.Tag;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.world.level.saveddata.SavedData;
+import net.minecraft.world.level.saveddata.SavedDataType;
+import net.minecraft.resources.Identifier;
 
 import java.util.LinkedHashSet;
 import java.util.Set;
@@ -15,6 +17,11 @@ import java.util.UUID;
 /** Persistent living identities and tested automatic-cap evidence for natural-spawn admission. */
 public final class PlayerNpcPopulationData extends SavedData {
     private static final String DATA_NAME = SmartNpc.MODID + "_player_npc_population";
+    private static final SavedDataType<PlayerNpcPopulationData> TYPE = new SavedDataType<>(
+            DATA_NAME,
+            PlayerNpcPopulationData::new,
+            CompoundTag.CODEC.xmap(tag -> load(tag, null), data -> data.save(new CompoundTag(), null))
+    );
     private static final String NPCS_TAG = "Npcs";
     private static final String ID_TAG = "Id";
     private static final String INITIALIZED_TAG = "Initialized";
@@ -25,30 +32,28 @@ public final class PlayerNpcPopulationData extends SavedData {
     private int learnedAutoCap;
 
     public static PlayerNpcPopulationData get(MinecraftServer server) {
-        return server.overworld().getDataStorage().computeIfAbsent(
-                new SavedData.Factory<>(PlayerNpcPopulationData::new, PlayerNpcPopulationData::load), DATA_NAME);
+        return server.overworld().getDataStorage().computeIfAbsent(TYPE);
     }
 
     public static PlayerNpcPopulationData load(CompoundTag tag, HolderLookup.Provider registries) {
         PlayerNpcPopulationData data = new PlayerNpcPopulationData();
-        data.initialized = tag.getBoolean(INITIALIZED_TAG);
-        data.learnedAutoCap = Math.max(0, tag.getInt(LEARNED_AUTO_CAP_TAG));
-        ListTag npcs = tag.getList(NPCS_TAG, Tag.TAG_COMPOUND);
+        data.initialized = tag.getBooleanOr(INITIALIZED_TAG, false);
+        data.learnedAutoCap = Math.max(0, tag.getIntOr(LEARNED_AUTO_CAP_TAG, 0));
+        ListTag npcs = tag.getListOrEmpty(NPCS_TAG);
         for (int index = 0; index < npcs.size(); index++) {
-            CompoundTag npcTag = npcs.getCompound(index);
-            if (npcTag.hasUUID(ID_TAG)) {
-                data.npcIds.add(npcTag.getUUID(ID_TAG));
+            CompoundTag npcTag = npcs.getCompoundOrEmpty(index);
+            if (SmartNpcNbt.hasUuid(npcTag, ID_TAG)) {
+                data.npcIds.add(SmartNpcNbt.getUuid(npcTag, ID_TAG));
             }
         }
         return data;
     }
 
-    @Override
     public CompoundTag save(CompoundTag tag, HolderLookup.Provider registries) {
         ListTag npcs = new ListTag();
         for (UUID npcId : this.npcIds) {
             CompoundTag npcTag = new CompoundTag();
-            npcTag.putUUID(ID_TAG, npcId);
+            SmartNpcNbt.putUuid(npcTag, ID_TAG, npcId);
             npcs.add(npcTag);
         }
         tag.put(NPCS_TAG, npcs);

@@ -23,7 +23,7 @@ public class RareSneakGoal extends Goal {
 
     @Override
     public boolean canUse() {
-        if (this.playerNpc.level().isClientSide
+        if (this.playerNpc.level().isClientSide()
                 || !this.playerNpc.isAlive()
                 || this.playerNpc.isNoAi()
                 || this.playerNpc.isPassenger()
@@ -73,7 +73,7 @@ public class RareSneakGoal extends Goal {
     public void stop() {
         this.playerNpc.setShiftKeyDown(false);
         this.playerNpc.setPose(Pose.STANDING);
-        if (!this.playerNpc.level().isClientSide) {
+        if (!this.playerNpc.level().isClientSide()) {
             this.playerNpc.setRareSneakCooldown(20 * 90 + this.playerNpc.getRandom().nextInt(20 * 180));
         }
         this.sneakTicks = 0;

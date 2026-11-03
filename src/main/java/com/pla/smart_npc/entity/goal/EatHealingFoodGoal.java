@@ -1,9 +1,8 @@
 package com.pla.smart_npc.entity.goal;
 
 import com.pla.smart_npc.entity.PlayerNpcEntity;
-import com.pla.smart_npc.compat.epicfight.EpicFight;
-import com.pla.smart_npc.entity.ai.PathNavigationAi;
 import com.pla.smart_npc.entity.ai.DangerousReactionAi;
+import com.pla.smart_npc.entity.ai.PathNavigationAi;
 import com.pla.smart_npc.util.InventoryUtils;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
@@ -19,7 +18,6 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.level.pathfinder.Path;
 import net.minecraft.world.phys.Vec3;
-import net.neoforged.fml.ModList;
 
 import java.util.EnumSet;
 
@@ -112,9 +110,7 @@ public class EatHealingFoodGoal extends Goal {
         this.playerNpc.setCurrentAiState("ai.player_npc.eating");
         this.playerNpc.setMainHandItemForAi(this.foodStack);
         this.playerNpc.startUsingItem(InteractionHand.MAIN_HAND);
-        if (ModList.get().isLoaded("epicfight")) {
-            EpicFight.playEatingAnimation(this.playerNpc);
-        }
+        // Epic Fight compatibility is disabled.
         this.updateEatingMovement();
     }
 
@@ -125,9 +121,7 @@ public class EatHealingFoodGoal extends Goal {
         }
         boolean shouldApplyCooldown = this.usingTemporaryFood || this.finishedEating;
         this.playerNpc.stopUsingItem();
-        if (ModList.get().isLoaded("epicfight")) {
-            EpicFight.stopEatingAnimation(this.playerNpc);
-        }
+        // Epic Fight compatibility is disabled.
         if (this.usingTemporaryFood) {
             ItemStack currentMainHand = this.playerNpc.getMainHandItem().copy();
             if (!this.finishedEating && this.isSameFood(currentMainHand)) {
@@ -168,12 +162,10 @@ public class EatHealingFoodGoal extends Goal {
             this.stop();
             return;
         }
-        if (ModList.get().isLoaded("epicfight")) {
-            EpicFight.keepEatingAnimation(this.playerNpc);
-        }
+        // Epic Fight compatibility is disabled.
 
         if (this.eatTicks % 8 == 0) {
-            this.playerNpc.level().playSound(null, this.playerNpc.blockPosition(), SoundEvents.GENERIC_EAT, SoundSource.HOSTILE, 0.8F, 1.0F);
+            this.playerNpc.level().playSound(null, this.playerNpc.blockPosition(), SoundEvents.GENERIC_EAT.value(), SoundSource.HOSTILE, 0.8F, 1.0F);
         }
 
         this.updateEatingMovement();
@@ -199,7 +191,7 @@ public class EatHealingFoodGoal extends Goal {
             this.playerNpc.heal(this.getHealAmount(eatenFood));
             this.playerNpc.addEffect(new MobEffectInstance(MobEffects.REGENERATION, 400, 1));
             this.playerNpc.addEffect(new MobEffectInstance(MobEffects.ABSORPTION, 2400, 3));
-            this.playerNpc.addEffect(new MobEffectInstance(MobEffects.DAMAGE_RESISTANCE, 6000, 0));
+            this.playerNpc.addEffect(new MobEffectInstance(MobEffects.RESISTANCE, 6000, 0));
             this.playerNpc.addEffect(new MobEffectInstance(MobEffects.FIRE_RESISTANCE, 6000, 0));
         } else {
             this.healDirectly(REGULAR_FOOD_HEAL_AMOUNT);

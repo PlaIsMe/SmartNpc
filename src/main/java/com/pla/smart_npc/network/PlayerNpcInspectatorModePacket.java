@@ -1,12 +1,14 @@
 package com.pla.smart_npc.network;
 
+import com.pla.smart_npc.util.SmartNpcNbt;
+
 import com.pla.smart_npc.entity.PlayerNpcEntity;
 import com.pla.smart_npc.util.PlayerNpcGoalTraceLogger;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.Entity;
@@ -15,7 +17,7 @@ import net.neoforged.neoforge.network.handling.IPayloadContext;
 import net.neoforged.neoforge.network.PacketDistributor;
 
 public class PlayerNpcInspectatorModePacket implements CustomPacketPayload {
-    public static final Type<PlayerNpcInspectatorModePacket> TYPE = new Type<>(ResourceLocation.fromNamespaceAndPath("smart_npc", "inspectator_mode"));
+    public static final Type<PlayerNpcInspectatorModePacket> TYPE = new Type<>(Identifier.fromNamespaceAndPath("smart_npc", "inspectator_mode"));
     public static final StreamCodec<FriendlyByteBuf, PlayerNpcInspectatorModePacket> STREAM_CODEC = StreamCodec.ofMember(PlayerNpcInspectatorModePacket::encode, PlayerNpcInspectatorModePacket::decode);
     private static final String ACTIVE_KEY = "PlayerNpcInspectatorActive";
     private static final String ORIGINAL_GAME_MODE_KEY = "PlayerNpcInspectatorOriginalGameMode";
@@ -65,9 +67,9 @@ public class PlayerNpcInspectatorModePacket implements CustomPacketPayload {
 
     public static void restorePlayer(ServerPlayer player) {
         CompoundTag data = player.getPersistentData();
-        boolean wasActive = data.getBoolean(ACTIVE_KEY);
+        boolean wasActive = data.getBooleanOr(ACTIVE_KEY, false);
         int originalGameMode = data.contains(ORIGINAL_GAME_MODE_KEY)
-                ? data.getInt(ORIGINAL_GAME_MODE_KEY)
+                ? data.getIntOr(ORIGINAL_GAME_MODE_KEY, 0)
                 : player.gameMode.getGameModeForPlayer().getId();
         data.remove(ACTIVE_KEY);
         data.remove(ORIGINAL_GAME_MODE_KEY);
@@ -87,10 +89,7 @@ public class PlayerNpcInspectatorModePacket implements CustomPacketPayload {
 
     public static void restorePlayerAndClearInspector(ServerPlayer player) {
         restorePlayer(player);
-        // Replay connections such as Flashback do not negotiate SmartNpc's custom payloads.
-        // Keep the server-side cleanup, but never attempt to send inspector state to a client
-        // that did not advertise this channel during configuration.
-        if (player.connection != null && player.connection.hasChannel(PlayerNpcInspectorPacket.TYPE)) {
+        if (player.connection != null) {
             PacketDistributor.sendToPlayer(
                     player,
                     PlayerNpcInspectorPacket.clear()
@@ -99,7 +98,7 @@ public class PlayerNpcInspectatorModePacket implements CustomPacketPayload {
     }
 
     public static boolean isInspectatorActive(Entity entity) {
-        return entity != null && entity.getPersistentData().getBoolean(ACTIVE_KEY);
+        return entity != null && entity.getPersistentData().getBooleanOr(ACTIVE_KEY, false);
     }
 
     public static boolean isInspecting(ServerPlayer player, PlayerNpcEntity playerNpc) {
@@ -109,7 +108,7 @@ public class PlayerNpcInspectatorModePacket implements CustomPacketPayload {
 
         CompoundTag data = player.getPersistentData();
         return player.getCamera() == playerNpc
-                || data.hasUUID(TARGET_UUID_KEY) && data.getUUID(TARGET_UUID_KEY).equals(playerNpc.getUUID());
+                || SmartNpcNbt.hasUuid(data, TARGET_UUID_KEY) && SmartNpcNbt.getUuid(data, TARGET_UUID_KEY).equals(playerNpc.getUUID());
     }
 
     public static boolean hasValidInspectatorTarget(ServerPlayer player) {
@@ -129,8 +128,8 @@ public class PlayerNpcInspectatorModePacket implements CustomPacketPayload {
         }
 
         CompoundTag data = player.getPersistentData();
-        return data.hasUUID(TARGET_UUID_KEY)
-                && data.getUUID(TARGET_UUID_KEY).equals(playerNpc.getUUID());
+        return SmartNpcNbt.hasUuid(data, TARGET_UUID_KEY)
+                && SmartNpcNbt.getUuid(data, TARGET_UUID_KEY).equals(playerNpc.getUUID());
     }
 
     public static void beginInspectator(ServerPlayer player, PlayerNpcEntity playerNpc) {
@@ -152,17 +151,17 @@ public class PlayerNpcInspectatorModePacket implements CustomPacketPayload {
         }
 
         if (teleportToNpc && player.level() != serverLevel) {
-            player.teleportTo(serverLevel, playerNpc.getX(), playerNpc.getY(), playerNpc.getZ(), playerNpc.getYRot(), playerNpc.getXRot());
+            player.teleportTo(serverLevel, playerNpc.getX(), playerNpc.getY(), playerNpc.getZ(), java.util.Set.of(), playerNpc.getYRot(), playerNpc.getXRot(), false);
         }
 
         PlayerNpcGoalTraceLogger.stopIfTracingDifferentNpc(player, playerNpc);
 
         CompoundTag data = player.getPersistentData();
-        if (!data.getBoolean(ACTIVE_KEY)) {
+        if (!data.getBooleanOr(ACTIVE_KEY, false)) {
             data.putInt(ORIGINAL_GAME_MODE_KEY, player.gameMode.getGameModeForPlayer().getId());
             data.putBoolean(ACTIVE_KEY, true);
         }
-        data.putUUID(TARGET_UUID_KEY, playerNpc.getUUID());
+        SmartNpcNbt.putUuid(data, TARGET_UUID_KEY, playerNpc.getUUID());
 
         player.setGameMode(GameType.SPECTATOR);
         player.setCamera(playerNpc);

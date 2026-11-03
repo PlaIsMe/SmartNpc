@@ -1,5 +1,7 @@
 package com.pla.smart_npc.entity.goal;
 
+import net.minecraft.tags.ItemTags;
+
 import com.pla.smart_npc.clazz.PlayerNpcInterest;
 import com.pla.smart_npc.entity.PlayerNpcEntity;
 import com.pla.smart_npc.entity.ai.BreakingBlockAi;
@@ -15,7 +17,7 @@ import com.pla.smart_npc.util.PlayerNpcAdaptiveSearchScope;
 import com.pla.smart_npc.util.PlayerNpcPerformanceMonitor;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.tags.BlockTags;
 import net.minecraft.world.SimpleContainer;
@@ -23,7 +25,6 @@ import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.ai.goal.Goal;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
-import net.minecraft.world.item.PickaxeItem;
 import net.minecraft.world.level.ClipContext;
 import net.minecraft.world.level.LightLayer;
 import net.minecraft.world.level.block.Blocks;
@@ -705,13 +706,13 @@ public class ExploreCaveOreGoal extends Goal {
                 && !this.playerNpc.hasInterest(PlayerNpcInterest.BUILDING)
                 && this.playerNpc.shouldPrioritizeLogGathering()
                 && !GatherLogsGoal.isLogGatheringEpisodeActive(this.playerNpc)
-                && !serverLevel.isNight()
+                && !serverLevel.isDarkOutside()
                 && !serverLevel.canSeeSky(this.playerNpc.blockPosition().above());
     }
 
     private boolean isTreeCanopyColumn(ServerLevel serverLevel, BlockPos feet, BlockPos surfaceTarget) {
         boolean foundTreeBlock = false;
-        int topY = Math.min(surfaceTarget.getY(), serverLevel.getMaxBuildHeight() - 1);
+        int topY = Math.min(surfaceTarget.getY(), serverLevel.getMaxY());
         for (int y = feet.getY() + 1; y <= topY; y++) {
             BlockPos pos = new BlockPos(feet.getX(), y, feet.getZ());
             BlockState state = serverLevel.getBlockState(pos);
@@ -734,7 +735,7 @@ public class ExploreCaveOreGoal extends Goal {
     }
 
     private BlockPos findSurfaceEscapeTarget(ServerLevel serverLevel, BlockPos feet) {
-        int scanTop = Math.min(serverLevel.getMaxBuildHeight() - 3, feet.getY() + SURFACE_ESCAPE_SCAN_UP);
+        int scanTop = Math.min(serverLevel.getMaxY() - 2, feet.getY() + SURFACE_ESCAPE_SCAN_UP);
         for (int y = feet.getY() + 3; y <= scanTop; y++) {
             BlockPos target = new BlockPos(feet.getX(), y, feet.getZ());
             if (serverLevel.canSeeSky(target.above())) {
@@ -1063,7 +1064,7 @@ public class ExploreCaveOreGoal extends Goal {
             return false;
         }
 
-        return serverLevel.getBlockState(pos.below()).isSolidRender(serverLevel, pos.below())
+        return serverLevel.getBlockState(pos.below()).isSolidRender()
                 && this.canClearBodySpace(serverLevel, pos)
                 && this.canClearBodySpace(serverLevel, pos.above());
     }
@@ -1103,7 +1104,7 @@ public class ExploreCaveOreGoal extends Goal {
             Vec3 motion = this.playerNpc.getDeltaMovement();
             this.playerNpc.getNavigation().stop();
             this.playerNpc.setDeltaMovement(dx / length * 0.28D, Math.min(motion.y, -0.08D), dz / length * 0.28D);
-            this.playerNpc.hasImpulse = true;
+            this.playerNpc.hurtMarked = true;
             return true;
         }
 
@@ -1667,7 +1668,7 @@ public class ExploreCaveOreGoal extends Goal {
         // ClearBlockAi may temporarily swap the ore pickaxe out of the NPC's visible
         // inventory while a shovel or another clearing tool is equipped. ToolAi still
         // owns that saved pickaxe, so it must count for the goal's continuation check.
-        return this.toolAi.hasTool(PickaxeItem.class);
+        return this.toolAi.hasTool(ItemTags.PICKAXES);
     }
 
     private boolean hasUsablePickaxeFor(BlockState state) {
@@ -1680,7 +1681,7 @@ public class ExploreCaveOreGoal extends Goal {
 
     private boolean isUsablePickaxeFor(ItemStack stack, BlockState state) {
         return !stack.isEmpty()
-                && stack.getItem() instanceof PickaxeItem
+                && stack.is(ItemTags.PICKAXES)
                 && (!state.requiresCorrectToolForDrops() || stack.isCorrectToolForDrops(state));
     }
 
@@ -1843,7 +1844,7 @@ public class ExploreCaveOreGoal extends Goal {
         }
 
         BlockState state = serverLevel.getBlockState(this.targetPos);
-        ResourceLocation blockId = BuiltInRegistries.BLOCK.getKey(state.getBlock());
+        Identifier blockId = BuiltInRegistries.BLOCK.getKey(state.getBlock());
         String blockName = blockId == null ? state.getBlock().getDescriptionId() : blockId.toString();
         int requiredMineTicks = this.getRequiredMineTicks(serverLevel, state);
         boolean inBreakRange = this.playerNpc.distanceToSqr(

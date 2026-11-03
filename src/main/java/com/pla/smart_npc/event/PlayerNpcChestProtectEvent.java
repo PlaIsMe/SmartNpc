@@ -1,5 +1,7 @@
 package com.pla.smart_npc.event;
 
+import net.neoforged.neoforge.event.level.BlockEvent.BreakEvent;
+
 import com.pla.smart_npc.SmartNpc;
 import com.pla.smart_npc.clazz.PlayerNpcInterest;
 import com.pla.smart_npc.entity.PlayerNpcEntity;
@@ -31,7 +33,7 @@ public final class PlayerNpcChestProtectEvent {
     }
 
     @SubscribeEvent(priority = EventPriority.LOWEST)
-    public static void onBlockBreak(BlockEvent.BreakEvent event) {
+    public static void onBlockBreak(BreakEvent event) {
         if (event.isCanceled()
                 || !(event.getLevel() instanceof ServerLevel serverLevel)
                 || !event.getState().is(Blocks.CHEST)) {

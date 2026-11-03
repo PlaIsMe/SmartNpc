@@ -1,6 +1,5 @@
 package com.pla.smart_npc.entity.goal;
 
-import com.pla.smart_npc.compat.epicfight.EpicFight;
 import com.pla.smart_npc.entity.PlayerNpcEntity;
 import com.pla.smart_npc.entity.ai.BreakingBlockAi;
 import com.pla.smart_npc.entity.ai.ClearBlockAi;
@@ -14,7 +13,7 @@ import com.pla.smart_npc.util.PlayerNpcFarmPlan.Plan;
 import com.pla.smart_npc.util.PlayerNpcHomeUtil;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
@@ -29,7 +28,6 @@ import net.minecraft.world.level.block.FenceBlock;
 import net.minecraft.world.level.block.FenceGateBlock;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.pathfinder.Path;
-import net.neoforged.fml.ModList;
 
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -103,7 +101,7 @@ public final class FarmCropGoal extends Goal {
                 || !FarmAi.isFarmingJobActive(playerNpc)
                 || !FarmAi.isReadyForCropWork(playerNpc, serverLevel)
                 || GatherLogsGoal.isLogGatheringEpisodeActive(playerNpc)
-                || serverLevel.isNight()
+                || serverLevel.isDarkOutside()
                 || serverLevel.isThundering()) {
             return false;
         }
@@ -177,13 +175,13 @@ public final class FarmCropGoal extends Goal {
         }
         BlockPos center = playerNpc.blockPosition();
         SupplyTargetCache cached = SUPPLY_TARGET_CACHE.get(playerNpc);
-        if (cached != null && cached.matches(playerNpc.tickCount, serverLevel.dimension().location(), center)) {
+        if (cached != null && cached.matches(playerNpc.tickCount, serverLevel.dimension().identifier(), center)) {
             return cached.actionable();
         }
         boolean actionable = hasActionableNearbySupplyTarget(playerNpc, serverLevel, center);
         SUPPLY_TARGET_CACHE.put(playerNpc, new SupplyTargetCache(
                 playerNpc.tickCount,
-                serverLevel.dimension().location(),
+                serverLevel.dimension().identifier(),
                 center.immutable(),
                 actionable
         ));
@@ -232,7 +230,7 @@ public final class FarmCropGoal extends Goal {
                 || this.playerNpc.getUpwardEscapeTarget() != null
                 || this.playerNpc.getHoleEscapeCooldown() > 0
                 || this.playerNpc.getFarmCooldown() > 0
-                || serverLevel.isNight()
+                || serverLevel.isDarkOutside()
                 || serverLevel.isThundering()) {
             return false;
         }
@@ -369,11 +367,9 @@ public final class FarmCropGoal extends Goal {
         this.breakingBlockAi.stop();
         this.toolAi.restoreMainHand();
         this.restoreActionItem();
-        if (this.playerNpc.isEpicFightDigging()) {
-            if (ModList.get().isLoaded("epicfight")) EpicFight.stopDiggingAnimation(this.playerNpc);
-        }
+        // Epic Fight compatibility is disabled.
         this.playerNpc.getNavigation().stop();
-        if (!this.playerNpc.level().isClientSide) {
+        if (!this.playerNpc.level().isClientSide()) {
             int cooldown = this.completedAction
                     ? QUICK_COOLDOWN_TICKS + this.playerNpc.getRandom().nextInt(8)
                     : this.action == Action.PLANT
@@ -826,7 +822,7 @@ public final class FarmCropGoal extends Goal {
         }
         this.clearBlockAi.stop();
         this.breakingBlockAi.stop();
-        if (ModList.get().isLoaded("epicfight")) EpicFight.stopDiggingAnimation(this.playerNpc);
+        // Epic Fight compatibility is disabled.
         this.restoreActionItem();
         this.action = Action.CLEAR_ENTRANCE;
         this.targetPos = obstruction;
@@ -1026,11 +1022,11 @@ public final class FarmCropGoal extends Goal {
 
     private record SupplyTargetCache(
             int tick,
-            ResourceLocation dimension,
+            Identifier dimension,
             BlockPos feet,
             boolean actionable
     ) {
-        boolean matches(int currentTick, ResourceLocation currentDimension, BlockPos currentFeet) {
+        boolean matches(int currentTick, Identifier currentDimension, BlockPos currentFeet) {
             return currentTick - this.tick <= 20
                     && this.dimension.equals(currentDimension)
                     && this.feet.distSqr(currentFeet) <= 4.0D;

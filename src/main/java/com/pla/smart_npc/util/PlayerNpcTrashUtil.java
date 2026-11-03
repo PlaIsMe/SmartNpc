@@ -1,9 +1,13 @@
 package com.pla.smart_npc.util;
 
+import net.minecraft.tags.ItemTags;
+
 import net.minecraft.core.component.DataComponents;
 import net.minecraft.world.Container;
 import net.minecraft.world.item.*;
 import net.minecraft.world.item.component.CustomData;
+import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.level.block.state.BlockState;
 
 /** Conservative inventory cleanup; a stack marker also prevents merging with ordinary loot. */
 public final class PlayerNpcTrashUtil {
@@ -22,7 +26,7 @@ public final class PlayerNpcTrashUtil {
     private PlayerNpcTrashUtil() {}
 
     public static boolean isDiscarded(ItemStack stack) {
-        return stack.getOrDefault(DataComponents.CUSTOM_DATA, CustomData.EMPTY).copyTag().getBoolean(DISCARDED);
+        return stack.getOrDefault(DataComponents.CUSTOM_DATA, CustomData.EMPTY).copyTag().getBooleanOr(DISCARDED, false);
     }
 
     public static ItemStack discardedCopy(ItemStack stack) {
@@ -166,22 +170,29 @@ public final class PlayerNpcTrashUtil {
 
     private static boolean isUpgrade(ItemStack oldStack, ItemStack replacement) {
         if (replacement.isEmpty() || isDiscarded(replacement) || toolKind(oldStack) != toolKind(replacement)
-                || !(oldStack.getItem() instanceof TieredItem oldTool)
-                || !(replacement.getItem() instanceof TieredItem newTool)) return false;
-        // Never throw away a working tool for a nearly broken replacement, or guess modded tier ordering.
-        if (!(oldTool.getTier() instanceof Tiers) || !(newTool.getTier() instanceof Tiers)) return false;
+                || !(oldStack.has(DataComponents.TOOL))
+                || !(replacement.has(DataComponents.TOOL))) return false;
+        // Never throw away a working tool for a nearly broken replacement. Tool tiers are
+        // data-driven in recent Minecraft versions, so compare their effective mining speed and durability.
         if (replacement.getMaxDamage() - replacement.getDamageValue() < Math.max(16, replacement.getMaxDamage() / 10)) return false;
-        return newTool.getTier().getAttackDamageBonus() > oldTool.getTier().getAttackDamageBonus()
-                && newTool.getTier().getUses() > oldTool.getTier().getUses();
+        BlockState comparisonState = switch (toolKind(oldStack)) {
+            case 1 -> Blocks.STONE.defaultBlockState();
+            case 2 -> Blocks.OAK_LOG.defaultBlockState();
+            case 3 -> Blocks.DIRT.defaultBlockState();
+            case 4 -> Blocks.FARMLAND.defaultBlockState();
+            default -> Blocks.COBWEB.defaultBlockState();
+        };
+        return replacement.getDestroySpeed(comparisonState) > oldStack.getDestroySpeed(comparisonState)
+                && replacement.getMaxDamage() > oldStack.getMaxDamage();
     }
 
     private static int toolKind(ItemStack stack) {
         Item item = stack.getItem();
-        if (item instanceof PickaxeItem) return 1;
+        if (stack.is(ItemTags.PICKAXES)) return 1;
         if (item instanceof AxeItem) return 2;
         if (item instanceof ShovelItem) return 3;
         if (item instanceof HoeItem) return 4;
-        if (item instanceof SwordItem) return 5;
+        if (item.builtInRegistryHolder().is(ItemTags.SWORDS)) return 5;
         return 0;
     }
 }

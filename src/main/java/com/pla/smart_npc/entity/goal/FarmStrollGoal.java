@@ -46,7 +46,7 @@ public final class FarmStrollGoal extends Goal {
         if (!(this.playerNpc.level() instanceof ServerLevel serverLevel)
                 || !this.canStroll(serverLevel)
                 || !this.playerNpc.onGround()
-                || this.playerNpc.isInWaterOrBubble()
+                || this.playerNpc.isInWater()
                 || this.playerNpc.tickCount < this.nextAttemptTick) {
             return false;
         }
@@ -65,7 +65,7 @@ public final class FarmStrollGoal extends Goal {
                 && this.strollTicks < MAX_STROLL_TICKS
                 && this.playerNpc.level() instanceof ServerLevel serverLevel
                 && this.canStroll(serverLevel)
-                && !this.playerNpc.isInWaterOrBubble()
+                && !this.playerNpc.isInWater()
                 && this.distanceToTargetSqr() > ARRIVAL_DISTANCE_SQR;
     }
 
@@ -127,7 +127,7 @@ public final class FarmStrollGoal extends Goal {
                 && this.playerNpc.getTarget() == null
                 && this.playerNpc.getUpwardEscapeTarget() == null
                 && this.playerNpc.getHoleEscapeCooldown() <= 0
-                && !serverLevel.isNight()
+                && !serverLevel.isDarkOutside()
                 && !serverLevel.isThundering()
                 && FarmAi.isFarmingJobActive(this.playerNpc)
                 && (FarmCropGoal.isFullyPlantedOwnedFarm(this.playerNpc, serverLevel)

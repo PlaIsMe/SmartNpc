@@ -156,7 +156,7 @@ public class CombatFishingRodGoal extends Goal {
         Vec3 pullMotion = pull.normalize().scale(0.48D);
         this.target.setDeltaMovement(motion.x + pullMotion.x, Math.min(motion.y + 0.12D, 0.35D), motion.z + pullMotion.z);
         this.target.hurtMarked = true;
-        this.target.hasImpulse = true;
+        this.target.hurtMarked = true;
     }
 
     private boolean hasFishingRod() {

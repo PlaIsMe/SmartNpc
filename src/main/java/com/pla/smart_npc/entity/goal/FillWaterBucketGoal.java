@@ -141,7 +141,7 @@ public class FillWaterBucketGoal extends Goal {
         ItemStack filledStack = new ItemStack(this.filledBucket);
         ItemStack remainder = InventoryUtils.addItemAndReturnRemainder(this.mob, filledStack);
         if (!remainder.isEmpty()) {
-            this.mob.spawnAtLocation(remainder);
+            this.mob.spawnAtLocation(serverLevel, remainder);
         }
         serverLevel.playSound(null, this.fluidPos, SoundEvents.BUCKET_FILL, SoundSource.NEUTRAL, 1.0F, 1.0F);
         this.stop();

@@ -1,5 +1,7 @@
 package com.pla.smart_npc.entity.goal;
 
+import net.minecraft.core.component.DataComponents;
+
 import com.pla.smart_npc.entity.PlayerNpcEntity;
 import com.pla.smart_npc.entity.ai.PathNavigationAi;
 import com.pla.smart_npc.util.InventoryUtils;
@@ -12,7 +14,6 @@ import net.minecraft.world.item.CrossbowItem;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.ProjectileWeaponItem;
 import net.minecraft.world.level.pathfinder.Path;
-import net.neoforged.neoforge.common.ItemAbilities;
 
 import java.util.EnumSet;
 
@@ -113,7 +114,7 @@ public class ShieldGuardGoal extends Goal {
         this.playerNpc.stopUsingItem();
         if (this.usingTemporaryShield) {
             ItemStack shield = this.playerNpc.getOffhandItem().copy();
-            if (!shield.isEmpty() && shield.canPerformAction(ItemAbilities.SHIELD_BLOCK)) {
+            if (!shield.isEmpty() && shield.has(DataComponents.BLOCKS_ATTACKS)) {
                 ItemStack remainder = InventoryUtils.addItemAndReturnRemainder(this.playerNpc, shield);
                 if (!remainder.isEmpty()) {
                     this.playerNpc.spawnAtLocation(remainder);
@@ -161,11 +162,11 @@ public class ShieldGuardGoal extends Goal {
 
     private boolean hasShield() {
         return this.isHoldingShield()
-                || InventoryUtils.hasItem(this.playerNpc, stack -> stack.canPerformAction(ItemAbilities.SHIELD_BLOCK));
+                || InventoryUtils.hasItem(this.playerNpc, stack -> stack.has(DataComponents.BLOCKS_ATTACKS));
     }
 
     private boolean isHoldingShield() {
-        return this.playerNpc.getOffhandItem().canPerformAction(ItemAbilities.SHIELD_BLOCK);
+        return this.playerNpc.getOffhandItem().has(DataComponents.BLOCKS_ATTACKS);
     }
 
     private boolean equipShieldIfNeeded() {
@@ -173,7 +174,7 @@ public class ShieldGuardGoal extends Goal {
             return true;
         }
 
-        ItemStack shield = this.playerNpc.consumeInventoryItem(stack -> stack.canPerformAction(ItemAbilities.SHIELD_BLOCK), 1).orElse(ItemStack.EMPTY);
+        ItemStack shield = this.playerNpc.consumeInventoryItem(stack -> stack.has(DataComponents.BLOCKS_ATTACKS), 1).orElse(ItemStack.EMPTY);
         if (shield.isEmpty()) {
             return false;
         }

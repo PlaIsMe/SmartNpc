@@ -4,11 +4,14 @@ import com.pla.smart_npc.clazz.PlayerNpcInterest;
 import com.pla.smart_npc.entity.PlayerNpcEntity;
 import net.minecraft.core.BlockPos;
 import net.minecraft.nbt.CompoundTag;
+import net.minecraft.world.level.storage.ValueInput;
+import net.minecraft.world.level.storage.ValueOutput;
 import net.minecraft.nbt.Tag;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.block.state.BlockState;
 
 import java.util.Optional;
+import java.util.List;
 
 public final class PlayerNpcHomeUtil {
     private static final int PROTECTED_HOME_HEIGHT = 6;
@@ -46,11 +49,11 @@ public final class PlayerNpcHomeUtil {
 
     public static Optional<String> getHomeLayoutId(PlayerNpcEntity playerNpc) {
         CompoundTag persistentData = playerNpc.getPersistentData();
-        if (!persistentData.contains(HOME_LAYOUT_ID, Tag.TAG_STRING)) {
+        if (!persistentData.contains(HOME_LAYOUT_ID)) {
             return Optional.empty();
         }
 
-        String layoutId = persistentData.getString(HOME_LAYOUT_ID);
+        String layoutId = persistentData.getStringOr(HOME_LAYOUT_ID, "");
         return layoutId.isBlank() ? Optional.empty() : Optional.of(layoutId);
     }
 
@@ -94,9 +97,33 @@ public final class PlayerNpcHomeUtil {
         }
 
         setHome(playerNpc, readHome(tag));
-        if (tag.contains(HOME_LAYOUT_ID, Tag.TAG_STRING)) {
-            setHomeLayoutId(playerNpc, tag.getString(HOME_LAYOUT_ID));
+        if (tag.contains(HOME_LAYOUT_ID)) {
+            setHomeLayoutId(playerNpc, tag.getStringOr(HOME_LAYOUT_ID, ""));
         }
+    }
+
+    public static void saveHome(PlayerNpcEntity playerNpc, ValueOutput output) {
+        getHome(playerNpc).ifPresent(homeArea -> {
+            output.putInt(HOME_X, homeArea.origin().getX());
+            output.putInt(HOME_Y, homeArea.origin().getY());
+            output.putInt(HOME_Z, homeArea.origin().getZ());
+            output.putInt(HOME_WIDTH, homeArea.width());
+            output.putInt(HOME_DEPTH, homeArea.depth());
+        });
+        getHomeLayoutId(playerNpc).ifPresent(layoutId -> output.putString(HOME_LAYOUT_ID, layoutId));
+    }
+
+    public static void readHome(PlayerNpcEntity playerNpc, ValueInput input) {
+        if (!input.keySet().containsAll(List.of(HOME_X, HOME_Y, HOME_Z, HOME_WIDTH, HOME_DEPTH))) {
+            return;
+        }
+        HomeArea homeArea = new HomeArea(
+                new BlockPos(input.getIntOr(HOME_X, 0), input.getIntOr(HOME_Y, 0), input.getIntOr(HOME_Z, 0)),
+                Math.max(3, input.getIntOr(HOME_WIDTH, 0)),
+                Math.max(3, input.getIntOr(HOME_DEPTH, 0))
+        );
+        setHome(playerNpc, homeArea);
+        input.getString(HOME_LAYOUT_ID).ifPresent(layoutId -> setHomeLayoutId(playerNpc, layoutId));
     }
 
     public static boolean isInside(HomeArea homeArea, BlockPos pos) {
@@ -174,21 +201,21 @@ public final class PlayerNpcHomeUtil {
     }
 
     private static boolean hasHomeTag(CompoundTag tag) {
-        return tag.contains(HOME_X, Tag.TAG_INT)
-                && tag.contains(HOME_Y, Tag.TAG_INT)
-                && tag.contains(HOME_Z, Tag.TAG_INT)
-                && tag.contains(HOME_WIDTH, Tag.TAG_INT)
-                && tag.contains(HOME_DEPTH, Tag.TAG_INT);
+        return tag.contains(HOME_X)
+                && tag.contains(HOME_Y)
+                && tag.contains(HOME_Z)
+                && tag.contains(HOME_WIDTH)
+                && tag.contains(HOME_DEPTH);
     }
 
     private static HomeArea readHome(CompoundTag tag) {
         BlockPos origin = new BlockPos(
-                tag.getInt(HOME_X),
-                tag.getInt(HOME_Y),
-                tag.getInt(HOME_Z)
+                tag.getIntOr(HOME_X, 0),
+                tag.getIntOr(HOME_Y, 0),
+                tag.getIntOr(HOME_Z, 0)
         );
-        int width = Math.max(3, tag.getInt(HOME_WIDTH));
-        int depth = Math.max(3, tag.getInt(HOME_DEPTH));
+        int width = Math.max(3, tag.getIntOr(HOME_WIDTH, 0));
+        int depth = Math.max(3, tag.getIntOr(HOME_DEPTH, 0));
         return new HomeArea(origin, width, depth);
     }
 
@@ -219,7 +246,7 @@ public final class PlayerNpcHomeUtil {
         for (int x = 0; x < homeArea.width(); x++) {
             for (int z = 0; z < homeArea.depth(); z++) {
                 BlockPos floor = homeArea.origin().offset(x, 0, z);
-                if (!serverLevel.getBlockState(floor.below()).isSolidRender(serverLevel, floor.below())) {
+                if (!serverLevel.getBlockState(floor.below()).isSolidRender()) {
                     return false;
                 }
                 for (int y = 0; y <= 3; y++) {

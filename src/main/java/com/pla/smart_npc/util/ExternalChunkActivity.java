@@ -2,10 +2,17 @@ package com.pla.smart_npc.util;
 
 import com.pla.smart_npc.mixin.DistanceManagerAccessor;
 import com.pla.smart_npc.mixin.ServerChunkCacheAccessor;
+import com.pla.smart_npc.mixin.TicketOwnerAccessor;
+import com.pla.smart_npc.mixin.TicketStorageAccessor;
+import com.pla.smart_npc.mixin.TicketTrackerAccessor;
+import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.resources.Identifier;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.Ticket;
 import net.minecraft.server.level.TicketType;
 import net.minecraft.world.level.ChunkPos;
+import net.minecraft.world.level.TicketStorage;
+import net.neoforged.neoforge.common.NeoForgeMod;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -41,25 +48,37 @@ public final class ExternalChunkActivity {
 
     private static Snapshot capture(ServerLevel level) {
         var manager = ((ServerChunkCacheAccessor) level.getChunkSource()).smartNpc$getDistanceManager();
-        var tickets = ((DistanceManagerAccessor) manager).smartNpc$getTickets();
+        TicketStorage storage = ((DistanceManagerAccessor) manager).smartNpc$getTicketStorage();
+        var tickets = ((TicketStorageAccessor) storage).smartNpc$getTickets();
         List<Anchor> anchors = new ArrayList<>();
         for (var entry : tickets.long2ObjectEntrySet()) {
             int minLevel = 34;
-            for (Ticket<?> ticket : entry.getValue()) {
-                TicketType<?> type = ticket.getType();
-                String name = type.toString();
+            for (Ticket ticket : entry.getValue()) {
+                TicketType type = ticket.getType();
+                Identifier id = BuiltInRegistries.TICKET_TYPE.getKey(type);
                 // Both mods can be installed together. NPCs must not keep one another's
                 // departure timers alive. UNKNOWN/LIGHT are transient chunk reads by AI.
                 // Vanilla spawn chunks remain loaded after all players travel away. They
                 // are not attendance, otherwise initial-spawn NPCs would never leave.
-                if (type == TicketType.UNKNOWN || type == TicketType.START
-                        || name.equals("smart_npc:player_npc_force_tick")
-                        || name.equals("annoyingvillagers:persistent_player_npc")) continue;
+                if (type == TicketType.UNKNOWN || type == TicketType.PLAYER_SPAWN
+                        || isOnlySmartNpcEntityTicket(storage, entry.getLongKey(), type)
+                        || id.equals(Identifier.fromNamespaceAndPath("annoyingvillagers", "persistent_player_npc"))) continue;
                 minLevel = Math.min(minLevel, ticket.getTicketLevel());
             }
             if (minLevel <= 33) anchors.add(new Anchor(new ChunkPos(entry.getLongKey()), 33 - minLevel));
         }
         return new Snapshot(level.getGameTime(), anchors);
+    }
+
+    private static boolean isOnlySmartNpcEntityTicket(TicketStorage storage, long chunk, TicketType type) {
+        if (type != NeoForgeMod.ENTITY_TICKET.value()) return false;
+        var sources = ((TicketTrackerAccessor) storage.getEntityForcedChunks()).smartNpc$getSourcesLoading().get(chunk);
+        if (sources == null || sources.isEmpty()) return false;
+        Identifier ownController = PlayerNpcForceTickManager.PLAYER_NPC_TICKET.id();
+        for (Object source : sources) {
+            if (!((TicketOwnerAccessor) source).smartNpc$getControllerId().equals(ownController)) return false;
+        }
+        return true;
     }
 
     private record Anchor(ChunkPos center, int radius) {}

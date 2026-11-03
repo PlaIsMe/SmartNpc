@@ -8,7 +8,7 @@ import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.entity.ai.goal.Goal;
-import net.minecraft.world.entity.projectile.ThrownEnderpearl;
+import net.minecraft.world.entity.projectile.throwableitemprojectile.ThrownEnderpearl;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.phys.Vec3;
@@ -40,7 +40,7 @@ public class WaterEnderPearlEscapeGoal extends Goal {
                 || this.playerNpc.isNoAi()
                 || this.playerNpc.isPassenger()
                 || this.playerNpc.isHealing()
-                || !this.playerNpc.isInWaterOrBubble()
+                || !this.playerNpc.isInWater()
                 || this.playerNpc.getEnderPearlCooldown() > 0
                 || !InventoryUtils.hasItem(this.playerNpc, Items.ENDER_PEARL)) {
             return false;
@@ -80,7 +80,7 @@ public class WaterEnderPearlEscapeGoal extends Goal {
         this.playerNpc.setCurrentAiState("ai.player_npc.water_ender_pearl");
         this.playerNpc.swing(InteractionHand.OFF_HAND, true);
 
-        ThrownEnderpearl thrownPearl = new ThrownEnderpearl(serverLevel, this.playerNpc);
+        ThrownEnderpearl thrownPearl = new ThrownEnderpearl(serverLevel, this.playerNpc, new ItemStack(Items.ENDER_PEARL));
         thrownPearl.setPos(this.playerNpc.getX(), this.playerNpc.getEyeY() - 0.1D, this.playerNpc.getZ());
         double x = this.pearlTarget.x - thrownPearl.getX();
         double y = this.pearlTarget.y - thrownPearl.getY();
@@ -134,6 +134,6 @@ public class WaterEnderPearlEscapeGoal extends Goal {
                 && serverLevel.getBlockState(pos.above()).isAir()
                 && serverLevel.getFluidState(pos).isEmpty()
                 && serverLevel.getFluidState(pos.above()).isEmpty()
-                && serverLevel.getBlockState(pos.below()).isSolidRender(serverLevel, pos.below());
+                && serverLevel.getBlockState(pos.below()).isSolidRender();
     }
 }
