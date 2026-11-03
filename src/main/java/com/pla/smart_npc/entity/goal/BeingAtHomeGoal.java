@@ -642,6 +642,11 @@ public class BeingAtHomeGoal extends Goal {
         }
     }
 
+    public boolean isRelaxingForYsm() {
+        return this.reachedSpot && (this.activityMode == ActivityMode.LOOK
+                || this.activityMode == ActivityMode.WALK && this.stationaryTicks > 0);
+    }
+
     private void tickSneakAtHome() {
         if (this.tickCustomHomeIdleAnimation(this.playerNpc)) {
             this.sneakingAi.setSneaking(false);

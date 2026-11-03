@@ -16,6 +16,8 @@ import com.pla.smart_npc.entity.ai.ToolAi;
 import com.pla.smart_npc.entity.ai.WaterTravelAi;
 import com.pla.smart_npc.entity.ai.ItemApproachAi;
 import com.pla.smart_npc.entity.ai.SocialNoticeAi;
+import com.pla.smart_npc.compat.YesSteveModelCompat;
+import com.pla.smart_npc.entity.goal.YsmIdleEmoteGoal;
 import com.pla.smart_npc.entity.goal.PlayerNpcFloatGoal;
 import com.pla.smart_npc.entity.goal.NoticeNearbyPlayerGoal;
 import com.pla.smart_npc.entity.goal.AiBudgetWaitingStrollGoal;
@@ -163,6 +165,17 @@ import java.util.function.Predicate;
 public class PlayerNpcEntity extends FakePlayer implements RangedAttackMob {
     private static final EntityDataAccessor<Integer> MAIN_HAND_ATTACK_ANIMATION_TICKS = SynchedEntityData.defineId(PlayerNpcEntity.class, EntityDataSerializers.INT);
     private static final EntityDataAccessor<Boolean> SOCIAL_NOTICE_PAUSES_WORK = SynchedEntityData.defineId(PlayerNpcEntity.class, EntityDataSerializers.BOOLEAN);
+    private static final EntityDataAccessor<String> YSM_MODEL = SynchedEntityData.defineId(PlayerNpcEntity.class, EntityDataSerializers.STRING);
+    private static final EntityDataAccessor<String> YSM_TEXTURE = SynchedEntityData.defineId(PlayerNpcEntity.class, EntityDataSerializers.STRING);
+    private static final EntityDataAccessor<Boolean> YSM_ACTIVE = SynchedEntityData.defineId(PlayerNpcEntity.class, EntityDataSerializers.BOOLEAN);
+    private static final EntityDataAccessor<String> YSM_EMOTE = SynchedEntityData.defineId(PlayerNpcEntity.class, EntityDataSerializers.STRING);
+    private static final EntityDataAccessor<Integer> YSM_EMOTE_SEQUENCE = SynchedEntityData.defineId(PlayerNpcEntity.class, EntityDataSerializers.INT);
+    private boolean ysmChoiceMade;
+    // Null denotes an older save; resolve its assignment source on the server thread.
+    @Nullable
+    private Boolean ysmRandomModel;
+    private int ysmEmoteTicks;
+    private int ysmEmoteCooldown;
     private static final EntityDataAccessor<Boolean> HEALING = SynchedEntityData.defineId(PlayerNpcEntity.class, EntityDataSerializers.BOOLEAN);
     private static final EntityDataAccessor<Integer> BETTER_COMBAT_ATTACK_ANIMATION_TICKS = SynchedEntityData.defineId(PlayerNpcEntity.class, EntityDataSerializers.INT);
     private static final EntityDataAccessor<Integer> BETTER_COMBAT_ATTACK_SEQUENCE = SynchedEntityData.defineId(PlayerNpcEntity.class, EntityDataSerializers.INT);
@@ -1754,6 +1767,11 @@ public class PlayerNpcEntity extends FakePlayer implements RangedAttackMob {
         super.defineSynchedData(builder);
         builder.define(MAIN_HAND_ATTACK_ANIMATION_TICKS, 0);
         builder.define(SOCIAL_NOTICE_PAUSES_WORK, false);
+        builder.define(YSM_MODEL, "");
+        builder.define(YSM_TEXTURE, "");
+        builder.define(YSM_ACTIVE, false);
+        builder.define(YSM_EMOTE, "");
+        builder.define(YSM_EMOTE_SEQUENCE, 0);
         builder.define(HEALING, false);
         builder.define(BETTER_COMBAT_ATTACK_ANIMATION_TICKS, 0);
         builder.define(BETTER_COMBAT_ATTACK_SEQUENCE, 0);
@@ -1767,7 +1785,19 @@ public class PlayerNpcEntity extends FakePlayer implements RangedAttackMob {
     @Override
     public void addAdditionalSaveData(@NotNull CompoundTag tag) {
         super.addAdditionalSaveData(tag);
-        tag.putBoolean(PENDING_SPAWN_INITIALIZATION_TAG, this.pendingSpawnInitialization);
+        tag.putBoolean("YsmChoiceMade", this.ysmChoiceMade);
+        if (this.ysmRandomModel != null) {
+            tag.putBoolean("YsmRandomModel", this.ysmRandomModel);
+        } else {
+            tag.remove("YsmRandomModel");
+        }
+        tag.putString("YsmModel", this.getYsmModelId());
+        tag.putString("YsmTexture", this.getYsmModelTexture());
+        tag.putInt("YsmEmoteCooldown", this.ysmEmoteCooldown);
+        tag.remove(PENDING_SPAWN_INITIALIZATION_TAG);
+        if (this.pendingSpawnInitialization) {
+            tag.putBoolean(PENDING_SPAWN_INITIALIZATION_TAG, true);
+        }
         tag.put("Inventory", this.inventory.createTag(this.registryAccess()));
         tag.putInt("GapCooldown", this.gapCooldown);
         tag.putInt("BucketCooldown", this.bucketCooldown);
@@ -1878,6 +1908,16 @@ public class PlayerNpcEntity extends FakePlayer implements RangedAttackMob {
     @Override
     public void readAdditionalSaveData(@NotNull CompoundTag tag) {
         super.readAdditionalSaveData(tag);
+        // /summon also calls load(), using fresh NBT without UUID, before finalizeSpawn.
+        // A saved legacy identity has UUID; keep it unchanged unless its spawn was pending.
+        this.ysmChoiceMade = tag.contains("YsmChoiceMade") ? tag.getBoolean("YsmChoiceMade")
+                : tag.hasUUID("UUID") && !tag.getBoolean(PENDING_SPAWN_INITIALIZATION_TAG);
+        this.ysmRandomModel = tag.contains("YsmRandomModel", Tag.TAG_BYTE) ? tag.getBoolean("YsmRandomModel") : null;
+        this.entityData.set(YSM_MODEL, tag.getString("YsmModel"));
+        this.entityData.set(YSM_TEXTURE, tag.getString("YsmTexture"));
+        this.ysmEmoteCooldown = Math.max(0, tag.getInt("YsmEmoteCooldown"));
+        this.entityData.set(YSM_ACTIVE, false);
+        this.stopYsmEmote(this.getYsmEmoteSequence());
         this.pendingSpawnInitialization = tag.getBoolean(PENDING_SPAWN_INITIALIZATION_TAG);
         if (tag.contains("Inventory", Tag.TAG_LIST)) {
             this.inventory.fromTag(tag.getList("Inventory", Tag.TAG_COMPOUND), this.registryAccess());
@@ -2374,6 +2414,7 @@ public class PlayerNpcEntity extends FakePlayer implements RangedAttackMob {
         // item, and return work still pre-empts it; equal-priority 5 work is not displaced.
         this.addWorkGoal(5, new CleanupTemporaryPillarGoal(this, 1.0D));
         this.goalSelector.addGoal(9, new AiBudgetWaitingStrollGoal(this, 0.55D));
+        this.addWorkGoal(8, new YsmIdleEmoteGoal(this));
         this.addWorkGoal(4, this.gated(new BeingAtHomeGoal(this, 1.0D), PlayerNpcInterest.BUILDING));
         this.goalSelector.addGoal(5, new OpenDoorGoal(this, true));
         ((GroundPathNavigation) this.getNavigation()).setCanOpenDoors(true);
@@ -2718,6 +2759,102 @@ public class PlayerNpcEntity extends FakePlayer implements RangedAttackMob {
 
     public SocialNoticeAi getSocialNoticeAi() {
         return this.socialNoticeAi;
+    }
+
+    public boolean isYsmChoiceMade() {
+        return this.ysmChoiceMade;
+    }
+
+    public void setYsmChoiceMade() {
+        this.ysmChoiceMade = true;
+    }
+
+    @Nullable
+    public Boolean getYsmRandomModel() {
+        return this.ysmRandomModel;
+    }
+
+    public void setYsmRandomModel(boolean random) {
+        this.ysmRandomModel = random;
+    }
+
+    public String getYsmModelId() {
+        return this.entityData.get(YSM_MODEL);
+    }
+
+    public String getYsmModelTexture() {
+        return this.entityData.get(YSM_TEXTURE);
+    }
+
+    public void setYsmModel(String model, String texture) {
+        this.entityData.set(YSM_MODEL, model);
+        this.entityData.set(YSM_TEXTURE, texture);
+    }
+
+    public boolean isYsmActive() {
+        return this.entityData.get(YSM_ACTIVE);
+    }
+
+    public void setYsmActive(boolean active) {
+        this.entityData.set(YSM_ACTIVE, active);
+        if (!active) {
+            this.stopYsmEmote(this.getYsmEmoteSequence());
+        }
+    }
+
+    public String getYsmEmote() {
+        return this.entityData.get(YSM_EMOTE);
+    }
+
+    public int getYsmEmoteSequence() {
+        return this.entityData.get(YSM_EMOTE_SEQUENCE);
+    }
+
+    public int startYsmEmote(String emote, int ticks) {
+        int sequence = this.getYsmEmoteSequence() == Integer.MAX_VALUE ? 1 : this.getYsmEmoteSequence() + 1;
+        this.entityData.set(YSM_EMOTE, emote);
+        this.entityData.set(YSM_EMOTE_SEQUENCE, sequence);
+        this.ysmEmoteTicks = Math.max(1, Math.min(ticks, 200));
+        return sequence;
+    }
+
+    public void stopYsmEmote(int ownerSequence) {
+        if (ownerSequence == this.getYsmEmoteSequence()) {
+            this.entityData.set(YSM_EMOTE, "");
+            this.ysmEmoteTicks = 0;
+        }
+    }
+
+    public int getYsmEmoteCooldown() {
+        return this.ysmEmoteCooldown;
+    }
+
+    public void setYsmEmoteCooldown(int ticks) {
+        this.ysmEmoteCooldown = normalizeCooldown(ticks);
+    }
+
+    /** Actual running owners, never inspector strings, decide whether an idle gesture fits. */
+    public boolean canPlayIdleYsmEmote() {
+        if (!this.canSociallyNotice() || !this.getNavigation().isDone() || this.isCrouching()
+                || this.getDeltaMovement().horizontalDistanceSqr() > 0.0025D) {
+            return false;
+        }
+        for (WrappedGoal wrapped : this.goalSelector.getAvailableGoals()) {
+            if (!wrapped.isRunning()) {
+                continue;
+            }
+            Goal goal = unwrapGoal(wrapped.getGoal());
+            if (goal instanceof BeingAtHomeGoal home) {
+                if (!home.isRelaxingForYsm()) return false;
+            } else if (goal instanceof MiningNightCampGoal camp) {
+                if (!camp.isRelaxingForYsm()) return false;
+            } else if (!(goal instanceof ExploreAroundGoal) && !(goal instanceof AiBudgetWaitingStrollGoal)
+                    && !(goal instanceof YsmIdleEmoteGoal) && !(goal instanceof NoticeNearbyPlayerGoal)
+                    && !(goal instanceof OpenDoorGoal)) {
+                return false;
+            }
+        }
+        return true;
     }
 
     public boolean isSocialNoticePausingWork() {
@@ -3264,6 +3401,15 @@ public class PlayerNpcEntity extends FakePlayer implements RangedAttackMob {
 
     @Override
     public void tick() {
+        if (this.level() instanceof ServerLevel) {
+            if (this.tickCount == 0 || Math.floorMod(this.tickCount + this.getId(), 20) == 0) {
+                YesSteveModelCompat.initializeSpawn(this);
+                YesSteveModelCompat.refreshAvailability(this);
+            }
+            if (this.ysmEmoteTicks > 0 && (--this.ysmEmoteTicks == 0 || !this.canSociallyNotice())) {
+                this.stopYsmEmote(this.getYsmEmoteSequence());
+            }
+        }
         if (this.level() instanceof ServerLevel && this.pendingSpawnInitialization) {
             this.completeSpawnInitialization();
             if (this.isRemoved()) {
@@ -3362,6 +3508,7 @@ public class PlayerNpcEntity extends FakePlayer implements RangedAttackMob {
     }
 
     private void tickAiCooldowns() {
+        this.ysmEmoteCooldown = tickCooldown(this.ysmEmoteCooldown);
         this.gapCooldown = tickCooldown(this.gapCooldown);
         this.bucketCooldown = tickCooldown(this.bucketCooldown);
         this.flintAndSteelCooldown = tickCooldown(this.flintAndSteelCooldown);
@@ -4887,6 +5034,8 @@ public class PlayerNpcEntity extends FakePlayer implements RangedAttackMob {
         if (!this.ensureConfiguredUsername() || this.isRemoved()) {
             return;
         }
+
+        YesSteveModelCompat.initializeSpawn(this);
 
         List<String> commands = EquipmentDataLoader.getEquipCommands(0.85f, this);
         for (String cmd : commands) {

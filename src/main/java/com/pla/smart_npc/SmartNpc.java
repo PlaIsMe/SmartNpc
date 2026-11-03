@@ -8,6 +8,7 @@ import com.pla.smart_npc.compat.epicfight.EpicFightCloneAnimations;
 import com.pla.smart_npc.compat.epicfight.EpicFightSmartNpcPatchedRenderer;
 import com.pla.smart_npc.compat.epicfight.EpicFightSmartNpcPatches;
 import com.pla.smart_npc.config.SmartNpcConfig;
+import com.pla.smart_npc.config.SmartNpcCompatConfig;
 import com.pla.smart_npc.config.SmartNpcEpicFightConfig;
 import com.pla.smart_npc.config.SmartNpcNamesConfig;
 import com.pla.smart_npc.event.NpcGearLoadEvent;
@@ -58,6 +59,7 @@ public class SmartNpc {
         modEventBus.addListener(SmartNpcNamesConfig::onConfigLoading);
         modEventBus.addListener(SmartNpcNamesConfig::onConfigReloading);
         modContainer.registerConfig(ModConfig.Type.COMMON, SmartNpcConfig.SPEC, "smart_npc-server.toml");
+        modContainer.registerConfig(ModConfig.Type.COMMON, SmartNpcCompatConfig.SPEC, "smart_npc-compat.toml");
         modContainer.registerConfig(ModConfig.Type.COMMON, SmartNpcNamesConfig.SPEC, "smart_npc-names.toml");
         if (ModList.get().isLoaded("epicfight")) {
             modContainer.registerConfig(ModConfig.Type.COMMON, SmartNpcEpicFightConfig.SPEC, "smart_npc-epicfight.toml");

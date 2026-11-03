@@ -82,6 +82,9 @@ public final class SmartNpcNamesConfig {
                         "The key must be a valid Minecraft username (1-16 letters, numbers, or underscores).",
                         "Each NPC must contain one job: BUILDING, MINING, FARMING, FISHING, or EXPLORING.",
                         "Other interests: HUNT_MONSTERS, HUNT_ANIMALS, HUNT_PLAYERS, HUNT_VILLAGERS, TROLL_HIT, LOOTING, CAUTIOUS, CHEST_PROTECT, TEAMUP, COWARD.",
+                        "Optional appearance: \"YSM:<filename>\" without .ysm (example: GI_Paimon.ysm -> YSM:GI_Paimon).",
+                        "The filename is case-sensitive and must be loaded by server YSM; modelChance in smart_npc-compat.toml still applies.",
+                        "Missing or ambiguous filenames use YSM's default. The choice is saved once and only applies to newly spawned NPCs.",
                         "CAUTIOUS conflict with HUNT_MONSTERS and HUNT_PLAYERS since CAUTIOUS will let NPC run away from them.",
                         "For an optional display name, use a quoted key: \"skinName:Display Name\" = [\"BUILDING\", \"CAUTIOUS\"].",
                         "Duplicate skin names are ignored after the first entry. An empty table disables Player NPC spawning.")
@@ -110,6 +113,17 @@ public final class SmartNpcNamesConfig {
     /** Cheap generation check used by loaded NPCs to refresh interests after a config reload. */
     public static long getPlayerNpcNameEntriesRevision() {
         return playerNpcNameEntriesRevision;
+    }
+
+    /** Spawn-only lookup; preserve the same first-entry-wins rule as the configured name pool. */
+    public static Optional<String> getYsmModelFileName(String skinName) {
+        for (String rawEntry : getPlayerNpcNameEntries()) {
+            Optional<NameEntry> parsed = parseNameEntry(rawEntry);
+            if (parsed.isPresent() && parsed.get().skinName().equalsIgnoreCase(skinName)) {
+                return Optional.ofNullable(parsed.get().ysmModelFileName());
+            }
+        }
+        return Optional.empty();
     }
 
     public static void onConfigLoading(ModConfigEvent.Loading event) {
@@ -147,10 +161,21 @@ public final class SmartNpcNamesConfig {
         }
 
         Set<PlayerNpcInterest> interests = new LinkedHashSet<>();
+        String ysmModelFileName = null;
         for (int i = 1; i < fields.length; i++) {
             String interestName = fields[i].trim();
             if (interestName.isEmpty()) {
                 return Optional.empty();
+            }
+            if (interestName.regionMatches(true, 0, "YSM:", 0, 4)) {
+                if (ysmModelFileName != null) {
+                    return Optional.empty();
+                }
+                ysmModelFileName = interestName.substring(4).trim();
+                if (ysmModelFileName.isEmpty()) {
+                    return Optional.empty();
+                }
+                continue;
             }
             try {
                 PlayerNpcInterest interest = PlayerNpcInterest.valueOf(interestName.toUpperCase(Locale.ROOT));
@@ -165,7 +190,7 @@ public final class SmartNpcNamesConfig {
         if (interests.stream().noneMatch(PlayerNpcInterest::isJob)) {
             return Optional.empty();
         }
-        return Optional.of(new NameEntry(skinName, displayName, List.copyOf(interests)));
+        return Optional.of(new NameEntry(skinName, displayName, List.copyOf(interests), ysmModelFileName));
     }
 
     private static boolean isValidNameEntry(Object value) {
@@ -228,7 +253,7 @@ public final class SmartNpcNamesConfig {
         for (String rawEntry : entries) {
             parseNameEntry(rawEntry).ifPresent(entry -> roster.set(
                     combinedName(entry),
-                    entry.interests().stream().map(Enum::name).toList()
+                    toRosterInterests(entry)
             ));
         }
         return roster;
@@ -242,10 +267,19 @@ public final class SmartNpcNamesConfig {
 
     private static String toConfigEntry(NameEntry entry) {
         StringBuilder result = new StringBuilder(combinedName(entry));
-        for (PlayerNpcInterest interest : entry.interests()) {
-            result.append('|').append(interest.name());
+        for (String interest : toRosterInterests(entry)) {
+            result.append('|').append(interest);
         }
         return result.toString();
+    }
+
+    private static List<String> toRosterInterests(NameEntry entry) {
+        List<String> result = new ArrayList<>();
+        entry.interests().forEach(interest -> result.add(interest.name()));
+        if (entry.ysmModelFileName() != null) {
+            result.add("YSM:" + entry.ysmModelFileName());
+        }
+        return result;
     }
 
     private static void migrateLegacyList(ModConfig config) {
@@ -281,6 +315,6 @@ public final class SmartNpcNamesConfig {
         }
     }
 
-    public record NameEntry(String skinName, String displayName, List<PlayerNpcInterest> interests) {
+    public record NameEntry(String skinName, String displayName, List<PlayerNpcInterest> interests, String ysmModelFileName) {
     }
 }
