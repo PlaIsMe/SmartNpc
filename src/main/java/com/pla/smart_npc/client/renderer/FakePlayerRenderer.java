@@ -4,6 +4,7 @@ import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.math.Axis;
 import com.pla.smart_npc.clazz.FakePlayer;
 import com.pla.smart_npc.client.compat.BetterCombatClientCompat;
+import com.pla.smart_npc.client.compat.YesSteveModelClientCompat;
 import com.pla.smart_npc.client.gui.SmartNpcInspectorOverlay;
 import com.pla.smart_npc.client.model.BetterCombatPlayerNpcModel;
 import com.pla.smart_npc.client.renderer.layer.BetterCombatItemInHandLayer;
@@ -37,9 +38,11 @@ public class FakePlayerRenderer<T extends FakePlayer> extends HumanoidMobRendere
     private final RenderLayer<T, PlayerModel<T>> defaultArmorLayer;
     private final RenderLayer<T, PlayerModel<T>> slimArmorLayer;
     private final int armorLayerIndex;
+    private final YesSteveModelClientCompat yesSteveModel;
 
     public FakePlayerRenderer(EntityRendererProvider.Context context) {
         super(context, new BetterCombatPlayerNpcModel<>(context.bakeLayer(ModelLayers.PLAYER), false), 0.5F);
+        this.yesSteveModel = new YesSteveModelClientCompat(context);
         this.defaultModel = this.model;
         this.slimModel = new BetterCombatPlayerNpcModel<>(context.bakeLayer(ModelLayers.PLAYER_SLIM), true);
         this.defaultArmorLayer = new HumanoidArmorLayer<>(
@@ -82,6 +85,12 @@ public class FakePlayerRenderer<T extends FakePlayer> extends HumanoidMobRendere
 
     @Override
     public void render(@NotNull T entity, float entityYaw, float partialTick, @NotNull PoseStack poseStack, @NotNull MultiBufferSource buffer, int packedLight) {
+        if (entity instanceof PlayerNpcEntity npc && this.yesSteveModel.render(npc, entityYaw, partialTick, poseStack, buffer, packedLight)) {
+            if (this.shouldShowName(entity)) {
+                this.renderNameTag(entity, entity.getDisplayName(), poseStack, buffer, packedLight);
+            }
+            return;
+        }
         boolean renderInspectatorBody = SmartNpcInspectorOverlay.shouldRenderInspectatorCameraTargetBody(entity);
         boolean slim = FakePlayerTextureUtils.getPlayerSkinType(entity.getProfile()) == FakePlayerTextureUtils.SkinType.SLIM;
         this.model = slim ? this.slimModel : this.defaultModel;

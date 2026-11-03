@@ -1,6 +1,7 @@
 package com.pla.smart_npc.entity.ai;
 
 import com.pla.smart_npc.entity.PlayerNpcEntity;
+import com.pla.smart_npc.compat.YesSteveModelCompat;
 import net.minecraft.util.Mth;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
@@ -22,6 +23,7 @@ public final class SocialNoticeAi {
     private int nextScanTick;
     private int untilTick;
     private int cooldownUntilTick;
+    private int ysmEmoteOwnerSequence;
     private float startBodyYaw;
     private float noticeHeadYaw;
     private float noticePitch;
@@ -103,6 +105,7 @@ public final class SocialNoticeAi {
             this.noticePitch = this.npc.getXRot();
             this.untilTick = this.npc.tickCount + 60 + this.npc.getRandom().nextInt(41);
             this.cooldownUntilTick = this.untilTick + 200 + this.npc.getRandom().nextInt(201);
+            this.ysmEmoteOwnerSequence = YesSteveModelCompat.playRandomEmote(this.npc, this.untilTick - this.npc.tickCount);
         }
     }
 
@@ -164,6 +167,8 @@ public final class SocialNoticeAi {
     }
 
     private void stop() {
+        this.npc.stopYsmEmote(this.ysmEmoteOwnerSequence);
+        this.ysmEmoteOwnerSequence = 0;
         this.target = null;
         this.npc.setSocialNoticePausesWork(false);
     }

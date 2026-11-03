@@ -56,6 +56,10 @@ sourceSets.main.java {
 repositories {
     mavenCentral()
     maven {
+        url = uri("https://api.modrinth.com/maven")
+        content { includeGroup "maven.modrinth" }
+    }
+    maven {
         url = uri("https://cursemaven.com")
     }
     flatDir { dir 'libs' }
@@ -68,6 +72,8 @@ mixin {
 
 dependencies {
     minecraft "net.minecraftforge:forge:${minecraft_version}-${forge_version}"
+
+    compileOnly fg.deobf("maven.modrinth:yes-steve-model:Zqooxsd2")
 
     compileOnly fg.deobf("curse.maven:epic-fight-mod-405076:8049910")
     compileOnly fg.deobf("curse.maven:combat-evolution-1377795:8699861")
