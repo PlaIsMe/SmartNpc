@@ -1,0 +1,19 @@
+{
+  "required": true,
+  "package": "com.pla.smart_npc.mixin",
+  "compatibilityLevel": "JAVA_17",
+  "mixins": [
+    "DistanceManagerAccessor",
+    "ServerChunkCacheAccessor",
+    "MonsterMixin",
+    "BoatMixin"
+  ],
+  "client": [
+    "CameraMixin",
+    "ClientPacketListenerMixin",
+    "ClientSuggestionProviderMixin",
+    "GuiMixin",
+    "PlayerRendererMixin"
+  ],
+  "minVersion": "0.8"
+}

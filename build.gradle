@@ -1,135 +1,76 @@
 plugins {
-    id 'eclipse'
-    id 'idea'
+    id 'base'
     id 'maven-publish'
-    id 'net.minecraftforge.gradle' version '[6.0,6.2)'
-    id 'org.parchmentmc.librarian.forgegradle' version '1.+'
-    id 'org.spongepowered.mixin' version '0.7.+'
+    id 'architectury-plugin' version '3.4.164'
+    id 'dev.architectury.loom' version '1.11.458' apply false
+    id 'com.github.johnrengelman.shadow' version '8.1.1' apply false
 }
 
-version = mod_version
-group = mod_group_id
+architectury { minecraft = minecraft_version }
 
-base {
-    archivesName = "SmartNpc-1.20.1"
-}
-
-java.toolchain.languageVersion = JavaLanguageVersion.of(17)
-
-println "Java: ${System.getProperty 'java.version'}, JVM: ${System.getProperty 'java.vm.version'} (${System.getProperty 'java.vendor'}), Arch: ${System.getProperty 'os.arch'}"
-minecraft {
-    mappings channel: mapping_channel, version: mapping_version
-    accessTransformer = file('src/main/resources/META-INF/accesstransformer.cfg')
-
-    copyIdeResources = true
-
-    runs {
-        configureEach {
-            workingDirectory project.file('run')
-            property 'forge.logging.markers', 'REGISTRIES'
-            property 'forge.logging.console.level', 'debug'
-
-            mods {
-                "${mod_id}" {
-                    source sourceSets.main
+subprojects {
+    apply plugin: 'java'
+    apply plugin: 'architectury-plugin'
+    apply plugin: 'maven-publish'
+    apply plugin: 'dev.architectury.loom'
+    group = rootProject.mod_group_id
+    version = rootProject.mod_version
+    base { archivesName = "SmartNPC-${project.name}-${rootProject.minecraft_version}" }
+    java { toolchain.languageVersion = JavaLanguageVersion.of(17); withSourcesJar() }
+    loom { silentMojangMappingsLicense(); mixin { defaultRefmapName = "smart_npc.${project.name}.refmap.json" } }
+    repositories {
+        exclusiveContent {
+            forRepository { maven { url = 'https://maven.fabricmc.net/' } }
+            filter { includeGroupByRegex 'net.fabricmc.*' }
+        }
+        exclusiveContent {
+            forRepository { maven { url = 'https://maven.architectury.dev/' } }
+            filter { includeGroupByRegex 'dev.architectury.*' }
+        }
+        mavenCentral()
+        maven { url = 'https://maven.architectury.dev/' }
+        maven { url = 'https://maven.terraformersmc.com/releases/' }
+        maven { url = 'https://maven.shedaniel.me/' }
+        maven { url = 'https://maven.kosmx.dev/' }
+        maven { url = 'https://api.modrinth.com/maven'; content { includeGroup 'maven.modrinth' } }
+        maven { url = 'https://cursemaven.com'; content { includeGroup 'curse.maven' } }
+    }
+    dependencies {
+        minecraft "com.mojang:minecraft:${rootProject.minecraft_version}"
+        mappings loom.officialMojangMappings()
+        compileOnly 'com.google.code.findbugs:jsr305:3.0.2'
+        compileOnly(annotationProcessor('io.github.llamalad7:mixinextras-common:0.5.0'))
+    }
+    tasks.withType(JavaCompile).configureEach { options.encoding = 'UTF-8'; options.release = 17 }
+    tasks.withType(net.fabricmc.loom.task.AbstractRunTask).configureEach {
+        javaLauncher = javaToolchains.launcherFor { languageVersion = JavaLanguageVersion.of(17) }
+    }
+    tasks.withType(ProcessResources).configureEach {
+        def properties = rootProject.properties.findAll { key, value -> key.startsWith('mod_') || key.endsWith('_version') || key.endsWith('_version_range') }
+        inputs.properties(properties)
+        filesMatching(['META-INF/mods.toml', 'fabric.mod.json', 'pack.mcmeta']) { expand(properties) }
+    }
+    tasks.named('jar', Jar) {
+        manifest.attributes('Specification-Title': rootProject.mod_id, 'Specification-Vendor': rootProject.mod_authors, 'Specification-Version': '1', 'Implementation-Title': "SmartNPC-${project.name}", 'Implementation-Version': rootProject.mod_version, 'Implementation-Vendor': rootProject.mod_authors)
+    }
+    if (project.name in ['fabric', 'forge']) {
+        // Development uses named mixins; each production remap injects the common refmap.
+        def commonRefmaps = project(':common').tasks.named('remapJar').flatMap { it.mixinRefmapServiceOptions }
+        tasks.named('remapJar') { mixinRefmapServiceOptions.addAll(commonRefmaps) }
+        publishing {
+            publications {
+                mavenJava(MavenPublication) {
+                    artifactId = "SmartNPC-${project.name}-${rootProject.minecraft_version}"
+                    artifact tasks.named('remapJar')
+                    artifact tasks.named('remapSourcesJar')
                 }
             }
-        }
-
-        client {
-        }
-
-        server {
-            args '--nogui'
-        }
-
-        data {
-            workingDirectory project.file('run-data')
-            args '--mod', mod_id, '--all', '--output', file('src/generated/resources/'), '--existing', file('src/main/resources/')
+            repositories { maven { url = rootProject.layout.projectDirectory.dir('mcmodsrepo') } }
         }
     }
 }
 
-sourceSets.main.resources { srcDirs = ['src/main/resources', 'src/generated/resources'] }
-sourceSets.main.java {
-}
-repositories {
-    mavenCentral()
-    maven {
-        url = uri("https://api.modrinth.com/maven")
-        content { includeGroup "maven.modrinth" }
-    }
-    maven {
-        url = uri("https://cursemaven.com")
-    }
-    flatDir { dir 'libs' }
-}
-
-mixin {
-    add sourceSets.main, 'smart_npc.mixins.refmap.json'
-    config 'smart_npc.mixins.json'
-}
-
-dependencies {
-    minecraft "net.minecraftforge:forge:${minecraft_version}-${forge_version}"
-
-    compileOnly fg.deobf("maven.modrinth:yes-steve-model:Zqooxsd2")
-
-    compileOnly fg.deobf("curse.maven:epic-fight-mod-405076:8049910")
-    compileOnly fg.deobf("curse.maven:combat-evolution-1377795:8699861")
-
-    compileOnly fg.deobf("curse.maven:cloth-config-348521:5729105")
-    compileOnly fg.deobf("curse.maven:playeranimator-658587:4587214")
-    compileOnly fg.deobf("curse.maven:better-combat-by-daedelus-639842:7287334")
-
-    compileOnly(annotationProcessor("io.github.llamalad7:mixinextras-common:0.5.0"))
-    annotationProcessor 'org.spongepowered:mixin:0.8.5:processor'
-}
-
-tasks.named('processResources', ProcessResources).configure {
-    var replaceProperties = [
-            minecraft_version: minecraft_version, minecraft_version_range: minecraft_version_range,
-            forge_version: forge_version, forge_version_range: forge_version_range,
-            loader_version_range: loader_version_range,
-            mod_id: mod_id, mod_name: mod_name, mod_license: mod_license, mod_version: mod_version,
-            mod_authors: mod_authors, mod_description: mod_description,
-    ]
-    inputs.properties replaceProperties
-
-    filesMatching(['META-INF/mods.toml', 'pack.mcmeta']) {
-        expand replaceProperties + [project: project]
-    }
-}
-tasks.named('jar', Jar).configure {
-    destinationDirectory = file("C:/Users/Admin/Desktop/Minecraft/delivery")
-    manifest {
-        attributes([
-                'Specification-Title'     : mod_id,
-                'Specification-Vendor'    : mod_authors,
-                'Specification-Version'   : '1', // We are version 1 of ourselves
-                'Implementation-Title'    : project.name,
-                'Implementation-Version'  : project.jar.archiveVersion,
-                'Implementation-Vendor'   : mod_authors,
-                'Implementation-Timestamp': new Date().format("yyyy-MM-dd'T'HH:mm:ssZ")
-        ])
-    }
-
-    finalizedBy 'reobfJar'
-}
-
-publishing {
-    publications {
-        register('mavenJava', MavenPublication) {
-            artifact jar
-        }
-    }
-    repositories {
-        maven {
-            url "file://${project.projectDir}/mcmodsrepo"
-        }
-    }
-}
-
-tasks.withType(JavaCompile).configureEach {
-    options.encoding = 'UTF-8'
-}
+tasks.named('assemble') { dependsOn ':forge:assemble', ':fabric:assemble' }
+tasks.register('compileJava') { dependsOn ':common:compileJava', ':forge:compileJava', ':fabric:compileJava' }
+tasks.named('build') { dependsOn ':forge:build', ':fabric:build' }
+tasks.named('publish') { dependsOn ':forge:publish', ':fabric:publish' }

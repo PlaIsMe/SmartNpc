@@ -2,11 +2,19 @@ pluginManagement {
     repositories {
         gradlePluginPortal()
         maven {
-            name = 'MinecraftForge'
-            url = 'https://maven.minecraftforge.net/'
+            url = 'https://maven.fabricmc.net/'
+            content { includeGroupByRegex 'net.fabricmc.*'; includeGroup 'org.spongepowered' }
         }
-        maven { url = 'https://maven.parchmentmc.org' }
+        maven {
+            url = 'https://maven.architectury.dev/'
+            content { includeGroupByRegex 'dev.architectury.*'; includeGroupByRegex 'architectury-plugin.*' }
+        }
+        maven {
+            url = 'https://maven.minecraftforge.net/'
+            content { includeGroupByRegex 'net.minecraftforge.*'; includeGroupByRegex 'de.oceanlabs.*' }
+        }
+        maven { url = 'https://libraries.minecraft.net/'; content { includeGroup 'com.mojang' } }
     }
 }
-
 rootProject.name = 'SmartNpc'
+include 'common', 'fabric', 'forge'

@@ -132,3 +132,11 @@ Do not re-add a per-tick `CameraType.THIRD_PERSON_FRONT` force in active mode. T
 
 If cycling between NPCs changes, keep the server refresh request and local `inspectedEntityId` update together so the overlay and camera target do not desync.
 AI resource holder rows show the remaining NPC-level worker day shift as minutes/seconds. Holders span routine-goal transitions and normally rotate at overworld time 1000 (about 07:00), after the sleep/wake transition; invalid/dead/unloaded NPCs and excess holders after a limit reduction still release immediately.
+# Multi-loader transport update
+
+The Minecraft 1.20.1 multi-loader port uses shared packet classes under `common/src`.
+Architectury NetworkManager registers explicit clientbound/serverbound channels with
+protocol `8` in their IDs. The retained handlers still queue application to the proper
+thread and validate senders, entity state and range. Loader event adapters call the
+shared inspector lifecycle/input/HUD hooks. See `multiloader_1_20_1.md` for current
+paths, runtime dependencies and verification limits.

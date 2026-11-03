@@ -1,0 +1,15 @@
+{
+  "required": true,
+  "package": "com.pla.smart_npc.mixin",
+  "compatibilityLevel": "JAVA_17",
+  "mixins": [
+    "epicfight.WeaponCapabilityAccessor",
+    "epicfight.CapabilityItemBuilderPresetMixin",
+    "epicfight.ItemCapabilityProviderPresetMixin",
+    "epicfight.ItemCapabilityReloadListenerPresetMixin",
+    "combat_evolution.ExecutionHandlerMixin"
+  ],
+  "refmap": "smart_npc.forge.refmap.json",
+  "plugin": "com.pla.smart_npc.mixin.plugin.SmartNpcMixinPlugin",
+  "minVersion": "0.8"
+}

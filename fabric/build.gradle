@@ -1,0 +1,49 @@
+plugins { id 'com.github.johnrengelman.shadow' }
+architectury { platformSetupLoomIde(); fabric() }
+loom { accessWidenerPath = project(':common').file('src/main/resources/smart_npc.accesswidener') }
+configurations {
+    common
+    shadowCommon
+    compileClasspath.extendsFrom common
+    runtimeClasspath.extendsFrom common
+    developmentFabric.extendsFrom common
+}
+dependencies {
+    modImplementation "net.fabricmc:fabric-loader:${rootProject.fabric_loader_version}"
+    modImplementation "net.fabricmc.fabric-api:fabric-api:${rootProject.fabric_api_version}"
+    modImplementation "dev.architectury:architectury-fabric:${rootProject.architectury_version}"
+    modImplementation 'maven.modrinth:forge-config-api-port:HvR3IdRE'
+    // Fabric Loader resolves these nested mods without separate player downloads.
+    include "dev.architectury:architectury-fabric:${rootProject.architectury_version}"
+    include 'maven.modrinth:forge-config-api-port:HvR3IdRE'
+    modCompileOnly 'maven.modrinth:yes-steve-model:LF0NYrRj'
+    modCompileOnly 'maven.modrinth:better-combat:OtwNg4r4'
+    modCompileOnly 'dev.kosmx.player-anim:player-animation-lib-fabric:1.0.2+1.19.4'
+    include 'io.github.llamalad7:mixinextras-fabric:0.5.0'
+    modImplementation 'io.github.llamalad7:mixinextras-fabric:0.5.0'
+    common(project(path: ':common', configuration: 'namedElements')) { transitive = false }
+    shadowCommon(project(path: ':common', configuration: 'transformProductionFabric')) { transitive = false }
+}
+shadowJar { configurations = [project.configurations.shadowCommon]; archiveClassifier = 'dev-shadow'; duplicatesStrategy = DuplicatesStrategy.EXCLUDE }
+processResources { from project(':common').file('src/main/resources/smart_npc.accesswidener') }
+remapJar {
+    dependsOn shadowJar
+    inputFile = shadowJar.archiveFile
+    archiveClassifier = ''
+    destinationDirectory = rootProject.file(rootProject.delivery_directory)
+}
+jar { archiveClassifier = 'dev' }
+sourcesJar {
+    dependsOn ':common:sourcesJar'
+    from project(':common').sourceSets.main.allSource
+}
+
+// Install optional integrations only for an explicit compatibility development run.
+if (providers.gradleProperty('compatRuntime').map { it.toBoolean() }.getOrElse(false)) {
+    dependencies {
+        modLocalRuntime 'maven.modrinth:yes-steve-model:LF0NYrRj'
+        modLocalRuntime 'maven.modrinth:better-combat:OtwNg4r4'
+        modLocalRuntime 'dev.kosmx.player-anim:player-animation-lib-fabric:1.0.2+1.19.4'
+        modLocalRuntime 'me.shedaniel.cloth:cloth-config-fabric:11.1.136'
+    }
+}

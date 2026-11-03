@@ -1,5 +1,14 @@
 # Notices
 
+## Bundled libraries
+
+Both distributions include an unmodified nested jar of their loader's Architectury API
+9.2.14 (LGPL-3.0). Fabric additionally bundles Forge Config API Port 8.0.3 (MPL-2.0).
+Their original metadata and license notices remain inside the nested jars.
+
+- Architectury API source: https://github.com/architectury/architectury-api
+- Forge Config API Port source: https://github.com/Fuzss/forgeconfigapiport
+
 ## MineColonies and Structurize
 
 PlayerNpc's `.blueprint` structure-loading support is inspired by and format-compatible with the Structurize blueprint format used by MineColonies.

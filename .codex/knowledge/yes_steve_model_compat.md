@@ -1,4 +1,20 @@
-# Yes Steve Model compatibility (Forge 1.20.1)
+# Yes Steve Model compatibility (Minecraft 1.20.1)
+
+## Multi-loader update
+
+The `common` / `fabric` / `forge` layout now shares model selection, filename matching,
+saved appearance and emote behavior. Forge is pinned to `Zqooxsd2`; Fabric is pinned to
+`LF0NYrRj`, both YSM 2.6.5 for 1.20.1. Obfuscated APIs differ between those releases:
+typed server adapters and display renderers live in each loader module. Fabric exposes
+only YSM's animation attachment through its injected capability interface; Forge keeps
+the animation capability. Both render the explicit animation/display proxy and retain
+the synchronized server-model-cache identity check.
+
+The shared gate checks the exact version for the active loader. Missing or unsupported
+YSM retains normal NPC rendering. `-PcompatRuntime=true` installs pinned optional mods
+for development; ordinary builds do not bundle YSM. See `multiloader_1_20_1.md` and
+README.md for current commands. The Forge-specific symbols and historical verification
+below describe the original adapter and must not be reused as Fabric API names.
 
 This checkout's actual build is Minecraft 1.20.1 / Forge 47.4.4 / Java 17, despite the
 26.1.2 overview in AGENTS.md. The adapter targets the released **YSM
@@ -22,38 +38,47 @@ own native library or make other YSM releases compatible.
 modelChance = 1.0
 ```
 
-This is a COMMON config, following the project's existing config placement, but only the
-logical server consults its value. Valid range is 0.0–1.0; default 1.0 selects every eligible
-new spawn. Zero disables appearance and emotes for existing NPCs too, retaining their saved
-choice for re-enabling. Other probability changes affect only new NPCs.
+This is a COMMON config; only the logical server consults its value. The range is
+0.0-1.0. Supported, native-available YSM always supplies an appearance when its server
+registry has the appropriate models:
 
-- `YesSteveModelCompat.initializeSpawn` executes on the server thread during completed
-  spawn initialization or the first staggered server tick. A worker-created NPC does not
-  access YSM's registry on its chunk-generation thread.
-- YSM loads its server registry asynchronously. A HIGHEST-priority ServerAboutToStart
-  observer captures the old registry map before YSM's NORMAL-priority reload begins.
-  Selection waits for the pinned native callback to publish a replacement map on the
-  server thread, even if that replacement is empty. This also prevents an integrated
-  world from using the previous world's registry. Pending selection is saved and polled
-  at most every 20 ticks. No chance roll occurs before publication.
-- Only `OoOoOoooO0O00oOoO00OOo00`'s server model map is enumerated. Each usable model gets
-  equal weight; its first server-listed texture is selected. Client model folders,
-  client preferences and player-selected skins never participate.
-- `YsmChoiceMade`, `YsmModel`, and `YsmTexture` persist on the NPC. Negative chance results,
-  no usable models, and spawning without YSM are final too. Loading old NPCs without these
-  tags does not reroll their appearance; unfinished spawn initialization remains eligible.
-  Vanilla `/summon` also invokes NBT loading: fresh command NBT without a saved UUID remains
-  eligible, while a legacy saved UUID retains its existing identity. An explicit
-  `YsmChoiceMade` tag always takes precedence. This covers both ordinary summons and custom
-  command NBT that bypasses `finalizeSpawn`.
-- Randomly assigned appearances keep their saved model while it is usable. After model
-  removal and YSM registry publication, choose and save another usable server model without
-  repeating the spawn chance roll. A removed texture uses the same model's declared default
-  or first texture instead. Config-assigned appearances retain their saved identity.
-  Death followed by a genuinely new world spawn gets a fresh decision.
-- Synched entity data carries the selected model/texture, server-approved active flag,
-  emote and sequence. Clients never select a model or enable the bridge independently.
-  The network protocol is bumped from 6 to 7 because entity data layout changed.
+- `0.0` uses `misc/2_steve` for wide skins and `misc/1_alex` for slim skins, including
+  existing NPCs. It does not disable YSM rendering or emotes.
+- `1.0` chooses another usable server model, including bundled models and server-installed
+  packs. The two exact Steve/Alex IDs are excluded from that lottery. YSM's `default`
+  model is a separate bundled character and remains eligible.
+- Intermediate values roll once when an NPC first receives an appearance: success picks
+  a custom model (honoring `YSM:<filename>`); failure uses Steve/Alex. Already assigned
+  appearances do not reroll when changing between intermediate values. Moving to zero
+  replaces an existing custom appearance with Steve/Alex; moving to one upgrades a base
+  appearance to a custom choice. The former custom ID is not retained across that change.
+- If custom selection has no usable result, Steve/Alex is the fallback. Base-only appearances
+  revisit skin shape every staggered refresh, allowing asynchronous profile resolution
+  to correct an initial wide/slim fallback. Custom choices temporarily using the base
+  fallback also retry custom selection after registry changes.
+
+`initializeSpawn` runs only on the server during completed initialization or the staggered
+20-tick check. It waits for YSM's asynchronous registry publication before selecting.
+`YsmChoiceMade`, `YsmModel`, `YsmTexture`, and `YsmRandomModel` keep their existing save
+format. A nullable server-only `YsmCustomModel` Boolean now persists the chance result,
+including a custom choice temporarily falling back to Steve/Alex. This prevents repeated
+chance rolls when the registry is empty and allows recovery after a model reload. Old NPCs with an empty saved model now receive an appearance too; a legacy failed
+chance or spawning before YSM installation no longer permanently excludes them.
+
+The custom lottery gives each usable model equal weight and uses its first server-listed
+texture. Base selection uses the chosen model's declared default texture or first available
+texture. Skin shape comes from existing Authlib SKIN metadata; if absent, it matches
+1.20.1 DefaultPlayerSkin's 18-entry UUID fallback without loading a client class. No new
+network profile request is made by model selection.
+
+Both display-player adapters expose the NPC's resolved GameProfile for YSM's Steve/Alex
+skin resolver. Overriding only `getSkinTextureLocation` is insufficient: YSM reads the
+profile through SkinManager directly. Display players retain their own entity UUID and
+never join the world or player list.
+
+Missing/unsupported/native-unavailable YSM still uses ordinary NPC rendering. Client-only
+models never enter server selection. Synced entity data already carries the resulting
+model, texture, active flag and emote state; this change requires no wire-format change.
 
 ## Per-name model preference (2026-11-03)
 
@@ -78,7 +103,7 @@ through YSM's server default-model API (`DefaultModelId` / `DefaultModelTexture`
 `default` / `default`); if necessary it tries the server's built-in `default` entry.
 If no usable server default exists, it keeps the normal NPC skin. It never substitutes
 a random model for a missing named preference. Names without a preference retain the
-existing random-model selection. Disabled/absent YSM and failed chance rolls still win.
+existing random-model selection. Absent/unavailable YSM still uses ordinary skins; a failed chance roll now selects YSM Steve/Alex.
 
 Use the server filename **without `.ysm`**, e.g. `GI_Paimon.ysm` uses
 `YSM:GI_Paimon`. `YsmModelFileIndex` builds filename aliases from the authoritative
@@ -185,8 +210,9 @@ server model using the existing equal-per-model lottery. Stop the old model's em
 synchronize the replacement ID/texture, and save it through the ordinary entity save path.
 There is no new spawn chance roll and no replacement while the saved model is valid.
 
-Config-assigned models (including their saved default fallback), NPCs without any saved
-YSM model, absent/unsupported YSM, and chance zero do not enter random recovery. If no usable
-server models exist, retain the last saved choice and show the normal skin until a later
-refresh can recover. Client-only model storage is never consulted. The new provenance tag
-is not synchronized to clients, so no wire/protocol change is needed.
+Config-assigned appearances do not enter the random replacement lottery. If their saved
+model becomes unavailable, use Steve/Alex so YSM remains active; retry the configured
+preference/default on subsequent refreshes while the custom decision remains selected. Random recovery also falls back to
+Steve/Alex if no custom result remains. Zero overrides either origin with Steve/Alex.
+Client-only model storage is never consulted. The provenance tag is not synchronized, so
+no wire/protocol change is needed.

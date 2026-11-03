@@ -1,5 +1,30 @@
 # Player NPC Force Tick Manage
 
+## 1.20.1 multi-loader world startup restoration (2026-11-03)
+
+Fabric's fresh-world entity loading exposed a recursion between pending NPC identity
+assignment and force-manager restoration. `nextConfiguredName` asks `livingNpcNameKeys`
+to reserve existing names; restoration reconciled an unnamed NPC and read its display
+name, reentering name assignment and restoration until `StackOverflowError`.
+
+`track` now ignores entities without a configured username. Their existing first-server-
+tick `completeSpawnInitialization` path assigns the identity and then tracks them. This
+keeps metadata, persistent entries and tab players out of unfinished world-generation
+entities. Named entities loaded from disk continue to register on entity load.
+
+Startup and enabled server ticks now use the same `ensureInitialized` method. Its
+separate `initializing` guard prevents nested restoration, marks completion only after
+restoration/reconciliation succeeds, and clears the guard in `finally`. This shared fix
+applies to Fabric and Forge; it does not alter saved identities or ticket selection.
+
+Validation: `compileJava` and `assemble` passed for both loaders. In isolated directories
+under `build`, the previous production Fabric jar reproduced the reported stack overflow
+when generating fresh terrain from the user's world seed. The rebuilt jar loaded that
+same seed, completed spawn preparation, initialized four NPC identities, and admitted the
+client. Both runs used Java 17, Fabric Loader 0.20.1 and Fabric API 0.92.12+1.20.1, with
+Architectury/Forge Config API Port resolved from inside Smart NPC. The user's original
+save/configs were read only; fixtures were separate copies. No test suite was added.
+
 Natural-spawn population cap:
 - `maxNaturalPlayerNpcs` defaults to `-1`, which now selects the conservative hardware/MSPT automatic policy documented in `.codex/knowledge/player_npc_natural_spawn_cap.md`. `0` disables natural spawning and a positive value is a fixed cap.
 - `PlayerNpcNaturalSpawnCap` and its persisted UUID registry own population admission. The spawn predicate no longer reads or initializes `MANAGED_NPCS`, and the cap remains active with `forceTickManage=false` without scanning every level for each spawn attempt.
