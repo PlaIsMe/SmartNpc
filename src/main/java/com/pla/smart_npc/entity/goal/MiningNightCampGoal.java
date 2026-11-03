@@ -119,6 +119,7 @@ public class MiningNightCampGoal extends Goal {
     private BlockPos resourcelessWalkProgressPos;
     private FurnaceMode furnaceMode = FurnaceMode.NONE;
     private ActivityMode activityMode = ActivityMode.LOOK;
+    private boolean relaxingForYsm;
     private ItemStack previousMainHand = ItemStack.EMPTY;
     private int actionDelayTicks;
     private int furnaceCooldownTicks;
@@ -388,6 +389,7 @@ public class MiningNightCampGoal extends Goal {
 
     @Override
     public void tick() {
+        this.relaxingForYsm = false;
         if (!(this.playerNpc.level() instanceof ServerLevel serverLevel)) {
             this.finished = true;
             return;
@@ -512,6 +514,7 @@ public class MiningNightCampGoal extends Goal {
 
     @Override
     public void stop() {
+        this.relaxingForYsm = false;
         this.stopResourcelessMiningNightWalk();
         this.stopFarmFenceClear();
         this.restorePreviousMainHand();
@@ -779,11 +782,16 @@ public class MiningNightCampGoal extends Goal {
             this.playerNpc.setCurrentAiDetail("sneaking around " + this.campActivityContext());
             this.lookAroundCamp();
         } else {
+            this.relaxingForYsm = true;
             this.playerNpc.getNavigation().stop();
             this.sneakingAi.setSneaking(false);
             this.playerNpc.setCurrentAiDetail("watching " + this.campActivityContext());
             this.lookAroundCamp();
         }
+    }
+
+    public boolean isRelaxingForYsm() {
+        return this.relaxingForYsm;
     }
 
     private boolean shouldUseResourcelessMiningNightWalk() {

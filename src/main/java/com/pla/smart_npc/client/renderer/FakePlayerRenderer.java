@@ -6,6 +6,7 @@ import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.math.Axis;
 import com.pla.smart_npc.clazz.FakePlayer;
 import com.pla.smart_npc.client.compat.BetterCombatClientCompat;
+import com.pla.smart_npc.client.compat.YesSteveModelClientCompat;
 import com.pla.smart_npc.client.gui.SmartNpcInspectorOverlay;
 import com.pla.smart_npc.client.model.BetterCombatPlayerNpcModel;
 import com.pla.smart_npc.client.renderer.layer.BetterCombatItemInHandLayer;
@@ -43,9 +44,11 @@ public class FakePlayerRenderer<T extends FakePlayer>
     private final RenderLayer<AvatarRenderState, PlayerModel> defaultArmorLayer;
     private final RenderLayer<AvatarRenderState, PlayerModel> slimArmorLayer;
     private final int armorLayerIndex;
+    private final YesSteveModelClientCompat yesSteveModel;
 
     public FakePlayerRenderer(EntityRendererProvider.Context context) {
         super(context, new BetterCombatPlayerNpcModel(context.bakeLayer(ModelLayers.PLAYER), false), 0.5F);
+        this.yesSteveModel = new YesSteveModelClientCompat(context);
         this.defaultModel = this.model;
         this.slimModel = new BetterCombatPlayerNpcModel(context.bakeLayer(ModelLayers.PLAYER_SLIM), true);
         this.defaultArmorLayer = new HumanoidArmorLayer<>(
@@ -82,6 +85,9 @@ public class FakePlayerRenderer<T extends FakePlayer>
     @Override
     public void submit(AvatarRenderState state, PoseStack poseStack,
                        SubmitNodeCollector collector, CameraRenderState camera) {
+        if (state instanceof FakePlayerRenderState npcState && this.yesSteveModel.submit(npcState.ysmFrame, poseStack, collector, camera)) {
+            return;
+        }
         boolean slim = state instanceof FakePlayerRenderState npcState && npcState.slim;
         this.model = slim ? this.slimModel : this.defaultModel;
         this.layers.remove(this.defaultArmorLayer);
@@ -135,6 +141,7 @@ public class FakePlayerRenderer<T extends FakePlayer>
         state.showRightSleeve = true;
         state.showCape = true;
         state.arrowCount = entity.getArrowCount();
+        state.id = entity.getId();
 
         if (state instanceof FakePlayerRenderState npcState) {
             npcState.slim = state.skin.model() == net.minecraft.world.entity.player.PlayerModelType.SLIM;
@@ -160,6 +167,9 @@ public class FakePlayerRenderer<T extends FakePlayer>
             }
         }
         extractCapeState(entity, state, partialTick);
+        if (state instanceof FakePlayerRenderState npcState) {
+            npcState.ysmFrame = entity instanceof PlayerNpcEntity playerNpc ? this.yesSteveModel.extract(playerNpc, state, partialTick) : null;
+        }
     }
 
     private static void extractCapeState(FakePlayer entity, AvatarRenderState state, float partialTick) {

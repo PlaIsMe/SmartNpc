@@ -1,5 +1,12 @@
 # Notice Nearby Player Goal
 
+With an active server-selected Yes Steve Model, starting attention also selects one random
+roulette animation from that model's server metadata. It lasts no longer than the existing
+notice window. The notice retains an animation sequence token and cancels only that exact
+animation on stop; newer idle/social animation ownership is preserved. Models with no emotes,
+absent/client-only YSM and a zero compatibility chance preserve the normal notice behavior.
+See `../yes_steve_model_compat.md` for the pinned optional API and persistent model rules.
+
 `NoticeNearbyPlayerGoal` is a flagless priority-zero social owner. `SocialNoticeAi` supplies bounded
 selection, retained attention and rotation; the entity validates safety before AI and applies final
 head/body rotation afterward. It does not preempt a work goal's MOVE/LOOK ownership.
