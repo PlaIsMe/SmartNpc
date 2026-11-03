@@ -1,8 +1,19 @@
 pluginManagement {
     repositories {
-        mavenLocal()
         gradlePluginPortal()
-        maven { url = 'https://maven.neoforged.net/releases' }
+        maven {
+            url = 'https://maven.fabricmc.net/'
+            content { includeGroupByRegex 'net.fabricmc.*'; includeGroup 'org.spongepowered' }
+        }
+        maven {
+            url = 'https://maven.architectury.dev/'
+            content { includeGroupByRegex 'dev.architectury.*'; includeGroupByRegex 'architectury-plugin.*' }
+        }
+        maven {
+            url = 'https://maven.neoforged.net/releases'
+            content { includeGroupByRegex 'net.minecraftforge.*'; includeGroupByRegex 'de.oceanlabs.*' }
+        }
+        maven { url = 'https://libraries.minecraft.net/'; content { includeGroup 'com.mojang' } }
     }
 }
 
@@ -11,3 +22,4 @@ plugins {
 }
 
 rootProject.name = 'SmartNpc'
+include 'common', 'fabric', 'neoforge'

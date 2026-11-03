@@ -1,0 +1,12 @@
+architectury { common('fabric', 'neoforge') }
+loom { accessWidenerPath = file('src/main/resources/smart_npc.accesswidener') }
+dependencies {
+    compileOnly 'com.electronwill.night-config:core:3.8.3'
+    compileOnly 'com.electronwill.night-config:toml:3.8.3'
+    modImplementation "net.fabricmc:fabric-loader:${rootProject.fabric_loader_version}"
+    modImplementation "dev.architectury:architectury:${rootProject.architectury_version}"
+    // Retain the existing TOML format and config migration on both loaders.
+    modCompileOnly 'maven.modrinth:forge-config-api-port:uXrWPsCu'
+}
+sourceSets.main.resources.srcDir 'src/generated/resources'
+dependencies { modCompileOnly 'maven.modrinth:player-animation-library:LUMEg2C0' }

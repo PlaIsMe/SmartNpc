@@ -1,0 +1,53 @@
+plugins { id 'com.gradleup.shadow' }
+architectury { platformSetupLoomIde(); fabric() }
+loom { accessWidenerPath = project(':common').file('src/main/resources/smart_npc.accesswidener') }
+configurations {
+    common
+    shadowCommon
+    compileClasspath.extendsFrom common
+    runtimeClasspath.extendsFrom common
+    developmentFabric.extendsFrom common
+}
+dependencies {
+    implementation 'com.electronwill.night-config:core:3.8.3'
+    implementation 'com.electronwill.night-config:toml:3.8.3'
+    modImplementation "net.fabricmc:fabric-loader:${rootProject.fabric_loader_version}"
+    modImplementation "net.fabricmc.fabric-api:fabric-api:${rootProject.fabric_api_version}"
+    modImplementation "dev.architectury:architectury-fabric:${rootProject.architectury_version}"
+    modImplementation 'maven.modrinth:forge-config-api-port:uXrWPsCu'
+    // Fabric Loader resolves these nested mods without separate player downloads.
+    include "dev.architectury:architectury-fabric:${rootProject.architectury_version}"
+    include 'maven.modrinth:forge-config-api-port:uXrWPsCu'
+    modCompileOnly 'maven.modrinth:player-animation-library:LUMEg2C0'
+    include 'io.github.llamalad7:mixinextras-fabric:0.5.0'
+    modImplementation 'io.github.llamalad7:mixinextras-fabric:0.5.0'
+    common(project(path: ':common', configuration: 'namedElements')) { transitive = false }
+    shadowCommon(project(path: ':common', configuration: 'transformProductionFabric')) { transitive = false }
+}
+shadowJar { configurations = [project.configurations.shadowCommon]; archiveClassifier = 'dev-shadow'; duplicatesStrategy = DuplicatesStrategy.EXCLUDE }
+processResources { from project(':common').file('src/main/resources/smart_npc.accesswidener') }
+remapJar {
+    dependsOn shadowJar
+    inputFile = shadowJar.archiveFile
+    archiveClassifier = ''
+    destinationDirectory = rootProject.file(rootProject.delivery_directory)
+}
+jar { archiveClassifier = 'dev' }
+sourcesJar {
+    dependsOn ':common:sourcesJar'
+    from project(':common').sourceSets.main.allSource
+}
+
+// Install optional integrations only for an explicit compatibility development run.
+if (providers.gradleProperty('compatRuntime').map { it.toBoolean() }.getOrElse(false)) {
+    dependencies {
+        runtimeOnly('com.zigythebird:mochafloats:4.1.5') { transitive = false }
+        runtimeOnly 'org.javassist:javassist:3.30.2-GA'
+        modLocalRuntime 'maven.modrinth:tiny-config:3.1.0-fabric'
+        modLocalRuntime 'maven.modrinth:better-combat:MLmCv38Y'
+        modLocalRuntime 'maven.modrinth:cloth-config:xuX40TN5'
+        modLocalRuntime 'maven.modrinth:player-animation-library:LUMEg2C0'
+    }
+}
+
+loom.runs.server.programArgs '--nogui'

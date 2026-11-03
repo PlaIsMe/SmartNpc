@@ -1,0 +1,60 @@
+plugins { id 'com.gradleup.shadow' }
+architectury { platformSetupLoomIde(); neoForge() }
+configurations {
+    common
+    shadowCommon
+    compileClasspath.extendsFrom common
+    runtimeClasspath.extendsFrom common
+    developmentNeoForge.extendsFrom common
+}
+dependencies {
+    neoForge "net.neoforged:neoforge:${rootProject.neo_version}"
+    modImplementation "dev.architectury:architectury-neoforge:${rootProject.architectury_version}"
+    modCompileOnly 'maven.modrinth:player-animation-library:uue016SO'
+    // Forge resolves the nested API without a separate player download.
+    include "dev.architectury:architectury-neoforge:${rootProject.architectury_version}"
+    include 'io.github.llamalad7:mixinextras-neoforge:0.5.0'
+    implementation 'io.github.llamalad7:mixinextras-common:0.5.0'
+    implementation 'io.github.llamalad7:mixinextras-neoforge:0.5.0'
+    common(project(path: ':common', configuration: 'namedElements')) { transitive = false }
+    shadowCommon(project(path: ':common', configuration: 'transformProductionNeoForge')) { transitive = false }
+}
+shadowJar { configurations = [project.configurations.shadowCommon]; archiveClassifier = 'dev-shadow' }
+remapJar {
+    dependsOn shadowJar
+    inputFile = shadowJar.archiveFile
+    archiveClassifier = ''
+    destinationDirectory = rootProject.file(rootProject.delivery_directory)
+}
+processResources { from('src/main/templates') }
+jar { archiveClassifier = 'dev' }
+sourcesJar {
+    dependsOn ':common:sourcesJar'
+    from project(':common').sourceSets.main.allSource
+}
+def npcDataModId = rootProject.mod_id
+def npcGeneratedResources = project(':common').file('src/generated/resources').absolutePath
+def npcExistingResources = project(':common').file('src/main/resources').absolutePath
+loom {
+    runs {
+        data {
+            clientData()
+            runDir 'run-data'
+            programArgs '--mod', npcDataModId, '--all', '--output', npcGeneratedResources, '--existing', npcExistingResources
+        }
+    }
+    neoForge { accessTransformer(file('src/main/resources/META-INF/accesstransformer.cfg')) }
+}
+
+if (providers.gradleProperty('compatRuntime').map { it.toBoolean() }.getOrElse(false)) {
+    dependencies {
+        runtimeOnly('com.zigythebird:mochafloats:4.1.5') { transitive = false }
+        runtimeOnly 'org.javassist:javassist:3.30.2-GA'
+        modLocalRuntime 'maven.modrinth:tiny-config:3.1.0-neoforge'
+        modLocalRuntime 'maven.modrinth:better-combat:lkzLyXbV'
+        modLocalRuntime 'maven.modrinth:player-animation-library:uue016SO'
+        modLocalRuntime 'maven.modrinth:cloth-config:Wsus0EWg'
+    }
+}
+
+loom.runs.server.programArgs '--nogui'

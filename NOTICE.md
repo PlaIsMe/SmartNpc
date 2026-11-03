@@ -1,5 +1,21 @@
 # Notices
 
+## Bundled loader libraries
+
+Both distributions include Architectury API 19.0.1 (LGPL-3.0). Fabric also includes
+Forge Config API Port 21.11.1 (MPL-2.0), retaining its nested Night Config dependencies.
+Original metadata and license files remain inside the nested jars.
+
+- Architectury API source: https://github.com/architectury/architectury-api
+- Forge Config API Port source: https://github.com/Fuzss/forgeconfigapiport
+
+## Fabric bow movement
+
+The Fabric bow movement adapter follows Minecraft's `RangedBowAttackGoal`,
+generalized for the NPC's `PathfinderMob` hierarchy. NeoForge uses its existing native
+bow goal. The NPC's eligibility, temporary equipment and restoration remain shared.
+
+
 ## MineColonies and Structurize
 
 PlayerNpc's `.blueprint` structure-loading support is inspired by and format-compatible with the Structurize blueprint format used by MineColonies.

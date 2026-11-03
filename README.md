@@ -22,6 +22,40 @@
   </a>
 </p>
 
+## Minecraft 1.21.11 builds
+
+This branch uses Java 21, Minecraft 1.21.11, NeoForge 21.11.48 and separate
+`common`, `fabric`, and `neoforge` modules. The shared source retains the existing
+1.21.11 gameplay, persistence and rendering APIs.
+
+```powershell
+./gradlew.bat compileJava
+./gradlew.bat assemble
+./gradlew.bat :fabric:runClient
+./gradlew.bat :neoforge:runClient
+./gradlew.bat :neoforge:runData
+```
+
+Distributables are `SmartNPC-fabric-1.21.11-2.0.0.jar` and
+`SmartNPC-neoforge-1.21.11-2.0.0.jar`, written to
+`C:/Users/Admin/Desktop/Minecraft/delivery`. Override with
+`-Pdelivery_directory=build/delivery`. Install the jar matching your loader;
+common, dev and dev-shadow jars are development inputs.
+
+Fabric needs Fabric API separately. Architectury API 19.0.1 is bundled on both
+loaders; Fabric also bundles Forge Config API Port 21.11.1. Existing
+`smart_npc-*.toml` filenames, name migration, saved-data names and registry IDs
+are retained.
+
+Better Combat 3.1.0 and Player Animation Library 1.1.11 remain optional on both
+loaders. Install them and their dependencies separately. Add
+`-PcompatRuntime=true` to a development run to include Better Combat, PAL and
+Cloth Config. Epic Fight and YSM remain removed on this branch; legacy YSM name
+entries are still readable and their model tokens are ignored.
+
+See `.codex/knowledge/multiloader_1_21_11.md` for version-specific details and
+validation scope.
+
 ## License & Use
 GNU GENERAL PUBLIC LICENSE
 
