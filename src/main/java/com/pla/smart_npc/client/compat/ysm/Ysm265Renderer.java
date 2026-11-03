@@ -2,6 +2,7 @@ package com.pla.smart_npc.client.compat.ysm;
 
 import com.elfmcys.yesstevemodel.O0OoOoO0oo0O00O0ooo0o0OO;
 import com.elfmcys.yesstevemodel.OOOoooO00oo000OOOOoO0OO0;
+import com.elfmcys.yesstevemodel.O0O0O0OOooOO00oOo0OooOOO;
 import com.elfmcys.yesstevemodel.OoOo0OOOoo0o0oOOoooooo0O;
 import com.elfmcys.yesstevemodel.o00O0ooooooOoo0oOO0oo0O0;
 import com.elfmcys.yesstevemodel.ooOoo0O0O0o0O00OO0O00ooo;
@@ -11,6 +12,7 @@ import com.pla.smart_npc.client.compat.YesSteveModelClientCompat;
 import com.pla.smart_npc.client.compat.YesSteveModelClientCompat.Frame;
 import com.pla.smart_npc.client.renderer.FakePlayerTextureUtils;
 import com.pla.smart_npc.entity.PlayerNpcEntity;
+import com.pla.smart_npc.SmartNpc;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.player.RemotePlayer;
 import net.minecraft.client.renderer.SubmitNodeCollector;
@@ -23,6 +25,7 @@ import net.minecraft.world.InteractionHand;
 import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.level.GameType;
 import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
 
@@ -34,6 +37,7 @@ public final class Ysm265Renderer implements YesSteveModelClientCompat.Renderer 
     private final ooOoo0O0O0o0O00OO0O00ooo renderer;
     private final AvatarRenderer<DisplayPlayer> stateExtractor;
     private final Map<PlayerNpcEntity, DisplayState> displays = new WeakHashMap<>();
+    private final Map<PlayerNpcEntity, String> reportedStates = new WeakHashMap<>();
 
     public Ysm265Renderer(EntityRendererProvider.Context context) {
         this.renderer = new ooOoo0O0O0o0O00OO0O00ooo(context);
@@ -45,6 +49,9 @@ public final class Ysm265Renderer implements YesSteveModelClientCompat.Renderer 
         // This is YSM's connection-synchronized cache, never its separate local-model registry.
         var serverModel = o00O0ooooooOoo0oOO0oo0O0.OO0OoO00ooOOo0o00O000OoO(npc.getYsmModelId()).orElse(null);
         if (serverModel == null) {
+            if (this.report(npc, "waiting for synchronized model")) {
+                SmartNpc.LOGGER.info("Smart NPC YSM cache: loaded={}, metadata={}, requested='{}'", o00O0ooooooOoo0oOO0oo0O0.O0oo00O0OoooOOOO00ooO000().size(), o00O0ooooooOoo0oOO0oo0O0.oo000Oo000o0Ooooooo00oOo().size(), npc.getYsmModelId());
+            }
             return null;
         }
         DisplayState display = this.displays.computeIfAbsent(npc, DisplayState::new);
@@ -58,6 +65,9 @@ public final class Ysm265Renderer implements YesSteveModelClientCompat.Renderer 
         }
         display.animation.o0Oo00O0Ooo00oOo0O000Ooo();
         if (display.animation.O000O0000O00000oo0o0OooO() != serverModel) {
+            if (this.report(npc, "waiting for native model")) {
+                SmartNpc.LOGGER.info("Smart NPC YSM native model: requested='{}', current='{}', bones={}, enabled={}", npc.getYsmModelId(), display.animation.o00O0ooooooOoo0oOO0oo0O0(), display.animation.OOOOo000OOoo00O0o00oOOoO() != null, display.animation.OO0O00OooO000oo00O0oOooO());
+            }
             return null;
         }
         if (display.emoteSequence != npc.getYsmEmoteSequence() || !display.emote.equals(npc.getYsmEmote())) {
@@ -76,11 +86,23 @@ public final class Ysm265Renderer implements YesSteveModelClientCompat.Renderer 
         var task = OOOoooO00oo000OOOOoO0OO0.OO0OoO00ooOOo0o00O000OoO(display.animation, snapshot);
         var frame = task.O0oo00O0OoooOOOO00ooO000();
         if (frame == null || display.animation.O000O0000O00000oo0o0OooO() != serverModel) {
+            if (this.report(npc, frame == null ? "native extraction returned no frame" : "native model changed during extraction")) {
+                SmartNpc.LOGGER.info("Smart NPC YSM frame: ready={}, allowed={}, bones={}, context={}", display.animation.ooO0OOOOo00O00O00OoO0OO0(), display.animation.O0oo00O0OoooOOOO00ooO000(), display.animation.OOOOo000OOoo00O0o00oOOoO() != null, O0O0O0OOooOO00oOo0OooOOO.OoO0Ooo0OO0Ooooo0O0OoOOO(true));
+            }
             return null;
         }
+        this.report(npc, "native frame ready");
         // Native extraction copies bone buffers and item transforms. Resolve now, before a
         // later frame changes the unticked proxy; submission consumes the captured data only.
         return new NativeFrame(this.renderer, snapshot, frame);
+    }
+
+    private boolean report(PlayerNpcEntity npc, String state) {
+        if (state.equals(this.reportedStates.put(npc, state))) {
+            return false;
+        }
+        SmartNpc.LOGGER.info("Smart NPC YSM extraction: NPC={}, model='{}', {}", npc.getName().getString(), npc.getYsmModelId(), state);
+        return true;
     }
 
     private static void copyNpcPresentation(AvatarRenderState source, AvatarRenderState target) {
@@ -206,6 +228,14 @@ public final class Ysm265Renderer implements YesSteveModelClientCompat.Renderer 
 
         private DisplayPlayer(ClientLevel level, GameProfile profile) {
             super(level, profile);
+        }
+
+        @Override
+        public GameType gameMode() {
+            // The real NPC has a spectator tab-list entry with this UUID. RemotePlayer
+            // normally reads its mode from that entry, causing YSM to hide the model.
+            // This unticked display proxy represents a living NPC independently of the tab.
+            return GameType.SURVIVAL;
         }
 
         private void copyUseState(PlayerNpcEntity npc) {

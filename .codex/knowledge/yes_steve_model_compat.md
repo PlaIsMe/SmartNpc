@@ -1,17 +1,7 @@
 # Yes Steve Model compatibility (NeoForge 26.1.2)
 
 This branch targets Minecraft 26.1.2 / NeoForge 26.1.2.109 / Java 25, as verified in
-`gradle.properties` and `build.gradle`. The adapter targets released **YSM
-2.6.5-neoforge+mc26.1-hotfix**, Modrinth version `1rPJlKDJ` (listed for 26.1.2).
-Its obfuscated symbols differ from the older Minecraft builds; exact mappings remain
-isolated in `compat/ysm` and `client/compat/ysm` and were inspected in this release.
-
-`build.gradle`. The adapter targets released **YSM
-2.6.5-neoforge+mc1.21.1**, Modrinth version `HZWaR0LY`. Its obfuscated symbols differ
-from the Forge 1.20.1 build; exact mappings remain isolated in `compat/ysm` and
-`client/compat/ysm` and were inspected in the matching released JAR.
-
-`build.gradle` uses Modrinth Maven and plain `compileOnly` under ModDev, so YSM is neither bundled
+`gradle.properties` and `build.gradle` uses Modrinth Maven and plain `compileOnly` under ModDev, so YSM is neither bundled
 nor installed by the runtime configuration. Metadata declares an optional dependency.
 The generally loaded facade checks the exact release and native availability before
 linking the typed adapter. Missing/unsupported YSM uses normal NPC rendering; API/linkage
@@ -234,3 +224,68 @@ YSM persistence now uses ValueInput/ValueOutput: optional Boolean provenance use
 Codec.BOOL, UUID detection uses SmartNpcNbt, and inventory storage remains this branch's
 codec-based storeAsItemList/fromItemList. Existing saved tag names are preserved.
 Release version and cherry-pick subject are `3.0.3`.
+
+## 26.1.2 client diagnostics (2026-11-03)
+
+Test instance: `C:/Users/Admin/curseforge/minecraft/Instances/TestMod 26.1.2`.
+The installed JAR matched the delivery JAR. Chance was1.0 and the matching hotfix was loaded.
+Saved entity data establishes that the new server selection worked: Darkhax had
+`wine_fox/18_wedding` / `skin`, Soaryn `wine_fox/05_magical` / `magic`, and LexManos
+`wine_fox/17_mini` / `texture`, all with random provenance. Older NPCs with no assigned
+model remain intentionally unchanged. No client adapter exception was logged.
+
+The remaining visible fallback cannot be localized from those existing logs. A read-only
+JVM diagnostic attach was denied by Windows; no attach bypass was attempted. Added
+per-NPC weak-key transition diagnostics in the client facade/extractor to identify active
+flag, synchronized model cache, native model readiness and returned-frame status. Stable
+states are logged once, not every frame. Native frame-null diagnostics also report native
+ready/allowed/bones and render-context flags. These diagnostics do not select or reroll
+models and do not access client-only models. A runtime log from this diagnostic build is
+still required before claiming a client rendering fix.
+
+## 26.1.2 spectator tab-list fallback fix (2026-11-03)
+
+The next diagnostic run confirmed `ready=true`, `allowed=false`, and allocated bones
+for assigned server models after the client cache synchronized. YSM's pinned player
+adapter rejects `Player.isSpectator()`. Its self/other model-disable config flags were
+both false in the instance.
+
+`PlayerNpcForceTickManager.tabPlayer()` deliberately registers the NPC UUID in the
+tab list as SPECTATOR. `AbstractClientPlayer.gameMode()` resolves that UUID through
+PlayerInfo, so the unticked RemotePlayer display proxy inherited spectator status.
+The display proxy now overrides `gameMode()` to return SURVIVAL. This keeps its visual
+player queries consistent with the living NPC while preserving the tab-list behavior,
+server model selection, saved identity, and YSM's client disable settings. No global
+YSM flags or renderer admission checks are bypassed. Compile/assemble validate the
+override; the rebuilt JAR still needs an in-game rendering confirmation.
+
+## 26.1.2 runtime confirmation and heap investigation (2026-11-03)
+
+The 14:06 test log confirmed native frames and successful submission after the spectator
+proxy fix. `wyld` selected `misc/1_alex`; YSM itself intentionally replaces the texture
+of `misc/1_alex` and `misc/2_steve` with the player's Minecraft skin. That appearance is
+not an adapter texture failure. No random-pool exclusion was requested or applied.
+
+The same instance exhausted its 4 GiB Java heap at 14:15. Read-only `jcmd` diagnostics
+against the still-running crashed JVM (PID 2200) succeeded. Both all-object and live-after-GC
+histograms showed roughly 2.43 million render states/wrappers, including cows, pigs,
+creepers, ordinary players and Smart NPCs. Only 12 YSM DisplayPlayer/DisplayState pairs
+were present. A heap dump established the retaining GC-root chain:
+
+`AnnoyingVillagers VanillaOverlayRenderStateCache.ENTITIES` (static strong IdentityHashMap)
+-> backing array -> extracted LivingEntityRenderState -> its item states, ETF/EMF data,
+and, for Smart NPCs, the native YSM frame/private snapshot.
+
+The map had exactly 2,432,680 entries. Its update hook runs on every living-entity
+extraction and the installed AnnoyingVillagers-26.1.2-3.0.0 implementation never removes
+entries. YSM increases retained memory per NPC snapshot, but the global history is owned
+by this Annoying Villagers cache. Native task/controller queues and ETF context stacks
+did not show unbounded history (only 13 ConcurrentLinkedDeque nodes in the live heap).
+
+The focused fix lives in a separate Annoying Villagers 26.1.2 worktree at
+`D:/projects/AnnoyingVillagers-26.1.2-memoryfix`, branch
+`fix/26.1.2-render-state-retention`, based on current 3.0.4 source. Both overlay texture
+and entity references are stored in NeoForge ContextKey data on their owning render state;
+there are no static maps retaining completed states. No Smart NPC renderer change is
+needed to remove this proven retention root. Runtime heap evidence remains in
+`C:/Users/Admin/AppData/Local/Temp/smartnpc-ysm-26.1.2` for local diagnosis only.
