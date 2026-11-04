@@ -1,0 +1,58 @@
+plugins { id 'com.gradleup.shadow' }
+architectury { platformSetupLoomIde(); neoForge() }
+configurations {
+    common { canBeResolved = true; canBeConsumed = false }
+    shadowBundle { canBeResolved = true; canBeConsumed = false }
+    compileClasspath.extendsFrom common
+    runtimeClasspath.extendsFrom common
+    developmentNeoForge.extendsFrom common
+}
+dependencies {
+    neoForge "net.neoforged:neoforge:${rootProject.neo_version}"
+    implementation(include("dev.architectury:architectury-neoforge:${rootProject.architectury_version}"))
+    compileOnly 'maven.modrinth:yes-steve-model:1rPJlKDJ'
+    compileOnly 'maven.modrinth:player-animation-library:QmAdOGjK'
+    implementation(include('io.github.llamalad7:mixinextras-neoforge:0.5.0'))
+    common(project(path: ':common')) { transitive = false }
+    shadowBundle(project(path: ':common', configuration: 'transformProductionNeoForge')) { transitive = false }
+}
+jar { archiveClassifier = 'raw' }
+// No-remap Loom applies nested libraries to jar, so shadow its processed output.
+shadowJar {
+    dependsOn jar
+    mainSpec.sourcePaths.clear()
+    from(zipTree(jar.archiveFile))
+    configurations = [project.configurations.shadowBundle]
+    archiveClassifier = ''
+    destinationDirectory = rootProject.file(rootProject.delivery_directory)
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+}
+assemble.dependsOn shadowJar
+sourcesJar { from project(':common').sourceSets.main.allSource }
+loom.runs.server.programArgs '--nogui'
+publishing {
+    publications {
+        mavenJava(MavenPublication) {
+            artifactId = "SmartNPC-${project.name}-${rootProject.minecraft_version}"
+            artifact tasks.named('shadowJar')
+            artifact tasks.named('sourcesJar')
+        }
+    }
+    repositories { maven { url = rootProject.layout.buildDirectory.dir('repo') } }
+}
+
+processResources { from 'src/main/templates' }
+loom { neoForge { accessTransformer(file('src/main/resources/META-INF/accesstransformer.cfg')) }; runs { data { clientData(); runDir 'run-data'; programArgs '--mod', rootProject.mod_id, '--all', '--output', project(':common').file('src/generated/resources').absolutePath, '--existing', project(':common').file('src/main/resources').absolutePath } } }
+
+if (providers.gradleProperty('compatRuntime').map { it.toBoolean() }.getOrElse(false)) {
+    dependencies {
+        runtimeOnly 'maven.modrinth:better-combat:YPa9bdAg'
+        runtimeOnly 'maven.modrinth:player-animation-library:QmAdOGjK'
+        runtimeOnly 'maven.modrinth:cloth-config:TimoYzse'
+        runtimeOnly 'maven.modrinth:tiny-config:4.0.0-neoforge'
+        runtimeOnly('com.zigythebird:mochafloats:5.0.0') { transitive = false }
+        runtimeOnly 'org.redlance.common-utils:services:1.2.8'
+    }
+}
+
+if (providers.gradleProperty('ysmRuntime').map { it.toBoolean() }.getOrElse(false)) { dependencies { runtimeOnly 'maven.modrinth:yes-steve-model:1rPJlKDJ' } }

@@ -1,0 +1,59 @@
+plugins { id 'com.gradleup.shadow' }
+architectury { platformSetupLoomIde(); fabric() }
+configurations {
+    common { canBeResolved = true; canBeConsumed = false }
+    shadowBundle { canBeResolved = true; canBeConsumed = false }
+    compileClasspath.extendsFrom common
+    runtimeClasspath.extendsFrom common
+    developmentFabric.extendsFrom common
+}
+dependencies {
+    implementation "net.fabricmc:fabric-loader:${rootProject.fabric_loader_version}"
+    implementation "net.fabricmc.fabric-api:fabric-api:${rootProject.fabric_api_version}"
+    implementation(include("dev.architectury:architectury-fabric:${rootProject.architectury_version}"))
+    implementation(include('maven.modrinth:forge-config-api-port:jUe0ucoE'))
+    implementation 'com.electronwill.night-config:core:3.8.3'
+    implementation 'com.electronwill.night-config:toml:3.8.3'
+    compileOnly 'maven.modrinth:player-animation-library:QmAdOGjK'
+    implementation(include('io.github.llamalad7:mixinextras-fabric:0.5.0'))
+    common(project(path: ':common')) { transitive = false }
+    shadowBundle(project(path: ':common', configuration: 'transformProductionFabric')) { transitive = false }
+}
+jar { archiveClassifier = 'raw' }
+// No-remap Loom applies nested libraries to jar, so shadow its processed output.
+shadowJar {
+    dependsOn jar
+    mainSpec.sourcePaths.clear()
+    from(zipTree(jar.archiveFile))
+    configurations = [project.configurations.shadowBundle]
+    archiveClassifier = ''
+    destinationDirectory = rootProject.file(rootProject.delivery_directory)
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+}
+assemble.dependsOn shadowJar
+sourcesJar { from project(':common').sourceSets.main.allSource }
+loom.runs.server.programArgs '--nogui'
+publishing {
+    publications {
+        mavenJava(MavenPublication) {
+            artifactId = "SmartNPC-${project.name}-${rootProject.minecraft_version}"
+            artifact tasks.named('shadowJar')
+            artifact tasks.named('sourcesJar')
+        }
+    }
+    repositories { maven { url = rootProject.layout.buildDirectory.dir('repo') } }
+}
+
+loom { accessWidenerPath = project(':common').file('src/main/resources/smart_npc.accesswidener') }
+processResources { from project(':common').file('src/main/resources/smart_npc.accesswidener') }
+
+if (providers.gradleProperty('compatRuntime').map { it.toBoolean() }.getOrElse(false)) {
+    dependencies {
+        runtimeOnly 'maven.modrinth:better-combat:1UMcSrDb'
+        runtimeOnly 'maven.modrinth:player-animation-library:QmAdOGjK'
+        runtimeOnly 'maven.modrinth:cloth-config:GFM8zh9J'
+        runtimeOnly 'maven.modrinth:tiny-config:4.0.0-fabric'
+        runtimeOnly('com.zigythebird:mochafloats:5.0.0') { transitive = false }
+        runtimeOnly 'org.redlance.common-utils:services:1.2.8'
+    }
+}

@@ -1,0 +1,23 @@
+{
+  "required": true,
+  "package": "com.pla.smart_npc.mixin.fabric",
+  "compatibilityLevel": "JAVA_25",
+  "mixins": [
+    "EntityDataMixin",
+    "LivingTickMixin",
+    "SpawnPlacementsInvoker",
+    "ServerPlayerTabMixin",
+    "ServerPlayerGameModeAccessor",
+    "DropExperienceBlockAccessor",
+    "BlockEntityDataMixin",
+    "MinecraftServerMixin"
+  ],
+  "client": [
+    "MinecraftScreenMixin",
+    "KeyboardInputMixin",
+    "GuiJumpBarMixin"
+  ],
+  "injectors": {
+    "defaultRequire": 1
+  }
+}

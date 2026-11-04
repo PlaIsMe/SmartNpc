@@ -1,0 +1,11 @@
+architectury { common('fabric', 'neoforge') }
+loom { accessWidenerPath = file('src/main/resources/smart_npc.accesswidener') }
+dependencies {
+    implementation "net.fabricmc:fabric-loader:${rootProject.fabric_loader_version}"
+    implementation "dev.architectury:architectury:${rootProject.architectury_version}"
+    compileOnly 'maven.modrinth:forge-config-api-port:jUe0ucoE'
+    compileOnly 'maven.modrinth:player-animation-library:QmAdOGjK'
+    compileOnly 'com.electronwill.night-config:core:3.8.3'
+    compileOnly 'com.electronwill.night-config:toml:3.8.3'
+}
+sourceSets.main.resources.srcDir 'src/generated/resources'

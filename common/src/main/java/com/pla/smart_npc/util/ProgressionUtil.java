@@ -1,0 +1,96 @@
+package com.pla.smart_npc.util;
+
+import com.pla.smart_npc.clazz.Difficulty;
+import net.minecraft.advancements.AdvancementHolder;
+import net.minecraft.resources.Identifier;
+import net.minecraft.server.MinecraftServer;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.level.Level;
+import net.minecraft.world.level.dimension.end.EnderDragonFight;
+
+public final class ProgressionUtil {
+    private ProgressionUtil() {
+    }
+
+    public static boolean isDifficulty(Difficulty difficulty) {
+        MinecraftServer server = dev.architectury.utils.GameInstance.getServer();
+        return server != null && isDifficulty(server, difficulty);
+    }
+
+    public static boolean isDifficulty(MinecraftServer server, Difficulty difficulty) {
+        return getDifficulty(server) == difficulty;
+    }
+
+    public static boolean isAtLeastDifficulty(Difficulty difficulty) {
+        MinecraftServer server = dev.architectury.utils.GameInstance.getServer();
+        return server != null && isAtLeastDifficulty(server, difficulty);
+    }
+
+    public static boolean isAtLeastDifficulty(MinecraftServer server, Difficulty difficulty) {
+        return getDifficulty(server).ordinal() >= difficulty.ordinal();
+    }
+
+    public static Difficulty getDifficulty(MinecraftServer server) {
+        return ProgressionData.get(server).getDifficulty();
+    }
+
+    public static boolean setDifficulty(MinecraftServer server, Difficulty difficulty) {
+        return ProgressionData.get(server).setDifficulty(difficulty);
+    }
+
+    public static void increaseDifficulty(MinecraftServer server, Difficulty difficulty) {
+        ProgressionData.get(server).increaseDifficulty(difficulty);
+    }
+
+    private static void increaseHistoricalDifficulty(MinecraftServer server, Difficulty difficulty) {
+        ProgressionData data = ProgressionData.get(server);
+        if (!data.isManualDifficulty()) {
+            data.increaseDifficulty(difficulty);
+        }
+    }
+
+    public static void reconcileHistoricalProgression(MinecraftServer server) {
+        reconcileDragonFightProgression(server);
+        for (ServerPlayer player : server.getPlayerList().getPlayers()) {
+            reconcileHistoricalProgression(player);
+        }
+    }
+
+    public static void reconcileDragonFightProgression(MinecraftServer server) {
+        if (isAtLeastDifficulty(server, Difficulty.HARD)) {
+            return;
+        }
+
+        ServerLevel end = server.getLevel(Level.END);
+        if (end != null) {
+            EnderDragonFight dragonFight = end.getDragonFight();
+            if (dragonFight != null && dragonFight.hasPreviouslyKilledDragon()) {
+                increaseHistoricalDifficulty(server, Difficulty.HARD);
+            }
+        }
+    }
+
+    public static void reconcileHistoricalProgression(ServerPlayer player) {
+        MinecraftServer server = player.level().getServer();
+        if (player.level().dimension() != Level.OVERWORLD
+                || hasAdvancement(player, "minecraft:story/enter_the_nether")
+                || hasAdvancement(player, "minecraft:end/root")) {
+            increaseHistoricalDifficulty(server, Difficulty.MEDIUM);
+        }
+
+        if (hasAdvancement(player, "minecraft:end/kill_dragon")) {
+            increaseHistoricalDifficulty(server, Difficulty.HARD);
+        }
+    }
+
+    private static boolean hasAdvancement(ServerPlayer player, String id) {
+        Identifier resourceLocation = Identifier.tryParse(id);
+        if (resourceLocation == null) {
+            return false;
+        }
+
+        AdvancementHolder advancement = player.level().getServer().getAdvancements().get(resourceLocation);
+        return advancement != null && player.getAdvancements().getOrStartProgress(advancement).isDone();
+    }
+}

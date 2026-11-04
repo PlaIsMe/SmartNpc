@@ -1,143 +1,46 @@
 plugins {
-    id 'eclipse'
-    id 'idea'
-    id 'java-library'
+    id 'base'
     id 'maven-publish'
-    id 'net.neoforged.moddev' version '2.0.147'
+    id 'architectury-plugin' version '3.5.170'
+    id 'dev.architectury.loom-no-remap' version '1.17.493' apply false
+    id 'com.gradleup.shadow' version '9.4.2' apply false
 }
-
-tasks.named('wrapper', Wrapper).configure {
-    distributionType = Wrapper.DistributionType.BIN
-}
-
-version = mod_version
-group = mod_group_id
-
-base {
-    archivesName = "SmartNpc-26.1.2"
-}
-
-java.toolchain.languageVersion = JavaLanguageVersion.of(25)
-
-neoForge {
-    version = project.neo_version
-
-    runs {
-        client {
-            client()
-            programArguments.addAll '--quickPlaySingleplayer', 'TestGame'
-            systemProperty 'neoforge.enabledGameTestNamespaces', project.mod_id
-        }
-        server {
-            server()
-            programArgument '--nogui'
-            systemProperty 'neoforge.enabledGameTestNamespaces', project.mod_id
-        }
-        gameTestServer {
-            type = 'gameTestServer'
-            systemProperty 'neoforge.enabledGameTestNamespaces', project.mod_id
-        }
-        data {
-            clientData()
-            programArguments.addAll '--mod', project.mod_id, '--all', '--output',
-                    file('src/generated/resources/').absolutePath, '--existing',
-                    file('src/main/resources/').absolutePath
-        }
-        configureEach {
-            systemProperty 'forge.logging.markers', 'REGISTRIES'
-            logLevel = org.slf4j.event.Level.DEBUG
-        }
-    }
-
-    mods {
-        "${mod_id}" {
-            sourceSet(sourceSets.main)
-        }
-    }
-}
-
-sourceSets.main.resources { srcDir 'src/generated/resources' }
-
-configurations {
-    runtimeClasspath.extendsFrom localRuntime
-}
-
-repositories {
-    mavenCentral()
-    maven {
-        url = uri('https://api.modrinth.com/maven')
-        content { includeGroup 'maven.modrinth' }
-    }
-    maven { url = uri('https://cursemaven.com') }
-    flatDir { dirs 'libs' }
-    mavenLocal()
-}
-
-dependencies {
-    compileOnly "maven.modrinth:yes-steve-model:1rPJlKDJ"
-
-    implementation "curse.maven:cloth-config-348521:7817583"
-    implementation "curse.maven:better-combat-by-daedelus-639842:8486482"
-    implementation "curse.maven:player-animation-library-1283899:8674772"
-
-    compileOnly(annotationProcessor('io.github.llamalad7:mixinextras-common:0.5.0'))
-}
-
-var generateModMetadata = tasks.register('generateModMetadata', ProcessResources) {
-    var replaceProperties = [
-            minecraft_version      : minecraft_version,
-            minecraft_version_range: minecraft_version_range,
-            neo_version            : neo_version,
-            mod_id                 : mod_id,
-            mod_name               : mod_name,
-            mod_license            : mod_license,
-            mod_version            : mod_version,
-            mod_authors            : mod_authors,
-            mod_description        : mod_description
-    ]
-    inputs.properties replaceProperties
-    expand replaceProperties
-    from 'src/main/templates'
-    into 'build/generated/sources/modMetadata'
-}
-
-sourceSets.main.resources.srcDir generateModMetadata
-neoForge.ideSyncTask generateModMetadata
-
-publishing {
-    publications {
-        register('mavenJava', MavenPublication) {
-            from components.java
-        }
-    }
+architectury { minecraft = minecraft_version }
+subprojects {
+    apply plugin: 'java-library'
+    apply plugin: 'architectury-plugin'
+    apply plugin: 'maven-publish'
+    apply plugin: 'dev.architectury.loom-no-remap'
+    group = rootProject.mod_group_id
+    version = rootProject.mod_version
+    base { archivesName = "SmartNPC-${project.name}-${rootProject.minecraft_version}" }
+    java { toolchain.languageVersion = JavaLanguageVersion.of(25); withSourcesJar() }
     repositories {
-        maven { url = layout.buildDirectory.dir('repo') }
+        mavenCentral()
+        maven { url = 'https://maven.neoforged.net/releases' }
+        maven { url = 'https://maven.architectury.dev/' }
+        maven { url = 'https://maven.fabricmc.net/' }
+        maven { url = 'https://repo.redlance.org/public'; content { includeGroupByRegex 'com.zigythebird.*'; includeGroup 'org.redlance.common-utils' } }
+        maven { url = 'https://maven.shedaniel.me/' }
+        maven { url = 'https://api.modrinth.com/maven'; content { includeGroup 'maven.modrinth' } }
+    }
+    dependencies {
+        minecraft "com.mojang:minecraft:${rootProject.minecraft_version}"
+        compileOnly 'com.google.code.findbugs:jsr305:3.0.2'
+        compileOnly(annotationProcessor('io.github.llamalad7:mixinextras-common:0.5.0'))
+    }
+    tasks.withType(JavaCompile).configureEach { options.encoding = 'UTF-8'; options.release = 25; options.compilerArgs.addAll(['-Xmaxerrs', '200']) }
+    tasks.withType(JavaExec).configureEach { javaLauncher = javaToolchains.launcherFor { languageVersion = JavaLanguageVersion.of(25) } }
+    tasks.withType(ProcessResources).configureEach {
+        def properties = rootProject.properties.findAll { key, value -> key.startsWith('mod_') || key.endsWith('_version') || key.endsWith('_version_range') }
+        inputs.properties(properties)
+        filesMatching(['META-INF/neoforge.mods.toml', 'fabric.mod.json']) { expand(properties) }
+    }
+    tasks.named('jar', Jar) {
+        manifest.attributes('Specification-Title': rootProject.mod_id, 'Specification-Vendor': rootProject.mod_authors, 'Specification-Version': '1', 'Implementation-Title': "SmartNPC-${project.name}", 'Implementation-Version': rootProject.mod_version, 'Implementation-Vendor': rootProject.mod_authors)
     }
 }
-
-tasks.withType(JavaCompile).configureEach {
-    options.encoding = 'UTF-8'
-    options.compilerArgs.addAll(['-Xmaxerrs', '1000'])
-}
-
-tasks.named('jar', Jar).configure {
-    destinationDirectory = file('C:/Users/Admin/Desktop/Minecraft/delivery')
-    manifest {
-        attributes([
-                'Specification-Title'     : mod_id,
-                'Specification-Vendor'    : mod_authors,
-                'Specification-Version'   : '1',
-                'Implementation-Title'    : project.name,
-                'Implementation-Version'  : archiveVersion.get(),
-                'Implementation-Vendor'   : mod_authors,
-                'Implementation-Timestamp': new Date().format("yyyy-MM-dd'T'HH:mm:ssZ")
-        ])
-    }
-}
-
-idea {
-    module {
-        downloadSources = true
-        downloadJavadoc = true
-    }
-}
+tasks.named('assemble') { dependsOn ':fabric:assemble', ':neoforge:assemble' }
+tasks.register('compileJava') { dependsOn ':common:compileJava', ':fabric:compileJava', ':neoforge:compileJava' }
+tasks.named('build') { dependsOn ':fabric:build', ':neoforge:build' }
+tasks.named('publish') { dependsOn ':fabric:publish', ':neoforge:publish' }

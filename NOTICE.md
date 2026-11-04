@@ -17,3 +17,16 @@ Credit to the Player Mob mod for the player skin fetching approach used as a ref
 
 - Player Mob repository: https://github.com/GoryMoon/PlayerMobs
 - Owner: GoryMoon
+
+## Bundled multi-loader libraries (26.1.2)
+
+Both distributions include Architectury API 20.1.17 (LGPL-3.0). Fabric also includes
+Forge Config API Port 26.1.5 (MPL-2.0), retaining its nested Night Config 3.8.3
+libraries. Original notices/licenses remain in the nested jars.
+
+- Architectury API source: https://github.com/architectury/architectury-api
+- Forge Config API Port source: https://github.com/Fuzss/forgeconfigapiport
+
+The Fabric ranged-bow movement adapter follows vanilla's ranged-bow goal for the
+player-shaped mob; job eligibility and temporary equipment/restoration stay shared.
+Epic Fight credits above describe historical code, not an active 26.1.2 integration.
