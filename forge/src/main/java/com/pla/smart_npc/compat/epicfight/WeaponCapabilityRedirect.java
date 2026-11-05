@@ -1,7 +1,7 @@
 package com.pla.smart_npc.compat.epicfight;
 
 import com.pla.smart_npc.SmartNpc;
-import com.pla.smart_npc.config.SmartNpcEpicFightConfig;
+import com.pla.smart_npc.config.SmartNpcCompatConfig;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
@@ -28,7 +28,7 @@ public final class WeaponCapabilityRedirect {
 
         Item sourceItem = heldStack.getItem();
         ResourceLocation sourceItemId = ForgeRegistries.ITEMS.getKey(sourceItem);
-        ResourceLocation targetPresetId = SmartNpcEpicFightConfig.getWeaponCapabilityRedirect(sourceItemId);
+        ResourceLocation targetPresetId = SmartNpcCompatConfig.getWeaponCapabilityRedirect(sourceItemId);
         if (targetPresetId == null) {
             return originalCapability;
         }

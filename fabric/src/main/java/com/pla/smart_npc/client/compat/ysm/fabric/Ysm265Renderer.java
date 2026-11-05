@@ -169,6 +169,13 @@ public final class Ysm265Renderer implements YesSteveModelClientCompat.Renderer 
         }
 
         @Override
+        public boolean isSpectator() {
+            // The NPC UUID has a spectator tab-list entry. AbstractClientPlayer reads
+            // that entry, but YSM must render this living NPC's held-item layers.
+            return false;
+        }
+
+        @Override
         public GameProfile getGameProfile() {
             // YSM Steve/Alex reads SkinManager using the profile, rather than the
             // skin-texture getter. Keep the resolved NPC profile for that lookup.

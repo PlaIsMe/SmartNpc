@@ -11,7 +11,6 @@ import com.pla.smart_npc.compat.epicfight.EpicFightSmartNpcPatchedRenderer;
 import com.pla.smart_npc.compat.epicfight.EpicFightSmartNpcPatches;
 import com.pla.smart_npc.config.SmartNpcConfig;
 import com.pla.smart_npc.config.SmartNpcCompatConfig;
-import com.pla.smart_npc.config.SmartNpcEpicFightConfig;
 import com.pla.smart_npc.config.SmartNpcNamesConfig;
 import com.pla.smart_npc.init.SmartNpcModEntities;
 import com.pla.smart_npc.init.SmartNpcModMenus;
@@ -49,11 +48,11 @@ public class SmartNpcForge {
 
         modEventBus.addListener((net.minecraftforge.fml.event.config.ModConfigEvent.Loading event) -> SmartNpcNamesConfig.onConfigLoading(event.getConfig()));
         modEventBus.addListener((net.minecraftforge.fml.event.config.ModConfigEvent.Reloading event) -> SmartNpcNamesConfig.onConfigReloading(event.getConfig()));
+        SmartNpcCompatConfig.migrateLegacyEpicFightConfig();
         context.registerConfig(ModConfig.Type.COMMON, SmartNpcConfig.SPEC, "smart_npc-server.toml");
         context.registerConfig(ModConfig.Type.COMMON, SmartNpcCompatConfig.SPEC, "smart_npc-compat.toml");
         context.registerConfig(ModConfig.Type.COMMON, SmartNpcNamesConfig.SPEC, "smart_npc-names.toml");
         if (ModList.get().isLoaded("epicfight")) {
-            context.registerConfig(ModConfig.Type.COMMON, SmartNpcEpicFightConfig.SPEC, "smart_npc-epicfight.toml");
             modEventBus.register(EpicFightCloneAnimations.class);
             modEventBus.register(EpicFightSmartNpcPatches.class);
             if (FMLEnvironment.dist == Dist.CLIENT) {
