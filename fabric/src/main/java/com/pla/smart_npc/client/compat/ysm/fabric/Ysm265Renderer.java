@@ -164,6 +164,13 @@ public final class Ysm265Renderer implements YesSteveModelClientCompat.Renderer 
             super(level, profile);
         }
 
+        @Override
+        public boolean isSpectator() {
+            // The NPC UUID has a spectator tab-list entry, but this visual proxy
+            // represents a living NPC whose native YSM item layers must be rendered.
+            return false;
+        }
+
         private void copyUseTicks(int ticks) {
             this.useItemRemaining = ticks;
         }

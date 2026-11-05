@@ -43,6 +43,7 @@ public final class SmartNpcFabric implements ModInitializer {
     public void onInitialize() {
         NeoForgeModConfigEvents.loading(SmartNpc.MODID).register(SmartNpcNamesConfig::onConfigLoading);
         NeoForgeModConfigEvents.reloading(SmartNpc.MODID).register(SmartNpcNamesConfig::onConfigReloading);
+        SmartNpcCompatConfig.migrateLegacyEpicFightConfig();
         NeoForgeConfigRegistry.INSTANCE.register(SmartNpc.MODID, ModConfig.Type.COMMON, SmartNpcConfig.SPEC, "smart_npc-server.toml");
         NeoForgeConfigRegistry.INSTANCE.register(SmartNpc.MODID, ModConfig.Type.COMMON, SmartNpcCompatConfig.SPEC, "smart_npc-compat.toml");
         NeoForgeConfigRegistry.INSTANCE.register(SmartNpc.MODID, ModConfig.Type.COMMON, SmartNpcNamesConfig.SPEC, "smart_npc-names.toml");

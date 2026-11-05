@@ -5,6 +5,9 @@
   "mixins": [
     "epicfight.WeaponCapabilityAccessor"
   ],
+  "client": [
+    "epicfight.YsmDisplayRenderMixin"
+  ],
   "plugin": "com.pla.smart_npc.mixin.plugin.SmartNpcMixinPlugin",
   "minVersion": "0.8"
 }

@@ -39,3 +39,12 @@ Credit to the Player Mob mod for the player skin fetching approach used as a ref
 Custom EpicFight mobpatch that having builder root design. The mod distributed under GPLv3
 - Source code: https://www.curseforge.com/minecraft/mc-mods/combat-evolution
 - Owner: ShelMarow
+
+## EpicYSM
+
+The NPC pose retargeter, two-hand alignment algorithm and standard bone-parent fallbacks
+in `client/compat/epicysm/` are adapted from the supplied `reference/EpicYSM-1.20.1`
+source by Argorice, copyright 2026, under the MIT License. Smart NPC supplies the typed
+YSM 2.6.5 NeoForge 1.21.1 adapter and NPC render lifecycle integration.
+The complete copyright and permission notice is bundled at
+`assets/smart_npc/licenses/EpicYSM-MIT.txt`. EpicYSM and model files are not bundled.

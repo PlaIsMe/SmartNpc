@@ -61,11 +61,15 @@ public final class YesSteveModelCompat {
         }
     }
 
+    public static boolean isEnabled() {
+        return SmartNpcCompatConfig.YES_STEVE_MODEL_ENABLED.get() && isSupported();
+    }
+
     public static void initializeSpawn(PlayerNpcEntity npc) {
         if (!(npc.level() instanceof ServerLevel) || (npc.isYsmChoiceMade() && !npc.getYsmModelId().isEmpty())) {
             return;
         }
-        if (!isSupported()) {
+        if (!isEnabled()) {
             return;
         }
         try {
@@ -90,7 +94,7 @@ public final class YesSteveModelCompat {
             return;
         }
         boolean active = false;
-        if (!npc.getYsmModelId().isEmpty() && isSupported()) {
+        if (!npc.getYsmModelId().isEmpty() && isEnabled()) {
             try {
                 if (Ysm265ServerAdapter.isServerReady(npc.getServer())) {
                     // Older saves did not record random/configured origin. Infer it once
@@ -184,7 +188,7 @@ public final class YesSteveModelCompat {
 
     /** Returns an ownership token; only that owner may cancel the resulting animation. */
     public static int playRandomEmote(PlayerNpcEntity npc, int ticks) {
-        if (!(npc.level() instanceof ServerLevel) || !npc.isYsmActive() || !isSupported()) {
+        if (!(npc.level() instanceof ServerLevel) || !npc.isYsmActive() || !isEnabled()) {
             return 0;
         }
         try {

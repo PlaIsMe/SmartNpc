@@ -56,6 +56,10 @@ public final class YesSteveModelClientCompat {
         }
     }
 
+    /** Identifies the display-only player without linking optional YSM classes. */
+    public interface DisplayProxy {
+    }
+
     public interface Renderer {
         boolean render(PlayerNpcEntity npc, float yaw, float partialTick, PoseStack poseStack, MultiBufferSource buffers, int light);
     }

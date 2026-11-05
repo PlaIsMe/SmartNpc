@@ -3,7 +3,12 @@ package com.pla.smart_npc.client.compat.ysm.neoforge;
 import com.elfmcys.yesstevemodel.OoooO0OO0000O00oo0Oo00OO;
 import com.elfmcys.yesstevemodel.oo0o0Oooo0OOO00OOo0OO000;
 import com.elfmcys.yesstevemodel.Oo00o00OOooooO0OooooOooO;
+import com.elfmcys.yesstevemodel.OOoOoO0o0o0o000OO0o0ooo0;
 import com.mojang.authlib.GameProfile;
+import com.mojang.blaze3d.vertex.VertexConsumer;
+import com.pla.smart_npc.SmartNpc;
+import com.pla.smart_npc.client.compat.epicysm.EpicFightYsmPose;
+import dev.architectury.platform.Platform;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.pla.smart_npc.client.compat.YesSteveModelClientCompat;
 import com.pla.smart_npc.client.renderer.FakePlayerTextureUtils;
@@ -60,11 +65,33 @@ public final class Ysm265Renderer implements YesSteveModelClientCompat.Renderer 
             }
         }
         // Call the animatable overload: the proxy is never added to the level or player list.
-        this.renderer.oOo0OO0O0o000OO0O000oo0o(display.animation, yaw, partialTick, poseStack, buffers, light);
+        this.renderer.display = display;
+        this.renderer.npc = npc;
+        try {
+            this.renderer.oOo0OO0O0o000OO0O000oo0o(display.animation, yaw, partialTick, poseStack, buffers, light);
+        } finally {
+            try {
+                if (display.poseBridge != null) {
+                    display.poseBridge.restore();
+                }
+            } finally {
+                this.renderer.display = null;
+                this.renderer.npc = null;
+            }
+        }
         return true;
     }
 
+    /** Keeps Epic Fight classes out of YSM-only field and method signatures. */
+    public interface PoseBridge {
+        void apply(PlayerNpcEntity npc, OoooO0OO0000O00oo0Oo00OO animation, PoseStack poses, float partialTick);
+        void restore();
+    }
+
     private static final class DisplayRenderer extends Oo00o00OOooooO0OooooOooO {
+        private DisplayState display;
+        private PlayerNpcEntity npc;
+
         private DisplayRenderer(EntityRendererProvider.Context context) {
             super(context);
         }
@@ -72,6 +99,29 @@ public final class Ysm265Renderer implements YesSteveModelClientCompat.Renderer 
         @Override
         public boolean shouldShowName(Player player) {
             return false; // FakePlayerRenderer keeps the NPC's real name and inspector rules.
+        }
+
+        @Override
+        public void oOo0OO0O0o000OO0O000oo0o(OOoOoO0o0o0o000OO0o0ooo0 animation, PoseStack poses, float partialTick, MultiBufferSource buffers, VertexConsumer consumer, int light, int overlay, float red, float green, float blue, float alpha) {
+            super.oOo0OO0O0o000OO0O000oo0o(animation, poses, partialTick, buffers, consumer, light, overlay, red, green, blue, alpha);
+            // YSM has finished interpolating its frame here; bones have not yet been
+            // consumed by the body or held-item layers. No buffer interception is needed.
+            if (this.display == null || this.display.poseFailed || !Platform.isModLoaded("epicfight")) {
+                return;
+            }
+            try {
+                if (this.display.poseBridge == null) {
+                    this.display.poseBridge = new EpicFightYsmPose();
+                }
+                this.display.poseBridge.apply(this.npc, this.display.animation, poses, partialTick);
+            } catch (LinkageError | RuntimeException error) {
+                if (this.display.poseBridge != null) {
+                    this.display.poseBridge.restore();
+                    this.display.poseBridge = null;
+                }
+                this.display.poseFailed = true;
+                SmartNpc.LOGGER.warn("Smart NPC could not apply its Epic Fight pose to a YSM display; retaining YSM animation for this NPC.", error);
+            }
         }
     }
 
@@ -83,6 +133,8 @@ public final class Ysm265Renderer implements YesSteveModelClientCompat.Renderer 
         private String emote = "";
         private int emoteSequence = -1;
         private int lastTick = -1;
+        private PoseBridge poseBridge;
+        private boolean poseFailed;
 
         private DisplayState(PlayerNpcEntity npc) {
             this.player = new DisplayPlayer((ClientLevel) npc.level(), new GameProfile(npc.getUUID(), npc.getName().getString()));
@@ -147,7 +199,7 @@ public final class Ysm265Renderer implements YesSteveModelClientCompat.Renderer 
         }
     }
 
-    private static final class DisplayPlayer extends RemotePlayer {
+    private static final class DisplayPlayer extends RemotePlayer implements YesSteveModelClientCompat.DisplayProxy {
         private GameProfile skinProfile;
         private PlayerSkin skin;
         private boolean inWater;
@@ -157,6 +209,13 @@ public final class Ysm265Renderer implements YesSteveModelClientCompat.Renderer 
 
         private DisplayPlayer(ClientLevel level, GameProfile profile) {
             super(level, profile);
+        }
+
+        @Override
+        public boolean isSpectator() {
+            // The NPC UUID has a spectator tab-list entry, but this visual proxy
+            // represents a living NPC whose native YSM item layers must be rendered.
+            return false;
         }
 
         private void copyUseTicks(int ticks) {
