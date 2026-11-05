@@ -62,8 +62,12 @@ public final class YesSteveModelCompat {
         }
     }
 
+    public static boolean isEnabled() {
+        return SmartNpcCompatConfig.YES_STEVE_MODEL_ENABLED.get() && isSupported();
+    }
+
     public static void initializeSpawn(PlayerNpcEntity npc) {
-        if (!(npc.level() instanceof ServerLevel level) || !npc.hasUsername() || (npc.isYsmChoiceMade() && !npc.getYsmModelId().isEmpty()) || !isSupported()) return;
+        if (!(npc.level() instanceof ServerLevel level) || !npc.hasUsername() || (npc.isYsmChoiceMade() && !npc.getYsmModelId().isEmpty()) || !isEnabled()) return;
         try {
             if (!Ysm265ServerAdapter.isServerReady(level.getServer())) return;
             String preferred = SmartNpcNamesConfig.getYsmModelFileName(npc.getUsername().getSkinName()).orElse(null);
@@ -80,7 +84,7 @@ public final class YesSteveModelCompat {
     public static void refreshAvailability(PlayerNpcEntity npc) {
         if (!(npc.level() instanceof ServerLevel level)) return;
         boolean active = false;
-        if (!npc.getYsmModelId().isEmpty() && isSupported()) {
+        if (!npc.getYsmModelId().isEmpty() && isEnabled()) {
             try {
                 if (Ysm265ServerAdapter.isServerReady(level.getServer())) {
                     if (npc.getYsmRandomModel() == null) npc.setYsmRandomModel(SmartNpcNamesConfig.getYsmModelFileName(npc.getUsername().getSkinName()).isEmpty());
@@ -146,7 +150,7 @@ public final class YesSteveModelCompat {
 
     /** Returns an ownership token; only that owner may cancel the resulting animation. */
     public static int playRandomEmote(PlayerNpcEntity npc, int ticks) {
-        if (!(npc.level() instanceof ServerLevel serverLevel) || !npc.isYsmActive() || !isSupported()) {
+        if (!(npc.level() instanceof ServerLevel serverLevel) || !npc.isYsmActive() || !isEnabled()) {
             return 0;
         }
         try {
