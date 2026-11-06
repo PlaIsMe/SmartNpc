@@ -15,7 +15,6 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.ai.goal.Goal;
-import net.minecraft.world.item.AxeItem;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.pathfinder.Path;
 import net.minecraft.world.phys.Vec3;
@@ -288,7 +287,7 @@ public class RespondToNpcAlertGoal extends Goal {
             return 0.0D;
         }
         double score = 0.0D;
-        if (stack.is(ItemTags.SWORDS) || stack.getItem() instanceof AxeItem) {
+        if (stack.is(ItemTags.SWORDS) || stack.getItem().builtInRegistryHolder().is(ItemTags.AXES)) {
             score += SmartNpcItemUtil.attackDamage(stack);
         }
         if (SmartNpcItemUtil.isArmor(stack)) {

@@ -960,7 +960,7 @@ public class ReturnHomeGoal extends Goal {
     }
 
     private boolean isFuel(ItemStack stack) {
-        return !stack.isEmpty() && this.playerNpc.level().fuelValues().isFuel(stack);
+        return !stack.isEmpty() && stack.has(net.minecraft.core.component.DataComponents.COOKING_FUEL);
     }
 
     private BlockPos findBlock(ServerLevel serverLevel, PlayerNpcHomeUtil.HomeArea homeArea, Block block) {

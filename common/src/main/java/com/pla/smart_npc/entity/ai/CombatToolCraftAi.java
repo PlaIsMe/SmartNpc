@@ -217,7 +217,7 @@ public final class CombatToolCraftAi {
     private static ToolKind kindFor(BlockState state) {
         Object preferred = ToolAi.preferredToolFor(state);
         return preferred == ItemTags.PICKAXES ? ToolKind.PICKAXE
-                : preferred == AxeItem.class ? ToolKind.AXE : preferred == ShovelItem.class ? ToolKind.SHOVEL : null;
+                : preferred == ItemTags.AXES ? ToolKind.AXE : preferred == ItemTags.SHOVELS ? ToolKind.SHOVEL : null;
     }
 
     private static SimpleContainer copy(SimpleContainer inventory) {

@@ -23,7 +23,7 @@ import java.lang.reflect.Method;
 import java.util.function.Function;
 
 /**
- * Typed adapter for Player Animation Library 1.2.x (Minecraft 26.1).
+ * Typed adapter for Player Animation Library 1.2.x (Minecraft 26.3).
  *
  * <p>The public surface intentionally uses {@link Object}. This class is only
  * reached after Better Combat's optional-mod gate, so SmartNpc can still load
@@ -131,14 +131,14 @@ final class PlayerAnimationSampler26 {
 
         // Match Player Animation Library 1.2.x's ItemInHandLayer mixin.
         poseStack.translate(position.x / 16.0F, -position.y / 16.0F, position.z / 16.0F);
-        if (rotation.z != 0.0F) {
-            poseStack.mulPose(Axis.ZP.rotation(-rotation.y));
-        }
         if (rotation.y != 0.0F) {
-            poseStack.mulPose(Axis.YP.rotation(-rotation.z));
+            poseStack.rotate(Axis.ZP.rotation(-rotation.y));
+        }
+        if (rotation.z != 0.0F) {
+            poseStack.rotate(Axis.YP.rotation(-rotation.z));
         }
         if (rotation.x != 0.0F) {
-            poseStack.mulPose(Axis.XP.rotation(-rotation.x));
+            poseStack.rotate(Axis.XP.rotation(-rotation.x));
         }
         poseStack.scale(scale.x, scale.y, scale.z);
     }

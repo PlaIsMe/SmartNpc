@@ -20,7 +20,6 @@ import net.minecraft.world.entity.monster.illager.AbstractIllager;
 import net.minecraft.world.entity.monster.Monster;
 import net.minecraft.world.entity.npc.villager.Villager;
 import net.minecraft.world.entity.player.Player;
-import net.minecraft.world.item.AxeItem;
 import net.minecraft.world.item.BowItem;
 import net.minecraft.world.item.CrossbowItem;
 import net.minecraft.world.item.ItemStack;
@@ -291,7 +290,7 @@ public class PlayerNpcSmartTargetGoal extends TargetGoal {
         }
 
         double score = 0.0D;
-        if (stack.is(ItemTags.SWORDS) || stack.getItem() instanceof AxeItem) {
+        if (stack.is(ItemTags.SWORDS) || stack.getItem().builtInRegistryHolder().is(ItemTags.AXES)) {
             score += SmartNpcItemUtil.attackDamage(stack);
         } else if (stack.has(DataComponents.TOOL)) {
             score += 3.0D;

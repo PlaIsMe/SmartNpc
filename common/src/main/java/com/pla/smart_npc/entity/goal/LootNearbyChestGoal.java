@@ -217,7 +217,7 @@ public class LootNearbyChestGoal extends Goal {
             int moved = this.lootNextStack(chest);
             if (moved > 0) {
                 this.takeDelayTicks = TAKE_INTERVAL_TICKS;
-                this.playerNpc.swing(InteractionHand.MAIN_HAND, true);
+                this.playerNpc.swing(InteractionHand.MAIN_HAND, this.playerNpc.getItemInHand(InteractionHand.MAIN_HAND).getInteractAnimation(), true);
                 this.playerNpc.equipBetterGearFromInventory();
                 serverLevel.playSound(null, this.chestPos, SoundEvents.ITEM_PICKUP, SoundSource.BLOCKS, 0.4F, 1.0F);
                 return;

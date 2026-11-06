@@ -34,7 +34,6 @@ import net.minecraft.world.entity.player.Input;
 import net.minecraft.world.phys.Vec2;
 import com.pla.smart_npc.mixin.ClientInputAccessor;
 import net.minecraft.core.registries.BuiltInRegistries;
-import org.lwjgl.glfw.GLFW;
 
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -1009,7 +1008,7 @@ public class SmartNpcInspectorOverlay {
     }
 
     private static void tickInspectatorControls(Minecraft minecraft) {
-        boolean chatOpen = isChatScreen(minecraft.screen);
+        boolean chatOpen = isChatScreen(minecraft.gui.screen());
         if (inspectedEntityId == PlayerNpcInspectorPacket.OVERALL_ENTITY_ID) {
             if (inspectatorActive) {
                 stopInspectator(minecraft, true);
@@ -1023,7 +1022,7 @@ public class SmartNpcInspectorOverlay {
             handleResourceScrollInput(minecraft);
             return;
         }
-        if (inspectedEntityId < 0 || minecraft.screen != null && !chatOpen) {
+        if (inspectedEntityId < 0 || minecraft.gui.screen() != null && !chatOpen) {
             if (inspectatorActive) {
                 stopInspectator(minecraft, true);
             }
@@ -1104,7 +1103,7 @@ public class SmartNpcInspectorOverlay {
             inspectatorCameraDistance = INSPECTATOR_CAMERA_DISTANCE_DEFAULT;
         }
         updateInspectatorCameraMode(minecraft, playerNpc);
-        if (minecraft.screen == null) {
+        if (minecraft.gui.screen() == null) {
             minecraft.mouseHandler.grabMouse();
         }
     }
@@ -1150,7 +1149,7 @@ public class SmartNpcInspectorOverlay {
             if (previousCameraType != null) {
                 minecraft.options.setCameraType(previousCameraType);
             }
-            if (minecraft.screen == null && wasActive) {
+            if (minecraft.gui.screen() == null && wasActive) {
                 minecraft.mouseHandler.grabMouse();
             }
         }
@@ -1167,8 +1166,8 @@ public class SmartNpcInspectorOverlay {
     }
 
     private static boolean isInspectatorModifierDown(Minecraft minecraft) {
-        return isPhysicalKeyDown(minecraft, GLFW.GLFW_KEY_LEFT_ALT)
-                || isPhysicalKeyDown(minecraft, GLFW.GLFW_KEY_RIGHT_ALT);
+        return isPhysicalKeyDown(minecraft, InputConstants.KEY_LALT)
+                || isPhysicalKeyDown(minecraft, InputConstants.KEY_RALT);
     }
 
     private static void resetInspectatorToggle() {
@@ -1176,8 +1175,8 @@ public class SmartNpcInspectorOverlay {
     }
 
     private static void handleInspectatorCycleInput(Minecraft minecraft, PlayerNpcEntity currentNpc) {
-        boolean leftDown = minecraft.options.keyLeft.isDown() || isPhysicalKeyDown(minecraft, GLFW.GLFW_KEY_LEFT);
-        boolean rightDown = minecraft.options.keyRight.isDown() || isPhysicalKeyDown(minecraft, GLFW.GLFW_KEY_RIGHT);
+        boolean leftDown = minecraft.options.keyLeft.isDown() || isPhysicalKeyDown(minecraft, InputConstants.KEY_LEFT);
+        boolean rightDown = minecraft.options.keyRight.isDown() || isPhysicalKeyDown(minecraft, InputConstants.KEY_RIGHT);
 
         if (leftDown && !previousCycleLeftDown) {
             requestInspectatorCycle(currentNpc, -1);
@@ -1192,7 +1191,7 @@ public class SmartNpcInspectorOverlay {
     }
 
     private static void handleTraceToggleInput(Minecraft minecraft, int entityId) {
-        boolean traceDown = isPhysicalKeyDown(minecraft, GLFW.GLFW_KEY_Z);
+        boolean traceDown = isPhysicalKeyDown(minecraft, InputConstants.KEY_Z);
         if (traceDown && !previousTraceToggleDown && entityId >= 0) {
             snapshotTraceEnabled = !snapshotTraceEnabled;
             lastDisplayCacheMillis = Long.MIN_VALUE;
@@ -1202,7 +1201,7 @@ public class SmartNpcInspectorOverlay {
     }
 
     private static void handleRequirementsToggleInput(Minecraft minecraft) {
-        boolean requirementsDown = isPhysicalKeyDown(minecraft, GLFW.GLFW_KEY_X);
+        boolean requirementsDown = isPhysicalKeyDown(minecraft, InputConstants.KEY_X);
         if (requirementsDown && !previousRequirementsToggleDown) {
             requirementsVisible = !requirementsVisible;
             if (!requirementsVisible) {
@@ -1221,8 +1220,8 @@ public class SmartNpcInspectorOverlay {
             return;
         }
 
-        boolean scrollUpDown = isPhysicalKeyDown(minecraft, GLFW.GLFW_KEY_UP);
-        boolean scrollDownDown = isPhysicalKeyDown(minecraft, GLFW.GLFW_KEY_DOWN);
+        boolean scrollUpDown = isPhysicalKeyDown(minecraft, InputConstants.KEY_UP);
+        boolean scrollDownDown = isPhysicalKeyDown(minecraft, InputConstants.KEY_DOWN);
         if (scrollUpDown && !previousRequirementScrollUpDown) {
             scrollRequirementRows(-1);
         } else if (scrollDownDown && !previousRequirementScrollDownDown) {
@@ -1234,8 +1233,8 @@ public class SmartNpcInspectorOverlay {
     }
 
     private static void handleResourceScrollInput(Minecraft minecraft) {
-        boolean scrollUpDown = isPhysicalKeyDown(minecraft, GLFW.GLFW_KEY_UP);
-        boolean scrollDownDown = isPhysicalKeyDown(minecraft, GLFW.GLFW_KEY_DOWN);
+        boolean scrollUpDown = isPhysicalKeyDown(minecraft, InputConstants.KEY_UP);
+        boolean scrollDownDown = isPhysicalKeyDown(minecraft, InputConstants.KEY_DOWN);
         if (scrollUpDown && !previousResourceScrollUpDown) {
             resourceScrollOffset = Math.max(0, resourceScrollOffset - 1);
         } else if (scrollDownDown && !previousResourceScrollDownDown) {
@@ -1254,8 +1253,8 @@ public class SmartNpcInspectorOverlay {
             inspectatorZoomRepeatTicks--;
         }
 
-        boolean zoomIn = isPhysicalKeyDown(minecraft, GLFW.GLFW_KEY_UP);
-        boolean zoomOut = isPhysicalKeyDown(minecraft, GLFW.GLFW_KEY_DOWN);
+        boolean zoomIn = isPhysicalKeyDown(minecraft, InputConstants.KEY_UP);
+        boolean zoomOut = isPhysicalKeyDown(minecraft, InputConstants.KEY_DOWN);
         if (zoomIn == zoomOut || inspectatorZoomRepeatTicks > 0) {
             return;
         }
@@ -1317,7 +1316,7 @@ public class SmartNpcInspectorOverlay {
     }
 
     private static boolean isPhysicalKeyDown(Minecraft minecraft, int key) {
-        return InputConstants.isKeyDown(minecraft.getWindow(), key);
+        return InputConstants.isKeyDown(key);
     }
 
     private static void requestInspectatorCycle(PlayerNpcEntity currentNpc, int direction) {
@@ -1354,7 +1353,7 @@ public class SmartNpcInspectorOverlay {
         if (target instanceof PlayerNpcEntity playerNpc && playerNpc.isAlive()) {
             updateInspectatorCameraMode(minecraft, playerNpc);
         }
-        if (minecraft.screen == null) {
+        if (minecraft.gui.screen() == null) {
             minecraft.mouseHandler.grabMouse();
         }
     }

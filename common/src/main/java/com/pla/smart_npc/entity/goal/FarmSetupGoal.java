@@ -1,5 +1,6 @@
 package com.pla.smart_npc.entity.goal;
 
+import net.minecraft.tags.ItemTags;
 import com.pla.smart_npc.entity.PlayerNpcEntity;
 import com.pla.smart_npc.entity.ai.BreakingBlockAi;
 import com.pla.smart_npc.entity.ai.ClearBlockAi;
@@ -24,7 +25,6 @@ import net.minecraft.sounds.SoundSource;
 import net.minecraft.tags.FluidTags;
 import net.minecraft.world.entity.ai.goal.Goal;
 import net.minecraft.world.item.BlockItem;
-import net.minecraft.world.item.HoeItem;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.level.ClipContext;
@@ -414,7 +414,7 @@ public final class FarmSetupGoal extends Goal {
         this.playerNpc.setCurrentAiState("ai.player_npc.setting_up_farm");
         this.updateDetail();
         if (this.action == Action.TILL) {
-            this.toolAi.equipTool(HoeItem.class);
+            this.toolAi.equipTool(ItemTags.HOES);
         }
         if (this.isFarmReturnAction()) {
             Path selectedPath = this.plannedStandPath;
@@ -1577,7 +1577,7 @@ public final class FarmSetupGoal extends Goal {
         if (!FarmAi.isTillableGround(state)
                 || state.is(Blocks.FARMLAND)
                 || serverLevel.getBlockState(this.targetPos.above()).getBlock() instanceof CropBlock
-                || !this.toolAi.equipTool(HoeItem.class)) {
+                || !this.toolAi.equipTool(ItemTags.HOES)) {
             return false;
         }
         BlockState tilled = FarmAi.tilledState(state);
@@ -1586,7 +1586,7 @@ public final class FarmSetupGoal extends Goal {
         }
         this.placingBlockAi.playMainHandAction();
         this.playerNpc.hurtMainHandItem(1);
-        serverLevel.playSound(null, this.targetPos, SoundEvents.HOE_TILL, SoundSource.BLOCKS, 0.9F, 1.0F);
+        serverLevel.playSound(null, this.targetPos, SoundEvents.HOE_TILL.value(), SoundSource.BLOCKS, 0.9F, 1.0F);
         return true;
     }
 

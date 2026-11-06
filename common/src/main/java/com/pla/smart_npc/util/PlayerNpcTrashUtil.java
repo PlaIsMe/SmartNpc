@@ -189,9 +189,9 @@ public final class PlayerNpcTrashUtil {
     private static int toolKind(ItemStack stack) {
         Item item = stack.getItem();
         if (stack.is(ItemTags.PICKAXES)) return 1;
-        if (item instanceof AxeItem) return 2;
-        if (item instanceof ShovelItem) return 3;
-        if (item instanceof HoeItem) return 4;
+        if (item.builtInRegistryHolder().is(ItemTags.AXES)) return 2;
+        if (item.builtInRegistryHolder().is(ItemTags.SHOVELS)) return 3;
+        if (item.builtInRegistryHolder().is(ItemTags.HOES)) return 4;
         if (item.builtInRegistryHolder().is(ItemTags.SWORDS)) return 5;
         return 0;
     }

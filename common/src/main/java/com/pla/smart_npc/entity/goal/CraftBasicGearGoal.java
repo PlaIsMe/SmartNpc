@@ -28,13 +28,10 @@ import net.minecraft.sounds.SoundSource;
 import net.minecraft.util.Mth;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.entity.ai.goal.Goal;
-import net.minecraft.world.item.AxeItem;
 import net.minecraft.world.item.BlockItem;
 import net.minecraft.world.item.FishingRodItem;
-import net.minecraft.world.item.HoeItem;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
-import net.minecraft.world.item.ShovelItem;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.FenceBlock;
 import net.minecraft.world.level.block.FenceGateBlock;
@@ -683,10 +680,10 @@ public class CraftBasicGearGoal extends Goal {
     }
 
     private boolean needsCriticalStarterTool() {
-        return !this.hasTool(AxeItem.class)
+        return !this.hasTool(ItemTags.AXES)
                 || !this.hasTool(ItemTags.PICKAXES)
                 || !GatherStoneGoal.isFarmingSupportJob(this.playerNpc)
-                && !this.hasTool(ShovelItem.class);
+                && !this.hasTool(ItemTags.SHOVELS);
     }
 
     private boolean needsCriticalStarterToolForCooldown() {
@@ -746,7 +743,7 @@ public class CraftBasicGearGoal extends Goal {
             return materialUpgradeRecipe;
         }
 
-        if (!this.hasTool(AxeItem.class)) {
+        if (!this.hasTool(ItemTags.AXES)) {
             return this.bestCraftableToolRecipe(ToolKind.AXE);
         }
         if (!this.hasTool(ItemTags.PICKAXES)) {
@@ -756,7 +753,7 @@ public class CraftBasicGearGoal extends Goal {
             return this.bestCraftableToolRecipe(ToolKind.SWORD);
         }
         if (!GatherStoneGoal.isFarmingSupportJob(this.playerNpc)
-                && !this.hasTool(ShovelItem.class)) {
+                && !this.hasTool(ItemTags.SHOVELS)) {
             return this.bestCraftableToolRecipe(ToolKind.SHOVEL);
         }
         return fishingRodRecipe;
@@ -785,7 +782,7 @@ public class CraftBasicGearGoal extends Goal {
             return this.bestCraftableToolRecipe(ToolKind.PICKAXE);
         }
         if (!GatherStoneGoal.isFarmingSupportJob(this.playerNpc)
-                && !this.hasTool(ShovelItem.class)) {
+                && !this.hasTool(ItemTags.SHOVELS)) {
             return this.bestCraftableToolRecipe(ToolKind.SHOVEL);
         }
         return null;
@@ -875,7 +872,7 @@ public class CraftBasicGearGoal extends Goal {
     private ToolRecipe nextFarmHoeRecipe() {
         if (!(this.playerNpc.level() instanceof ServerLevel serverLevel)
                 || !FarmAi.needsHoe(this.playerNpc, serverLevel)
-                || this.hasTool(HoeItem.class)) {
+                || this.hasTool(ItemTags.HOES)) {
             return null;
         }
         return this.bestCraftableToolRecipe(ToolKind.HOE);
@@ -892,7 +889,7 @@ public class CraftBasicGearGoal extends Goal {
         if (this.emergencyPickaxeCraft && !this.hasTool(ItemTags.PICKAXES)) {
             return this.bestCraftableToolRecipe(ToolKind.PICKAXE);
         }
-        if (FarmAi.needsFarmLogs(this.playerNpc, serverLevel) && !this.hasTool(AxeItem.class)) {
+        if (FarmAi.needsFarmLogs(this.playerNpc, serverLevel) && !this.hasTool(ItemTags.AXES)) {
             return this.bestCraftableToolRecipe(ToolKind.AXE);
         }
         if (FarmAi.needsFarmStone(this.playerNpc, serverLevel) && !this.hasTool(ItemTags.PICKAXES)) {
@@ -908,14 +905,14 @@ public class CraftBasicGearGoal extends Goal {
         if (this.shouldPrioritizeMiningStarterPickaxe() && !this.hasTool(ItemTags.PICKAXES)) {
             return this.bestCraftableToolRecipe(ToolKind.PICKAXE);
         }
-        if (!this.hasTool(AxeItem.class)) {
+        if (!this.hasTool(ItemTags.AXES)) {
             return this.bestCraftableToolRecipe(ToolKind.AXE);
         }
         if (!this.hasTool(ItemTags.PICKAXES)) {
             return this.bestCraftableToolRecipe(ToolKind.PICKAXE);
         }
         if (!GatherStoneGoal.isFarmingSupportJob(this.playerNpc)
-                && !this.hasTool(ShovelItem.class)) {
+                && !this.hasTool(ItemTags.SHOVELS)) {
             return this.bestCraftableToolRecipe(ToolKind.SHOVEL);
         }
         return null;
@@ -1058,9 +1055,9 @@ public class CraftBasicGearGoal extends Goal {
     }
 
     private boolean isCriticalStarterRecipe(ToolRecipe recipe) {
-        return recipe.kind() == ToolKind.AXE && !this.hasTool(AxeItem.class)
+        return recipe.kind() == ToolKind.AXE && !this.hasTool(ItemTags.AXES)
                 || recipe.kind() == ToolKind.PICKAXE && !this.hasTool(ItemTags.PICKAXES)
-                || recipe.kind() == ToolKind.SHOVEL && !this.hasTool(ShovelItem.class)
+                || recipe.kind() == ToolKind.SHOVEL && !this.hasTool(ItemTags.SHOVELS)
                 || recipe.kind() == ToolKind.HOE && this.needsFarmHoe();
     }
 

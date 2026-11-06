@@ -9,7 +9,6 @@ import net.minecraft.tags.ItemTags;
 import com.pla.smart_npc.entity.PlayerNpcEntity;
 import com.pla.smart_npc.util.InventoryUtils;
 import net.minecraft.world.SimpleContainer;
-import net.minecraft.world.item.AxeItem;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.block.Blocks;
 
@@ -176,7 +175,7 @@ public final class WeaponAi {
         if (stack.is(ItemTags.SWORDS)) {
             return 100.0D + SmartNpcItemUtil.attackDamage(stack) + tierBonus(stack);
         }
-        if (stack.getItem() instanceof AxeItem) {
+        if (stack.getItem().builtInRegistryHolder().is(ItemTags.AXES)) {
             return 90.0D + SmartNpcItemUtil.attackDamage(stack) + tierBonus(stack);
         }
         return 0.0D;

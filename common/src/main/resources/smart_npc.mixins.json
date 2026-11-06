@@ -8,7 +8,8 @@
     "ServerChunkCacheAccessor",
     "MonsterMixin",
     "BoatMixin",
-    "MinecartMixin"
+    "MinecartMixin",
+    "LivingEntitySwingAccessor"
   ],
   "client": [
     "ClientInputAccessor",

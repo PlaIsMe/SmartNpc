@@ -14,7 +14,6 @@ import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.ai.goal.Goal;
 import net.minecraft.world.entity.projectile.Projectile;
 import net.minecraft.world.entity.projectile.throwableitemprojectile.AbstractThrownPotion;
-import net.minecraft.world.item.BedItem;
 import net.minecraft.world.item.BlockItem;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
@@ -309,7 +308,7 @@ public class PlayerNpcProjectileBlockGoal extends Goal {
                 || stack.is(Items.CRAFTING_TABLE)
                 || stack.is(Items.CHEST)
                 || stack.is(Items.FURNACE)
-                || stack.getItem() instanceof BedItem
+                || stack.getItem().builtInRegistryHolder().is(ItemTags.BEDS)
                 || blockItem.getBlock().defaultBlockState().is(Blocks.TORCH)) {
             return false;
         }

@@ -324,7 +324,7 @@ public final class BetterCombatClientCompat {
     private static boolean isPoseSuppressed(PlayerNpcEntity playerNpc) {
         if (playerNpc.getBetterCombatAttackAnimationTicks() > 0
                 || playerNpc.getMainHandAttackAnimationTicks() > 0
-                || playerNpc.swinging
+                || playerNpc.isSwinging()
                 || playerNpc.isUsingItem()
                 || playerNpc.isSwimming()
                 || playerNpc.isWorkDigging()) {

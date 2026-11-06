@@ -90,7 +90,7 @@ public class CombatFishingRodGoal extends Goal {
             this.playerNpc.setCurrentAiDetail(this.target.getDisplayName().getString());
             this.playerNpc.getLookControl().setLookAt(this.target, 60.0F, 60.0F);
         }
-        this.playerNpc.swing(InteractionHand.OFF_HAND, true);
+        this.playerNpc.swing(InteractionHand.OFF_HAND, this.playerNpc.getItemInHand(InteractionHand.OFF_HAND).getInteractAnimation(), true);
         this.playerNpc.playSound(SoundEvents.FISHING_BOBBER_THROW, 1.0F, 1.0F);
     }
 
@@ -112,7 +112,7 @@ public class CombatFishingRodGoal extends Goal {
             this.pullTarget();
             this.pulled = true;
             this.playerNpc.hurtItemInHand(InteractionHand.OFF_HAND, 1);
-            this.playerNpc.swing(InteractionHand.OFF_HAND, true);
+            this.playerNpc.swing(InteractionHand.OFF_HAND, this.playerNpc.getItemInHand(InteractionHand.OFF_HAND).getInteractAnimation(), true);
             this.playerNpc.level().playSound(null, this.playerNpc.blockPosition(), SoundEvents.FISHING_BOBBER_RETRIEVE, SoundSource.HOSTILE, 0.9F, 1.0F);
         } else if (this.pullTicks % 8 == 0) {
             this.pullTarget();
@@ -155,8 +155,8 @@ public class CombatFishingRodGoal extends Goal {
         Vec3 motion = this.target.getDeltaMovement();
         Vec3 pullMotion = pull.normalize().scale(0.48D);
         this.target.setDeltaMovement(motion.x + pullMotion.x, Math.min(motion.y + 0.12D, 0.35D), motion.z + pullMotion.z);
-        this.target.hurtMarked = true;
-        this.target.hurtMarked = true;
+        this.target.syncVelocity = true;
+        this.target.syncVelocity = true;
     }
 
     private boolean hasFishingRod() {

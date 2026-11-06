@@ -708,7 +708,7 @@ public class PickupNearbyItemGoal extends Goal implements GatheringGoal {
                     motion.y,
                     motion.z * 0.35D + pushZ
             );
-            playerNpc.hurtMarked = true;
+            playerNpc.syncVelocity = true;
 
             float yaw = (float) (Mth.atan2(dz, dx) * Mth.RAD_TO_DEG) - 90.0F;
             playerNpc.setYRot(yaw);
@@ -718,7 +718,7 @@ public class PickupNearbyItemGoal extends Goal implements GatheringGoal {
         if (shouldJumpTowardPickup(dy, horizontalSqr)) {
             Vec3 motion = playerNpc.getDeltaMovement();
             playerNpc.setDeltaMovement(motion.x, Math.max(motion.y, ACTIVE_APPROACH_JUMP_Y), motion.z);
-            playerNpc.hurtMarked = true;
+            playerNpc.syncVelocity = true;
             activeApproachJumpCooldown = ACTIVE_APPROACH_JUMP_COOLDOWN_TICKS;
         }
 

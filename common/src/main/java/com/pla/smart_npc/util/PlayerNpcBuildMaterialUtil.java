@@ -8,7 +8,6 @@ import net.minecraft.resources.Identifier;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.tags.ItemTags;
 import net.minecraft.world.SimpleContainer;
-import net.minecraft.world.item.BedItem;
 import net.minecraft.world.item.BlockItem;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
@@ -204,41 +203,41 @@ public final class PlayerNpcBuildMaterialUtil {
     );
     private static final List<Item> GLASS_BLOCKS = List.of(
             Items.GLASS,
-            Items.WHITE_STAINED_GLASS,
-            Items.ORANGE_STAINED_GLASS,
-            Items.MAGENTA_STAINED_GLASS,
-            Items.LIGHT_BLUE_STAINED_GLASS,
-            Items.YELLOW_STAINED_GLASS,
-            Items.LIME_STAINED_GLASS,
-            Items.PINK_STAINED_GLASS,
-            Items.GRAY_STAINED_GLASS,
-            Items.LIGHT_GRAY_STAINED_GLASS,
-            Items.CYAN_STAINED_GLASS,
-            Items.PURPLE_STAINED_GLASS,
-            Items.BLUE_STAINED_GLASS,
-            Items.BROWN_STAINED_GLASS,
-            Items.GREEN_STAINED_GLASS,
-            Items.RED_STAINED_GLASS,
-            Items.BLACK_STAINED_GLASS
+            Items.STAINED_GLASS.white(),
+            Items.STAINED_GLASS.orange(),
+            Items.STAINED_GLASS.magenta(),
+            Items.STAINED_GLASS.lightBlue(),
+            Items.STAINED_GLASS.yellow(),
+            Items.STAINED_GLASS.lime(),
+            Items.STAINED_GLASS.pink(),
+            Items.STAINED_GLASS.gray(),
+            Items.STAINED_GLASS.lightGray(),
+            Items.STAINED_GLASS.cyan(),
+            Items.STAINED_GLASS.purple(),
+            Items.STAINED_GLASS.blue(),
+            Items.STAINED_GLASS.brown(),
+            Items.STAINED_GLASS.green(),
+            Items.STAINED_GLASS.red(),
+            Items.STAINED_GLASS.black()
     );
     private static final List<Item> GLASS_PANES = List.of(
             Items.GLASS_PANE,
-            Items.WHITE_STAINED_GLASS_PANE,
-            Items.ORANGE_STAINED_GLASS_PANE,
-            Items.MAGENTA_STAINED_GLASS_PANE,
-            Items.LIGHT_BLUE_STAINED_GLASS_PANE,
-            Items.YELLOW_STAINED_GLASS_PANE,
-            Items.LIME_STAINED_GLASS_PANE,
-            Items.PINK_STAINED_GLASS_PANE,
-            Items.GRAY_STAINED_GLASS_PANE,
-            Items.LIGHT_GRAY_STAINED_GLASS_PANE,
-            Items.CYAN_STAINED_GLASS_PANE,
-            Items.PURPLE_STAINED_GLASS_PANE,
-            Items.BLUE_STAINED_GLASS_PANE,
-            Items.BROWN_STAINED_GLASS_PANE,
-            Items.GREEN_STAINED_GLASS_PANE,
-            Items.RED_STAINED_GLASS_PANE,
-            Items.BLACK_STAINED_GLASS_PANE
+            Items.STAINED_GLASS_PANE.white(),
+            Items.STAINED_GLASS_PANE.orange(),
+            Items.STAINED_GLASS_PANE.magenta(),
+            Items.STAINED_GLASS_PANE.lightBlue(),
+            Items.STAINED_GLASS_PANE.yellow(),
+            Items.STAINED_GLASS_PANE.lime(),
+            Items.STAINED_GLASS_PANE.pink(),
+            Items.STAINED_GLASS_PANE.gray(),
+            Items.STAINED_GLASS_PANE.lightGray(),
+            Items.STAINED_GLASS_PANE.cyan(),
+            Items.STAINED_GLASS_PANE.purple(),
+            Items.STAINED_GLASS_PANE.blue(),
+            Items.STAINED_GLASS_PANE.brown(),
+            Items.STAINED_GLASS_PANE.green(),
+            Items.STAINED_GLASS_PANE.red(),
+            Items.STAINED_GLASS_PANE.black()
     );
     private static final List<Item> FLOWERS = List.of(
             Items.DANDELION,
@@ -380,7 +379,7 @@ public final class PlayerNpcBuildMaterialUtil {
         if (item.get() == Items.GLASS_PANE && tryCraftGlassPaneFromAnyGlass(playerNpc.getInventory())) {
             return true;
         }
-        if (item.get() instanceof BedItem) {
+        if (item.get().builtInRegistryHolder().is(ItemTags.BEDS)) {
             return PlayerNpcCraftingUtil.tryCraftBed(playerNpc.getInventory(), BUILD_CRAFT_RAW_LOG_RESERVE);
         }
         return PlayerNpcCraftingUtil.tryCraftWithLogConversion(serverLevel, playerNpc.getInventory(), item.get(), true, BUILD_CRAFT_RAW_LOG_RESERVE);
@@ -920,7 +919,7 @@ public final class PlayerNpcBuildMaterialUtil {
         }
 
         if (targetFamily == MaterialFamily.BEDS || targetFamily == MaterialFamily.CARPETS) {
-            return item instanceof BedItem
+            return item.builtInRegistryHolder().is(ItemTags.BEDS)
                     || stack.is(ItemTags.WOOL)
                     || stackFamily == MaterialFamily.BEDS
                     || stackFamily == MaterialFamily.CARPETS;
@@ -1019,7 +1018,7 @@ public final class PlayerNpcBuildMaterialUtil {
                 && PlayerNpcCraftingUtil.tryCraftTorches(playerNpc.getInventory(), BUILD_CRAFT_RAW_LOG_RESERVE)) {
             return playerNpc.consumeInventoryItem(item, 1).orElse(ItemStack.EMPTY);
         }
-        if (item instanceof BedItem
+        if (item.builtInRegistryHolder().is(ItemTags.BEDS)
                 && PlayerNpcCraftingUtil.tryCraftBed(playerNpc.getInventory(), BUILD_CRAFT_RAW_LOG_RESERVE)) {
             return playerNpc.consumeInventoryItem(item, 1).orElse(ItemStack.EMPTY);
         }
@@ -1432,7 +1431,7 @@ public final class PlayerNpcBuildMaterialUtil {
     }
 
     private static boolean hasFuel(PlayerNpcEntity playerNpc) {
-        return InventoryUtils.hasItem(playerNpc, stack -> !stack.isEmpty() && playerNpc.level().fuelValues().isFuel(stack));
+        return InventoryUtils.hasItem(playerNpc, stack -> !stack.isEmpty() && stack.has(net.minecraft.core.component.DataComponents.COOKING_FUEL));
     }
 
     private static boolean canUseOrCreateHomeFurnace(ServerLevel serverLevel, PlayerNpcEntity playerNpc) {

@@ -9,7 +9,6 @@ import net.minecraft.tags.BlockTags;
 import net.minecraft.tags.ItemTags;
 import net.minecraft.world.SimpleContainer;
 import net.minecraft.world.entity.ai.goal.Goal;
-import net.minecraft.world.item.BedItem;
 import net.minecraft.world.item.BlockItem;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
@@ -292,7 +291,7 @@ public class ExploreBiomeForLogsGoal extends Goal {
                 && !stack.is(Items.CRAFTING_TABLE)
                 && !stack.is(Items.FURNACE)
                 && !stack.is(Items.CHEST)
-                && !(stack.getItem() instanceof BedItem);
+                && !(stack.getItem().builtInRegistryHolder().is(ItemTags.BEDS));
     }
 
     private boolean canStandAt(ServerLevel serverLevel, BlockPos pos) {

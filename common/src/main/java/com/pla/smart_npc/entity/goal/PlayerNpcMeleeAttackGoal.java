@@ -123,7 +123,7 @@ public final class PlayerNpcMeleeAttackGoal extends Goal {
     }
 
     private void swing(LivingEntity target, boolean critical) {
-        this.npc.swing(InteractionHand.MAIN_HAND, true);
+        this.npc.swing(InteractionHand.MAIN_HAND, this.npc.getItemInHand(InteractionHand.MAIN_HAND).getAttackAnimation(), true);
         VanillaMeleeAttackAi.attack(this.npc, target, critical);
         boolean fastFistAttack = false;
         int interval;

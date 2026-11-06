@@ -10,7 +10,6 @@ import net.minecraft.core.Direction;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.tags.FluidTags;
 import net.minecraft.tags.ItemTags;
-import net.minecraft.world.item.BedItem;
 import net.minecraft.world.item.BlockItem;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
@@ -680,7 +679,7 @@ public final class WaterEscapeAi {
                 Math.max(motion.y, 0.12D),
                 motion.z - flow.z * 0.18D
         );
-        this.playerNpc.hurtMarked = true;
+        this.playerNpc.syncVelocity = true;
     }
 
     private void jumpUpFromWater(ServerLevel serverLevel) {
@@ -694,7 +693,7 @@ public final class WaterEscapeAi {
                 Math.max(motion.y, 0.22D),
                 motion.z - flow.z * 0.08D
         );
-        this.playerNpc.hurtMarked = true;
+        this.playerNpc.syncVelocity = true;
     }
 
     /**
@@ -724,7 +723,7 @@ public final class WaterEscapeAi {
         }
 
         this.playerNpc.setDeltaMovement(nextX, motion.y, nextZ);
-        this.playerNpc.hurtMarked = true;
+        this.playerNpc.syncVelocity = true;
     }
 
     private boolean tryPlaceStandBlock(ServerLevel serverLevel, BlockPos pos) {
@@ -777,7 +776,7 @@ public final class WaterEscapeAi {
                 || stack.is(Items.CHEST)
                 || stack.is(Items.FURNACE)
                 || stack.is(Items.TORCH)
-                || stack.getItem() instanceof BedItem
+                || stack.getItem().builtInRegistryHolder().is(ItemTags.BEDS)
                 || blockItem.getBlock().defaultBlockState().is(Blocks.WATER)
                 || blockItem.getBlock().defaultBlockState().is(Blocks.LAVA)) {
             return false;

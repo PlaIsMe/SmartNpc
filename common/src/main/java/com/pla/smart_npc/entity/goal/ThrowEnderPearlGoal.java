@@ -99,7 +99,7 @@ public class ThrowEnderPearlGoal extends Goal {
         this.playerNpc.getNavigation().stop();
         this.playerNpc.getLookControl().setLookAt(this.pearlTarget.x, this.pearlTarget.y, this.pearlTarget.z, 60.0F, 60.0F);
         this.playerNpc.setCurrentAiState("ai.player_npc.throwing_ender_pearl");
-        this.playerNpc.swing(InteractionHand.OFF_HAND, true);
+        this.playerNpc.swing(InteractionHand.OFF_HAND, this.playerNpc.getItemInHand(InteractionHand.OFF_HAND).getInteractAnimation(), true);
         this.throwTicks = THROW_WINDUP_TICKS;
     }
 
@@ -164,7 +164,7 @@ public class ThrowEnderPearlGoal extends Goal {
 
         heldPearl.shrink(1);
         this.threwPearl = true;
-        this.playerNpc.swing(InteractionHand.OFF_HAND, true);
+        this.playerNpc.swing(InteractionHand.OFF_HAND, this.playerNpc.getItemInHand(InteractionHand.OFF_HAND).getInteractAnimation(), true);
         ThrownEnderpearl pearl = new ThrownEnderpearl(serverLevel, this.playerNpc, new ItemStack(Items.ENDER_PEARL));
         pearl.setPos(this.playerNpc.getX(), this.playerNpc.getEyeY() - 0.1D, this.playerNpc.getZ());
         double x = this.pearlTarget.x - pearl.getX();

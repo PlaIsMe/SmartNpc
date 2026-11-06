@@ -161,10 +161,11 @@ public class FakePlayerRenderer<T extends FakePlayer>
             if (playerNpc.isSocialNoticePausingWork() || playerNpc.isHealing()
                     || entity.isUsingItem() && entity.getUseItem().has(DataComponents.BLOCKS_ATTACKS)
                     || BetterCombatClientCompat.hasActiveAttackAnimation(playerNpc)) {
-                state.attackTime = 0.0F;
-            } else if (state.attackTime <= 0.0F && playerNpc.getMainHandAttackAnimationTicks() > 0) {
+                state.swingAnimation = 0.0F;
+            } else if (state.swingAnimation <= 0.0F && playerNpc.getMainHandAttackAnimationTicks() > 0) {
+                state.currentSwing = new net.minecraft.world.entity.LivingEntity.SwingDescription(InteractionHand.MAIN_HAND, playerNpc.getMainHandItem().getInteractAnimation(), playerNpc.getMainHandAttackAnimationDuration());
                 float duration = playerNpc.getMainHandAttackAnimationDuration();
-                state.attackTime = Mth.clamp(1.0F - ((float) playerNpc.getMainHandAttackAnimationTicks() - partialTick) / duration, 0.0F, 1.0F);
+                state.swingAnimation = Mth.clamp(1.0F - ((float) playerNpc.getMainHandAttackAnimationTicks() - partialTick) / duration, 0.0F, 1.0F);
             }
         }
         extractCapeState(entity, state, partialTick);
@@ -205,7 +206,7 @@ public class FakePlayerRenderer<T extends FakePlayer>
                 && !state.hasPose(Pose.SLEEPING) && state.swimAmount > 0.0F) {
             float swimXRot = state instanceof FakePlayerRenderState npcState ? npcState.swimXRot : state.xRot;
             float targetXRot = state.isInWater ? -90.0F - swimXRot : -90.0F;
-            poseStack.mulPose(Axis.XP.rotationDegrees(Mth.lerp(state.swimAmount, 0.0F, targetXRot)));
+            poseStack.rotate(Axis.XP.rotationDegrees(Mth.lerp(state.swimAmount, 0.0F, targetXRot)));
             if (state.isVisuallySwimming) {
                 poseStack.translate(0.0F, -1.0F, 0.3F);
             }

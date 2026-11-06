@@ -103,7 +103,7 @@ public final class TeamUpGoal extends Goal {
         this.playerNpc.setShiftKeyDown(offering && phase % 2 == 0);
         if (this.gestureTicks == this.swingTick) {
             // Gesture only: never call attack, use, interact or damage APIs.
-            this.playerNpc.swing(InteractionHand.MAIN_HAND, true);
+            this.playerNpc.swing(InteractionHand.MAIN_HAND, this.playerNpc.getItemInHand(InteractionHand.MAIN_HAND).getInteractAnimation(), true);
         }
         if (this.gestureTicks == this.jumpTick && this.playerNpc.onGround()
                 && this.playerNpc.distanceToSqr(this.inviteTarget) <= 4.0D

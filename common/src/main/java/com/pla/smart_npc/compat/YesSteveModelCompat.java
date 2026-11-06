@@ -41,25 +41,8 @@ public final class YesSteveModelCompat {
     }
 
     public static boolean isSupported() {
-        if (failed) {
-            return false;
-        }
-        if (supportedVersion == null) {
-            supportedVersion = !Platform.isFabric() && Platform.getOptionalMod(MOD_ID)
-                    .map(mod -> mod.getVersion().equals("2.6.5-neoforge+mc26.1")).orElse(false);
-            if (!supportedVersion && Platform.isModLoaded(MOD_ID)) {
-                SmartNpc.LOGGER.warn("Smart NPC YSM compatibility requires the pinned YSM 2.6.5 NeoForge 26.1 hotfix API; using normal NPC skins.");
-            }
-        }
-        if (!supportedVersion) {
-            return false;
-        }
-        try {
-            return Ysm265ServerAdapter.isAvailable();
-        } catch (LinkageError | RuntimeException error) {
-            disable(error);
-            return false;
-        }
+        // YSM's native adapter targets 26.1; this branch deliberately skips YSM.
+        return false;
     }
 
     public static boolean isEnabled() {

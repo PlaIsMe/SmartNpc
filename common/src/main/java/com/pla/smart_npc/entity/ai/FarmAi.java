@@ -17,7 +17,6 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.tags.BlockTags;
 import net.minecraft.tags.ItemTags;
 import net.minecraft.world.item.BlockItem;
-import net.minecraft.world.item.HoeItem;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.level.block.Blocks;
@@ -291,7 +290,7 @@ public final class FarmAi {
     }
 
     public static boolean hasHoe(PlayerNpcEntity playerNpc) {
-        return playerNpc != null && playerNpc.hasCarriedTool(HoeItem.class);
+        return playerNpc != null && playerNpc.hasCarriedTool(ItemTags.HOES);
     }
 
     public static int requiredRawLogs(Plan plan) {

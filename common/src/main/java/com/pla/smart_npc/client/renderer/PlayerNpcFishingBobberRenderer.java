@@ -35,7 +35,7 @@ public class PlayerNpcFishingBobberRenderer
         poseStack.pushPose();
         poseStack.pushPose();
         poseStack.scale(0.5F, 0.5F, 0.5F);
-        poseStack.mulPose(camera.orientation);
+        poseStack.rotate(camera.orientation);
         collector.submitCustomGeometry(poseStack, RENDER_TYPE, (pose, buffer) -> {
             vertex(buffer, pose, state.lightCoords, 0.0F, 0, 0, 1);
             vertex(buffer, pose, state.lightCoords, 1.0F, 0, 1, 1);
@@ -47,7 +47,7 @@ public class PlayerNpcFishingBobberRenderer
         float x = (float) state.lineOriginOffset.x;
         float y = (float) state.lineOriginOffset.y;
         float z = (float) state.lineOriginOffset.z;
-        float width = Minecraft.getInstance().gameRenderer.getGameRenderState().windowRenderState.appropriateLineWidth;
+        float width = Minecraft.getInstance().gameRenderer.gameRenderState().windowRenderState.appropriateLineWidth;
         collector.submitCustomGeometry(poseStack, RenderTypes.lines(), (pose, buffer) -> {
             for (int i = 0; i < 16; i++) {
                 float from = fraction(i, 16);
@@ -122,8 +122,8 @@ public class PlayerNpcFishingBobberRenderer
 
     @Override
     public boolean shouldRender(PlayerNpcFishingBobberEntity entity, Frustum culler,
-                                double camX, double camY, double camZ) {
-        return entity.getAngler() != null && super.shouldRender(entity, culler, camX, camY, camZ);
+                                double camX, double camY, double camZ, float partialTick) {
+        return entity.getAngler() != null && super.shouldRender(entity, culler, camX, camY, camZ, partialTick);
     }
 
     @Override

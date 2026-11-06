@@ -595,7 +595,7 @@ public class BurnNearbyItemGoal extends Goal implements GatheringGoal {
 
     private boolean equipToolFor(BlockState state) {
         if (state.is(BlockTags.MINEABLE_WITH_AXE)) {
-            if (!equipTool(AxeItem.class)) {
+            if (!equipTool(ItemTags.AXES)) {
                 equipEmptyHandForMining();
             }
             return true;
@@ -604,7 +604,7 @@ public class BurnNearbyItemGoal extends Goal implements GatheringGoal {
             return equipTool(ItemTags.PICKAXES);
         }
         if (state.is(BlockTags.MINEABLE_WITH_SHOVEL)) {
-            if (!equipTool(ShovelItem.class)) {
+            if (!equipTool(ItemTags.SHOVELS)) {
                 equipEmptyHandForMining();
             }
             return true;
@@ -854,7 +854,7 @@ public class BurnNearbyItemGoal extends Goal implements GatheringGoal {
         burnTicks = burnTarget.tool() == BurnTool.LAVA_BUCKET ? 8 : 24;
         mob.getNavigation().stop();
         mob.getLookControl().setLookAt(firePos.getX() + 0.5D, firePos.getY() + 0.5D, firePos.getZ() + 0.5D, 40.0F, 40.0F);
-        mob.swing(InteractionHand.MAIN_HAND, true);
+        mob.swing(InteractionHand.MAIN_HAND, mob.getItemInHand(InteractionHand.MAIN_HAND).getInteractAnimation(), true);
         if (burnTarget.tool() == BurnTool.LAVA_BUCKET) {
             convertActiveLavaBucketToEmptyBucket();
             serverLevel.playSound(null, firePos, SoundEvents.BUCKET_EMPTY_LAVA, SoundSource.HOSTILE, 1.0F, 1.0F);
@@ -894,7 +894,7 @@ public class BurnNearbyItemGoal extends Goal implements GatheringGoal {
             if (!ownsCurrentState) {
                 return;
             }
-            mob.swing(InteractionHand.MAIN_HAND, true);
+            mob.swing(InteractionHand.MAIN_HAND, mob.getItemInHand(InteractionHand.MAIN_HAND).getInteractAnimation(), true);
             serverLevel.removeBlock(firePos, false);
         }
     }
@@ -1092,7 +1092,7 @@ public class BurnNearbyItemGoal extends Goal implements GatheringGoal {
             itemEntity.setItem(groundStack);
         }
 
-        mob.swing(InteractionHand.MAIN_HAND);
+        mob.swing(InteractionHand.MAIN_HAND, mob.getItemInHand(InteractionHand.MAIN_HAND).getInteractAnimation());
 
         mob.level().playSound(
                 null,
@@ -1138,7 +1138,7 @@ public class BurnNearbyItemGoal extends Goal implements GatheringGoal {
             itemEntity.setItem(groundStack);
         }
 
-        mob.swing(InteractionHand.MAIN_HAND);
+        mob.swing(InteractionHand.MAIN_HAND, mob.getItemInHand(InteractionHand.MAIN_HAND).getInteractAnimation());
 
         mob.level().playSound(
                 null,
@@ -1212,7 +1212,7 @@ public class BurnNearbyItemGoal extends Goal implements GatheringGoal {
             itemEntity.setItem(remaining);
         }
 
-        mob.swing(InteractionHand.MAIN_HAND);
+        mob.swing(InteractionHand.MAIN_HAND, mob.getItemInHand(InteractionHand.MAIN_HAND).getInteractAnimation());
 
         mob.level().playSound(
                 null,
@@ -1321,7 +1321,7 @@ public class BurnNearbyItemGoal extends Goal implements GatheringGoal {
         }
 
         return stack.is(ItemTags.SWORDS)
-                || stack.getItem() instanceof AxeItem
+                || stack.getItem().builtInRegistryHolder().is(ItemTags.AXES)
                 || stack.has(DataComponents.TOOL)
                 || stack.getItem() instanceof TridentItem
                 || stack.getItem() instanceof BowItem

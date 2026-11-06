@@ -38,7 +38,7 @@ public final class NpcPlatformImpl {
         return new NpcPlatform.TeleportResult(false, x, y, z);
     }
     public static boolean projectileImpact(net.minecraft.world.entity.projectile.Projectile entity, net.minecraft.world.phys.HitResult hit) { return false; }
-    public static void hurtAndBreak(ItemStack stack, int amount, ServerLevel level, net.minecraft.world.entity.LivingEntity entity, java.util.function.Consumer<net.minecraft.world.item.Item> broken) { stack.hurtAndBreak(amount, level, null, broken); }
+    public static void hurtAndBreak(ItemStack stack, int amount, ServerLevel level, net.minecraft.world.entity.LivingEntity entity, java.util.function.Consumer<ItemStack> broken) { stack.hurtAndBreak(amount, level, null, broken); }
     public static net.minecraft.world.entity.EquipmentSlot equipmentSlot(ItemStack stack) { var equippable = stack.get(net.minecraft.core.component.DataComponents.EQUIPPABLE); return equippable == null ? null : equippable.slot(); }
     public static net.minecraft.world.InteractionHand bowHand(com.pla.smart_npc.entity.PlayerNpcEntity npc) { return npc.canFireProjectileWeapon(npc.getMainHandItem().getItem()) ? net.minecraft.world.InteractionHand.MAIN_HAND : net.minecraft.world.InteractionHand.OFF_HAND; }
     public static net.minecraft.world.entity.ai.goal.Goal rangedBowGoal(com.pla.smart_npc.entity.PlayerNpcEntity npc, double speed, int interval, float radius) { return new com.pla.smart_npc.fabric.ai.FabricNpcRangedBowGoal(npc, speed, interval, radius); }

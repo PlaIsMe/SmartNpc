@@ -566,7 +566,7 @@ public final class PathStuckFallbackAi {
                 motion.y,
                 dz / length * DEFAULT_STEP_OFF_SPEED
         );
-        this.playerNpc.hurtMarked = true;
+        this.playerNpc.syncVelocity = true;
         this.detail = detailPrefix + " path fallback forced step off @ "
                 + posText(this.stepOffStartPos)
                 + " -> "

@@ -124,12 +124,6 @@ public class FakePlayer extends PathfinderMob {
         }
     }
 
-    @Override
-    public void aiStep() {
-        this.updateSwingTime();
-        super.aiStep();
-    }
-
     private void updateCapeMotion() {
         this.xCloakO = this.xCloak;
         this.yCloakO = this.yCloak;

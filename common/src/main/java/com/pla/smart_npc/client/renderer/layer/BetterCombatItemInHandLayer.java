@@ -16,7 +16,7 @@ import net.minecraft.world.entity.HumanoidArm;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.SwingAnimationType;
 
-/** Adds Better Combat's held-item channel to the 26.1 render-state item layer. */
+/** Adds Better Combat's held-item channel to the 26.3 render-state item layer. */
 public final class BetterCombatItemInHandLayer extends ItemInHandLayer<AvatarRenderState, PlayerModel> {
     public BetterCombatItemInHandLayer(RenderLayerParent<AvatarRenderState, PlayerModel> parent) {
         super(parent);
@@ -30,14 +30,14 @@ public final class BetterCombatItemInHandLayer extends ItemInHandLayer<AvatarRen
 
         poseStack.pushPose();
         this.getParentModel().translateToHand(state, arm, poseStack);
-        poseStack.mulPose(Axis.XP.rotationDegrees(-90.0F));
-        poseStack.mulPose(Axis.YP.rotationDegrees(180.0F));
+        poseStack.rotate(Axis.XP.rotationDegrees(-90.0F));
+        poseStack.rotate(Axis.YP.rotationDegrees(180.0F));
         boolean leftHand = arm == HumanoidArm.LEFT;
         float offsetX = state.isBaby ? 0.0F : 1.0F;
         float offsetY = state.isBaby ? 1.0F : 2.0F;
         float offsetZ = state.isBaby ? -4.5F : -10.0F;
         poseStack.translate((leftHand ? -1 : 1) * offsetX / 16.0F, offsetY / 16.0F, offsetZ / 16.0F);
-        if (state.attackTime > 0.0F && state.attackArm == arm && state.swingAnimationType == SwingAnimationType.STAB) {
+        if (state.swingAnimation > 0.0F && state.currentSwing != null && (state.currentSwing.hand() == net.minecraft.world.InteractionHand.MAIN_HAND ? state.mainArm : state.mainArm.getOpposite()) == arm && state.currentSwing.animation().type() == SwingAnimationType.STAB) {
             SpearAnimations.thirdPersonAttackItem(state, poseStack);
         }
         float ticksUsingItem = state.ticksUsingItem(arm);

@@ -30,7 +30,6 @@ import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.ai.goal.Goal;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.Container;
-import net.minecraft.world.item.BedItem;
 import net.minecraft.world.item.BlockItem;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
@@ -1990,7 +1989,7 @@ public class BuildHouseGoal extends Goal {
         this.playerNpc.getJumpControl().jump();
         Vec3 motion = this.playerNpc.getDeltaMovement();
         this.playerNpc.setDeltaMovement(motion.x, Math.max(motion.y, 0.42D), motion.z);
-        this.playerNpc.hurtMarked = true;
+        this.playerNpc.syncVelocity = true;
         return true;
     }
 
@@ -2279,7 +2278,7 @@ public class BuildHouseGoal extends Goal {
                 || stack.is(ItemTags.LOGS)
                 || stack.is(ItemTags.SAPLINGS)
                 || stack.is(Items.TORCH)
-                || stack.getItem() instanceof BedItem) {
+                || stack.getItem().builtInRegistryHolder().is(ItemTags.BEDS)) {
             return false;
         }
 

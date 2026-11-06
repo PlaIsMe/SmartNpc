@@ -29,12 +29,9 @@ import net.minecraft.tags.BlockTags;
 import net.minecraft.tags.ItemTags;
 import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.ai.goal.Goal;
-import net.minecraft.world.item.AxeItem;
-import net.minecraft.world.item.BedItem;
 import net.minecraft.world.item.BlockItem;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
-import net.minecraft.world.item.ShovelItem;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.AABB;
@@ -315,7 +312,7 @@ public class TerraformBuildSiteGoal extends Goal {
 
         if (nextTarget.target().phase() == TerraformPhase.CLEAR
                 && serverLevel.getBlockState(nextTarget.target().pos()).is(BlockTags.MINEABLE_WITH_SHOVEL)
-                && !hasTool(this.playerNpc, ShovelItem.class)) {
+                && !hasTool(this.playerNpc, ItemTags.SHOVELS)) {
             return false;
         }
         this.target = nextTarget.target();
@@ -1680,7 +1677,7 @@ public class TerraformBuildSiteGoal extends Goal {
         }
 
         BlockState state = serverLevel.getBlockState(target.pos());
-        return !state.is(BlockTags.MINEABLE_WITH_SHOVEL) || hasTool(playerNpc, ShovelItem.class);
+        return !state.is(BlockTags.MINEABLE_WITH_SHOVEL) || hasTool(playerNpc, ItemTags.SHOVELS);
     }
 
     private static ActionablePrepCache matchingPrepCache(PlayerNpcEntity playerNpc, ServerLevel serverLevel) {
@@ -1703,7 +1700,7 @@ public class TerraformBuildSiteGoal extends Goal {
         boolean needsShovel = hasPrep
                 && target.phase() == TerraformPhase.CLEAR
                 && serverLevel.getBlockState(target.pos()).is(BlockTags.MINEABLE_WITH_SHOVEL)
-                && !hasTool(playerNpc, ShovelItem.class);
+                && !hasTool(playerNpc, ItemTags.SHOVELS);
         ACTIONABLE_PREP_CACHE.put(playerNpc, new ActionablePrepCache(
                 playerNpc.tickCount,
                 serverLevel.dimension().identifier(),
@@ -1951,7 +1948,7 @@ public class TerraformBuildSiteGoal extends Goal {
                 || stack.is(ItemTags.PLANKS)
                 || stack.is(ItemTags.SAPLINGS)
                 || stack.is(Items.TORCH)
-                || stack.getItem() instanceof BedItem) {
+                || stack.getItem().builtInRegistryHolder().is(ItemTags.BEDS)) {
             return false;
         }
         for (net.minecraft.world.item.Item item : FILL_ITEMS) {
@@ -1968,7 +1965,7 @@ public class TerraformBuildSiteGoal extends Goal {
                 || stack.is(ItemTags.LOGS)
                 || stack.is(ItemTags.SAPLINGS)
                 || stack.is(Items.TORCH)
-                || stack.getItem() instanceof BedItem
+                || stack.getItem().builtInRegistryHolder().is(ItemTags.BEDS)
                 || stack.is(Items.SAND)
                 || stack.is(Items.RED_SAND)
                 || stack.is(Items.GRAVEL)) {
@@ -2130,7 +2127,7 @@ public class TerraformBuildSiteGoal extends Goal {
         this.playerNpc.getJumpControl().jump();
         Vec3 motion = this.playerNpc.getDeltaMovement();
         this.playerNpc.setDeltaMovement(motion.x, Math.max(motion.y, 0.42D), motion.z);
-        this.playerNpc.hurtMarked = true;
+        this.playerNpc.syncVelocity = true;
         this.supportClearanceJumpCooldownTicks = SUPPORT_CLEARANCE_JUMP_COOLDOWN_TICKS;
         return true;
     }
@@ -2289,11 +2286,11 @@ public class TerraformBuildSiteGoal extends Goal {
 
     private void equipToolFor(BlockState state) {
         if (state.is(BlockTags.MINEABLE_WITH_SHOVEL)) {
-            if (!this.equipTool(ShovelItem.class)) {
+            if (!this.equipTool(ItemTags.SHOVELS)) {
                 this.equipEmptyHand();
             }
         } else if (state.is(BlockTags.MINEABLE_WITH_AXE) || state.is(BlockTags.LOGS)) {
-            if (!this.equipTool(AxeItem.class)) {
+            if (!this.equipTool(ItemTags.AXES)) {
                 this.equipEmptyHand();
             }
         } else if (state.is(BlockTags.MINEABLE_WITH_PICKAXE)) {

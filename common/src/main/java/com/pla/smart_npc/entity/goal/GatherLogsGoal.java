@@ -1,5 +1,6 @@
 package com.pla.smart_npc.entity.goal;
 
+import net.minecraft.tags.ItemTags;
 import com.pla.smart_npc.clazz.PlayerNpcInterest;
 import com.pla.smart_npc.entity.PlayerNpcEntity;
 import com.pla.smart_npc.entity.ai.BreakingBlockAi;
@@ -25,9 +26,7 @@ import net.minecraft.core.Direction;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.tags.BlockTags;
 import net.minecraft.world.entity.ai.goal.Goal;
-import net.minecraft.world.item.AxeItem;
 import net.minecraft.world.item.Items;
-import net.minecraft.world.item.ShovelItem;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.FenceBlock;
 import net.minecraft.world.level.block.state.BlockState;
@@ -429,7 +428,7 @@ public class GatherLogsGoal extends Goal implements GatheringGoal {
                 + CONTINUE_ELIGIBILITY_INTERVAL_TICKS;
         this.continueEligibilityAllowed = true;
         this.playerNpc.setCurrentAiState("ai.player_npc.gathering_logs");
-        this.toolAi.equipTool(AxeItem.class);
+        this.toolAi.equipTool(ItemTags.AXES);
         this.resetDetailRefresh();
         this.updateDetail();
         this.applyActiveNavigationBudget();
@@ -1141,7 +1140,7 @@ public class GatherLogsGoal extends Goal implements GatheringGoal {
                 this.pillarRouteAuthorized = this.standPos != null
                         && !canMineFromStandPosition(this.standPos, this.targetPos)
                         && canPillarTowardFrom(this.standPos, this.targetPos);
-                this.toolAi.equipTool(AxeItem.class);
+                this.toolAi.equipTool(ItemTags.AXES);
                 return true;
             }
 
@@ -1466,7 +1465,7 @@ public class GatherLogsGoal extends Goal implements GatheringGoal {
                         + " @ "
                         + posText(this.dirtTargetPos);
                 this.breakingBlockAi.stop();
-                this.toolAi.equipTool(ShovelItem.class);
+                this.toolAi.equipTool(ItemTags.SHOVELS);
                 return true;
             }
             if (!dirtSearch.complete()) {
@@ -1589,7 +1588,7 @@ public class GatherLogsGoal extends Goal implements GatheringGoal {
             this.resetTargetRouteRecovery();
             this.breakingBlockAi.stop();
             this.clearBlockAi.stop();
-            this.toolAi.equipTool(AxeItem.class);
+            this.toolAi.equipTool(ItemTags.AXES);
             this.pillarTraceDetail = "pillar blocked by log; mining blocker @ "
                     + posText(blockerPos)
                     + detailSuffix(failureDetail);

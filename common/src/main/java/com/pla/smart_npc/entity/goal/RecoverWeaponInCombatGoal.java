@@ -223,7 +223,7 @@ public class RecoverWeaponInCombatGoal extends Goal {
         }
 
         if (playEquipFeedback) {
-            mob.swing(InteractionHand.MAIN_HAND);
+            mob.swing(InteractionHand.MAIN_HAND, mob.getItemInHand(InteractionHand.MAIN_HAND).getInteractAnimation());
             mob.level().playSound(
                     null,
                     mob.blockPosition(),

@@ -328,7 +328,7 @@ public final class BreakingBlockAi {
             return;
         }
 
-        this.playerNpc.swing(InteractionHand.MAIN_HAND, true);
+        this.playerNpc.swing(InteractionHand.MAIN_HAND, this.playerNpc.getItemInHand(InteractionHand.MAIN_HAND).getInteractAnimation(), true);
         this.playerNpc.triggerMainHandAttackAnimation();
 
 

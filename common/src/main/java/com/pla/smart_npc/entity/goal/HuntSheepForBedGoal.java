@@ -7,7 +7,6 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.tags.ItemTags;
 import net.minecraft.world.entity.ai.goal.Goal;
 import net.minecraft.world.entity.animal.sheep.Sheep;
-import net.minecraft.world.item.BedItem;
 
 import java.util.Comparator;
 import java.util.EnumSet;
@@ -70,7 +69,7 @@ public class HuntSheepForBedGoal extends Goal {
     }
 
     private boolean hasBedOrEnoughWool() {
-        return InventoryUtils.hasItem(this.playerNpc, stack -> stack.getItem() instanceof BedItem)
+        return InventoryUtils.hasItem(this.playerNpc, stack -> stack.getItem().builtInRegistryHolder().is(ItemTags.BEDS))
                 || PlayerNpcCraftingUtil.countItem(this.playerNpc.getInventory(), stack -> stack.is(ItemTags.WOOL)) >= 3;
     }
 }

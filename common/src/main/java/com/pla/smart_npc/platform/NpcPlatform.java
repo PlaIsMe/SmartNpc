@@ -41,7 +41,7 @@ public final class NpcPlatform {
     @ExpectPlatform
     public static net.minecraft.world.level.block.SoundType soundType(net.minecraft.world.level.block.state.BlockState state, ServerLevel level, net.minecraft.core.BlockPos pos, Entity entity) { throw new AssertionError(); }
     @ExpectPlatform
-    public static void hurtAndBreak(ItemStack stack, int amount, ServerLevel level, net.minecraft.world.entity.LivingEntity entity, java.util.function.Consumer<net.minecraft.world.item.Item> broken) { throw new AssertionError(); }
+    public static void hurtAndBreak(ItemStack stack, int amount, ServerLevel level, net.minecraft.world.entity.LivingEntity entity, java.util.function.Consumer<ItemStack> broken) { throw new AssertionError(); }
     @ExpectPlatform
     public static net.minecraft.world.entity.EquipmentSlot equipmentSlot(ItemStack stack) { throw new AssertionError(); }
     @ExpectPlatform

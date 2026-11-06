@@ -1,5 +1,6 @@
 package com.pla.smart_npc.entity.goal;
 
+import net.minecraft.tags.ItemTags;
 import com.pla.smart_npc.entity.PlayerNpcEntity;
 import com.pla.smart_npc.entity.ai.PlacingBlockAi;
 import com.pla.smart_npc.util.InventoryUtils;
@@ -10,7 +11,6 @@ import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.entity.ai.goal.Goal;
 import net.minecraft.world.entity.animal.golem.IronGolem;
-import net.minecraft.world.item.BedItem;
 import net.minecraft.world.item.BlockItem;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
@@ -91,7 +91,7 @@ public class IronGolemTrollGoal extends Goal {
         this.playerNpc.setTarget(this.golem);
         this.playerNpc.setCurrentAiState("ai.player_npc.trolling_golem");
         this.playerNpc.setCurrentAiDetail(this.golem.getDisplayName().getString());
-        this.playerNpc.swing(InteractionHand.MAIN_HAND, true);
+        this.playerNpc.swing(InteractionHand.MAIN_HAND, this.playerNpc.getItemInHand(InteractionHand.MAIN_HAND).getInteractAnimation(), true);
         serverLevel.playSound(null, this.pillarBase, SoundEvents.STONE_PLACE, SoundSource.BLOCKS, 0.9F, 1.0F);
         serverLevel.playSound(null, this.playerNpc.blockPosition(), SoundEvents.PLAYER_ATTACK_SWEEP, SoundSource.HOSTILE, 0.6F, 1.1F);
         this.playerNpc.setIronGolemTrollCooldown(20 * 60 * 10 + this.playerNpc.getRandom().nextInt(20 * 60 * 10));
@@ -144,7 +144,7 @@ public class IronGolemTrollGoal extends Goal {
                 && !stack.is(Items.CRAFTING_TABLE)
                 && !stack.is(Items.CHEST)
                 && !stack.is(Items.FURNACE)
-                && !(stack.getItem() instanceof BedItem)
+                && !(stack.getItem().builtInRegistryHolder().is(ItemTags.BEDS))
                 && !((BlockItem) stack.getItem()).getBlock().defaultBlockState().is(Blocks.TORCH);
     }
 

@@ -1104,7 +1104,7 @@ public class ExploreCaveOreGoal extends Goal {
             Vec3 motion = this.playerNpc.getDeltaMovement();
             this.playerNpc.getNavigation().stop();
             this.playerNpc.setDeltaMovement(dx / length * 0.28D, Math.min(motion.y, -0.08D), dz / length * 0.28D);
-            this.playerNpc.hurtMarked = true;
+            this.playerNpc.syncVelocity = true;
             return true;
         }
 

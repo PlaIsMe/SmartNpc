@@ -209,7 +209,7 @@ public class JukeboxDanceGoal extends Goal {
 
         disc.setCount(1);
         jukebox.setTheItem(disc.copy());
-        this.playerNpc.swing(InteractionHand.MAIN_HAND, true);
+        this.playerNpc.swing(InteractionHand.MAIN_HAND, this.playerNpc.getItemInHand(InteractionHand.MAIN_HAND).getInteractAnimation(), true);
         this.playerNpc.getLookControl().setLookAt(this.jukeboxPos.getX() + 0.5D, this.jukeboxPos.getY() + 0.5D, this.jukeboxPos.getZ() + 0.5D, 40.0F, 40.0F);
         this.playerNpc.setCurrentAiState("ai.player_npc.setting_up_jukebox");
         this.finishInstantAction();

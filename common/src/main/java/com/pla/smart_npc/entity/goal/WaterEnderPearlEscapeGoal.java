@@ -78,7 +78,7 @@ public class WaterEnderPearlEscapeGoal extends Goal {
         this.playerNpc.getNavigation().stop();
         this.playerNpc.getLookControl().setLookAt(this.pearlTarget.x, this.pearlTarget.y, this.pearlTarget.z, 60.0F, 60.0F);
         this.playerNpc.setCurrentAiState("ai.player_npc.water_ender_pearl");
-        this.playerNpc.swing(InteractionHand.OFF_HAND, true);
+        this.playerNpc.swing(InteractionHand.OFF_HAND, this.playerNpc.getItemInHand(InteractionHand.OFF_HAND).getInteractAnimation(), true);
 
         ThrownEnderpearl thrownPearl = new ThrownEnderpearl(serverLevel, this.playerNpc, new ItemStack(Items.ENDER_PEARL));
         thrownPearl.setPos(this.playerNpc.getX(), this.playerNpc.getEyeY() - 0.1D, this.playerNpc.getZ());

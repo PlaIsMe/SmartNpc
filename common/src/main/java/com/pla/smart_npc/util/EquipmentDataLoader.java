@@ -17,7 +17,6 @@ import net.minecraft.util.GsonHelper;
 import net.minecraft.util.ExtraCodecs;
 import net.minecraft.util.profiling.ProfilerFiller;
 import net.minecraft.world.entity.Entity;
-import net.minecraft.world.item.AxeItem;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.ShieldItem;
@@ -297,7 +296,7 @@ public class EquipmentDataLoader extends SimpleJsonResourceReloadListener<JsonEl
 
     private static boolean canUseVanillaShield(ItemStack stack) {
         Item item = stack.getItem();
-        return item.builtInRegistryHolder().is(ItemTags.SWORDS) || item instanceof AxeItem || item instanceof TridentItem;
+        return item.builtInRegistryHolder().is(ItemTags.SWORDS) || item.builtInRegistryHolder().is(ItemTags.AXES) || item instanceof TridentItem;
     }
 
     public static boolean canUseCompatShield(ItemStack stack) {

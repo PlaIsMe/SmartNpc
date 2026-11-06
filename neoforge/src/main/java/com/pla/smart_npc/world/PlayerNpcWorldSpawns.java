@@ -35,8 +35,6 @@ public final class PlayerNpcWorldSpawns {
         @SuppressWarnings("unchecked")
         EntityType<? extends Mob> mobType = (EntityType<? extends Mob>) rawType;
 
-        builder.getMobSpawnSettings()
-                .getSpawner(mobType.getCategory())
-                .add(new MobSpawnSettings.SpawnerData(mobType, spawnConfig.minCount(), spawnConfig.maxCount()), spawnConfig.weight());
+        builder.getMobSpawnSettings().addSpawn(mobType, spawnConfig.weight(), spawnConfig.minCount(), spawnConfig.maxCount());
     }
 }

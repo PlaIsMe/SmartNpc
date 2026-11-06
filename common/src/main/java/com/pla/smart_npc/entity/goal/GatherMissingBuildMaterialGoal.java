@@ -21,7 +21,6 @@ import net.minecraft.tags.ItemTags;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.entity.ai.goal.Goal;
 import net.minecraft.world.entity.animal.sheep.Sheep;
-import net.minecraft.world.item.ShovelItem;
 import net.minecraft.world.level.block.BedBlock;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.properties.BedPart;
@@ -198,7 +197,7 @@ public class GatherMissingBuildMaterialGoal extends Goal implements GatheringGoa
                 ? "ai.player_npc.gathering_build_material"
                 : "ai.player_npc.hunting_sheep");
         if (this.need != null && this.need.kind() == MissingBuildMaterialKind.SAND) {
-            this.toolAi.equipTool(ShovelItem.class);
+            this.toolAi.equipTool(ItemTags.SHOVELS);
         } else if (this.sheepTarget != null) {
             this.weaponAi.equipBestMeleeWeapon();
         }
@@ -327,7 +326,7 @@ public class GatherMissingBuildMaterialGoal extends Goal implements GatheringGoa
             return;
         }
 
-        this.playerNpc.swing(InteractionHand.MAIN_HAND, true);
+        this.playerNpc.swing(InteractionHand.MAIN_HAND, this.playerNpc.getItemInHand(InteractionHand.MAIN_HAND).getInteractAnimation(), true);
         this.playerNpc.triggerMainHandAttackAnimation();
         this.playerNpc.doHurtTarget(this.sheepTarget);
         int interval = this.playerNpc.getMainHandItem().isEmpty()

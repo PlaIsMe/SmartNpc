@@ -20,17 +20,22 @@ subprojects {
         maven { url = 'https://maven.neoforged.net/releases' }
         maven { url = 'https://maven.architectury.dev/' }
         maven { url = 'https://maven.fabricmc.net/' }
-        maven { url = 'https://repo.redlance.org/public'; content { includeGroupByRegex 'com.zigythebird.*'; includeGroup 'org.redlance.common-utils' } }
+        maven { url = 'https://repo.redlance.org/public'; content { includeGroupByRegex 'com.zigythebird.*'; includeGroup 'org.redlance.common-utils'; includeGroup 'org.redlance.mochafloats' } }
         maven { url = 'https://maven.shedaniel.me/' }
         maven { url = 'https://api.modrinth.com/maven'; content { includeGroup 'maven.modrinth' } }
     }
     dependencies {
         minecraft "com.mojang:minecraft:${rootProject.minecraft_version}"
         compileOnly 'com.google.code.findbugs:jsr305:3.0.2'
+        compileOnly 'com.google.j2objc:j2objc-annotations:3.1'
         compileOnly(annotationProcessor('io.github.llamalad7:mixinextras-common:0.5.0'))
     }
     tasks.withType(JavaCompile).configureEach { options.encoding = 'UTF-8'; options.release = 25; options.compilerArgs.addAll(['-Xmaxerrs', '200']) }
-    tasks.withType(JavaExec).configureEach { javaLauncher = javaToolchains.launcherFor { languageVersion = JavaLanguageVersion.of(25) } }
+    tasks.withType(JavaExec).configureEach {
+        javaLauncher = javaToolchains.launcherFor { languageVersion = JavaLanguageVersion.of(25) }
+        // RenderPearl's native Vulkan shader compiler needs headroom on Windows.
+        if (name == 'runClient') jvmArgs '-Xss4M', '-XX:StackShadowPages=32'
+    }
     tasks.withType(ProcessResources).configureEach {
         def properties = rootProject.properties.findAll { key, value -> key.startsWith('mod_') || key.endsWith('_version') || key.endsWith('_version_range') }
         inputs.properties(properties)

@@ -91,7 +91,12 @@ public final class PlayerNpcBlueprintLayoutReader {
         List<BlockState> palette = new ArrayList<>(paletteTag.size());
         for (int i = 0; i < paletteTag.size(); i++) {
             try {
-                palette.add(NbtUtils.readBlockState(BuiltInRegistries.BLOCK, paletteTag.getCompoundOrEmpty(i)));
+                CompoundTag entry = paletteTag.getCompoundOrEmpty(i).copy();
+                // Structurize v1 palettes keep the old keys. Since 26.3 vanilla
+                // expects id/properties and silently reads an old Name as air.
+                if (!entry.contains("id")) entry.getString("Name").ifPresent(name -> entry.putString("id", name));
+                if (!entry.contains("properties")) entry.getCompound("Properties").ifPresent(properties -> entry.put("properties", properties.copy()));
+                palette.add(NbtUtils.readBlockState(BuiltInRegistries.BLOCK, entry));
             } catch (RuntimeException exception) {
                 LOGGER.warn("Blueprint reader replaced invalid palette entry {} with air: {}", i, exception.getMessage());
                 palette.add(Blocks.AIR.defaultBlockState());

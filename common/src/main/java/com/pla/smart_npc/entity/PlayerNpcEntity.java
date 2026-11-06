@@ -505,10 +505,7 @@ public class PlayerNpcEntity extends FakePlayer implements RangedAttackMob {
         this.entityData.set(HEALING, healing);
         if (healing) {
             // Eating owns the main hand, including recovery frames from the last hit.
-            this.swinging = false;
-            this.swingTime = 0;
-            this.attackAnim = 0.0F;
-            this.oAttackAnim = 0.0F;
+            ((com.pla.smart_npc.mixin.LivingEntitySwingAccessor) this).smartNpc$setSwingState(new LivingEntity.SwingState());
             this.entityData.set(MAIN_HAND_ATTACK_ANIMATION_TICKS, 0);
             this.entityData.set(BETTER_COMBAT_ATTACK_ANIMATION_TICKS, 0);
         }
@@ -2517,7 +2514,7 @@ public class PlayerNpcEntity extends FakePlayer implements RangedAttackMob {
                 Math.max(motion.y, PLAYER_LIKE_JUMP_Y),
                 motion.z + forward.z * strength
         );
-        this.hurtMarked = true;
+        this.syncVelocity = true;
     }
 
     public void shortPillarJump() {
@@ -2528,7 +2525,7 @@ public class PlayerNpcEntity extends FakePlayer implements RangedAttackMob {
         Vec3 v = this.getDeltaMovement();
         double keepH = 0.02D;
         this.setDeltaMovement(v.x * keepH, PLAYER_LIKE_JUMP_Y, v.z * keepH);
-        this.hurtMarked = true;
+        this.syncVelocity = true;
     }
 
     @Override
@@ -2592,8 +2589,8 @@ public class PlayerNpcEntity extends FakePlayer implements RangedAttackMob {
     }
 
     @Override
-    protected void blockUsingItem(ServerLevel level, LivingEntity attacker) {
-        super.blockUsingItem(level, attacker);
+    protected void blockUsingItem(ServerLevel level, LivingEntity attacker, DamageSource source, float damage, boolean fullyBlocked) {
+        super.blockUsingItem(level, attacker, source, damage, fullyBlocked);
         ItemStack blockingWith = this.getItemBlockingWith();
         var blocksAttacks = blockingWith != null ? blockingWith.get(DataComponents.BLOCKS_ATTACKS) : null;
         float seconds = attacker.getSecondsToDisableBlocking();
@@ -3004,7 +3001,7 @@ public class PlayerNpcEntity extends FakePlayer implements RangedAttackMob {
     private boolean isMainHandGear(ItemStack stack) {
         return !stack.isEmpty()
                 && (stack.is(ItemTags.SWORDS)
-                || stack.getItem() instanceof AxeItem
+                || stack.getItem().builtInRegistryHolder().is(ItemTags.AXES)
                 || stack.getItem() instanceof TridentItem
                 || stack.has(DataComponents.TOOL));
     }
@@ -3012,7 +3009,7 @@ public class PlayerNpcEntity extends FakePlayer implements RangedAttackMob {
     private boolean isCombatMainHandGear(ItemStack stack) {
         return !stack.isEmpty()
                 && (stack.is(ItemTags.SWORDS)
-                || stack.getItem() instanceof AxeItem
+                || stack.getItem().builtInRegistryHolder().is(ItemTags.AXES)
                 || stack.getItem() instanceof TridentItem);
     }
 
@@ -3031,7 +3028,7 @@ public class PlayerNpcEntity extends FakePlayer implements RangedAttackMob {
         double score = 0.0D;
         if (SmartNpcItemUtil.isArmor(stack)) {
             score += SmartNpcItemUtil.armorScore(stack);
-        } else if (stack.is(ItemTags.SWORDS) || stack.getItem() instanceof AxeItem) {
+        } else if (stack.is(ItemTags.SWORDS) || stack.getItem().builtInRegistryHolder().is(ItemTags.AXES)) {
             score += SmartNpcItemUtil.attackDamage(stack);
         } else if (stack.getItem() instanceof TridentItem) {
             score += 9.0D;
@@ -3068,7 +3065,7 @@ public class PlayerNpcEntity extends FakePlayer implements RangedAttackMob {
         if (this.entityData.get(MAIN_HAND_ATTACK_ANIMATION_TICKS) <= 0) {
             this.entityData.set(MAIN_HAND_ATTACK_ANIMATION_TICKS, MAIN_HAND_USE_ANIMATION_DURATION);
         }
-        this.swing(InteractionHand.MAIN_HAND, true);
+        this.swing(InteractionHand.MAIN_HAND, this.getItemInHand(InteractionHand.MAIN_HAND).getInteractAnimation(), true);
     }
 
     public int getMainHandAttackAnimationTicks() {
@@ -4483,7 +4480,7 @@ public class PlayerNpcEntity extends FakePlayer implements RangedAttackMob {
         this.getMoveControl().setWantedPosition(targetX, this.getY(), targetZ, 1.0D);
         Vec3 motion = this.getDeltaMovement();
         this.setDeltaMovement(dx / length * 0.24D, motion.y, dz / length * 0.24D);
-        this.hurtMarked = true;
+        this.syncVelocity = true;
         return true;
     }
 
@@ -5242,7 +5239,7 @@ public class PlayerNpcEntity extends FakePlayer implements RangedAttackMob {
         }
 
         if (pSlot == EquipmentSlot.OFFHAND &&
-                (pNewItem.is(ItemTags.SWORDS) || pNewItem.getItem() instanceof AxeItem || pNewItem.getItem() instanceof ShieldItem)) {
+                (pNewItem.is(ItemTags.SWORDS) || pNewItem.getItem().builtInRegistryHolder().is(ItemTags.AXES) || pNewItem.getItem() instanceof ShieldItem)) {
             this.setOffWeaponItem(pNewItem);
         }
 

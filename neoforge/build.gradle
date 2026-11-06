@@ -10,8 +10,7 @@ configurations {
 dependencies {
     neoForge "net.neoforged:neoforge:${rootProject.neo_version}"
     implementation(include("dev.architectury:architectury-neoforge:${rootProject.architectury_version}"))
-    compileOnly 'maven.modrinth:yes-steve-model:1rPJlKDJ'
-    compileOnly 'maven.modrinth:player-animation-library:QmAdOGjK'
+    compileOnly 'maven.modrinth:player-animation-library:lQIjpkZc'
     implementation(include('io.github.llamalad7:mixinextras-neoforge:0.5.0'))
     common(project(path: ':common')) { transitive = false }
     shadowBundle(project(path: ':common', configuration: 'transformProductionNeoForge')) { transitive = false }
@@ -46,13 +45,18 @@ loom { neoForge { accessTransformer(file('src/main/resources/META-INF/accesstran
 
 if (providers.gradleProperty('compatRuntime').map { it.toBoolean() }.getOrElse(false)) {
     dependencies {
-        runtimeOnly 'maven.modrinth:better-combat:YPa9bdAg'
-        runtimeOnly 'maven.modrinth:player-animation-library:QmAdOGjK'
-        runtimeOnly 'maven.modrinth:cloth-config:TimoYzse'
-        runtimeOnly 'maven.modrinth:tiny-config:4.0.0-neoforge'
-        runtimeOnly('com.zigythebird:mochafloats:5.0.0') { transitive = false }
-        runtimeOnly 'org.redlance.common-utils:services:1.2.8'
+        runtimeOnly 'maven.modrinth:better-combat:RbEnSa47'
+        runtimeOnly 'maven.modrinth:player-animation-library:lQIjpkZc'
+        runtimeOnly 'maven.modrinth:cloth-config:GchRXPnb'
+        runtimeOnly 'maven.modrinth:tiny-config:4.0.1-neoforge'
+        ['parser', 'lexer', 'runtime'].each { module -> runtimeOnly("org.redlance.mochafloats:${module}:6.2.0") { transitive = false } }
+        runtimeOnly 'org.redlance.common-utils:services:1.4.2'
     }
 }
 
-if (providers.gradleProperty('ysmRuntime').map { it.toBoolean() }.getOrElse(false)) { dependencies { runtimeOnly 'maven.modrinth:yes-steve-model:1rPJlKDJ' } }
+// The retained 26.1 YSM adapters cannot link against RenderPearl. Keep save/config
+// fields, but omit the native implementation until a 26.3 YSM API is supported.
+sourceSets.main.java {
+    exclude '**/NeoForgeYsm265ServerAdapter.java'
+    exclude '**/Ysm265Renderer.java'
+}

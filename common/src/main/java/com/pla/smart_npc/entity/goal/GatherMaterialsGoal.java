@@ -24,10 +24,8 @@ import net.minecraft.world.SimpleContainer;
 import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.ai.goal.Goal;
 import net.minecraft.world.entity.item.ItemEntity;
-import net.minecraft.world.item.AxeItem;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
-import net.minecraft.world.item.ShovelItem;
 import net.minecraft.world.level.ClipContext;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.FenceBlock;
@@ -347,7 +345,7 @@ public class GatherMaterialsGoal extends Goal implements GatheringGoal {
         BlockState targetState = serverLevel.getBlockState(this.targetPos);
         if (this.targetType == MaterialTarget.LOG
                 && targetState.is(BlockTags.LOGS)
-                && !this.hasTool(AxeItem.class)
+                && !this.hasTool(ItemTags.AXES)
                 && this.canCraftAxeNow(serverLevel)) {
             this.playerNpc.clearBlockBreakProgress(this.targetPos);
             this.targetPos = null;
@@ -1877,7 +1875,7 @@ public class GatherMaterialsGoal extends Goal implements GatheringGoal {
 
         int woodCount = this.countWood();
         int stoneCount = this.countStone();
-        if (!this.hasTool(AxeItem.class) || !this.hasTool(ItemTags.PICKAXES)) {
+        if (!this.hasTool(ItemTags.AXES) || !this.hasTool(ItemTags.PICKAXES)) {
             return MaterialTarget.LOG;
         }
 
@@ -2025,14 +2023,14 @@ public class GatherMaterialsGoal extends Goal implements GatheringGoal {
             return false;
         }
 
-        if (!this.hasTool(AxeItem.class)) {
+        if (!this.hasTool(ItemTags.AXES)) {
             return woodAfterTable >= 5;
         }
         if (!this.hasTool(ItemTags.PICKAXES)) {
             return woodAfterTable >= 5;
         }
         return !this.hasTool(ItemTags.SWORDS) && woodAfterTable >= 4
-                || !this.hasTool(ShovelItem.class) && woodAfterTable >= 3;
+                || !this.hasTool(ItemTags.SHOVELS) && woodAfterTable >= 3;
     }
 
     private boolean canCraftingGoalPlaceTable(ServerLevel serverLevel) {
@@ -2090,12 +2088,12 @@ public class GatherMaterialsGoal extends Goal implements GatheringGoal {
 
     private boolean needsStarterGear() {
         return !this.hasTool(ItemTags.PICKAXES)
-                || !this.hasTool(AxeItem.class)
+                || !this.hasTool(ItemTags.AXES)
                 || !this.hasTool(ItemTags.SWORDS);
     }
 
     private boolean needsCriticalGatherTool() {
-        return !this.hasTool(AxeItem.class) || !this.hasTool(ItemTags.PICKAXES);
+        return !this.hasTool(ItemTags.AXES) || !this.hasTool(ItemTags.PICKAXES);
     }
 
     private boolean needsStoneGear() {
@@ -2107,14 +2105,14 @@ public class GatherMaterialsGoal extends Goal implements GatheringGoal {
 
     private boolean canCraftStarterGear() {
         int woodCount = this.countWood(this.rawLogReserveForStarterCrafting());
-        if (!this.hasTool(AxeItem.class)) {
+        if (!this.hasTool(ItemTags.AXES)) {
             return woodCount >= 5;
         }
         if (!this.hasTool(ItemTags.PICKAXES)) {
             return woodCount >= 5;
         }
         return !this.hasTool(ItemTags.SWORDS) && woodCount >= 4
-                || !this.hasTool(ShovelItem.class) && woodCount >= 3;
+                || !this.hasTool(ItemTags.SHOVELS) && woodCount >= 3;
     }
 
     private boolean canCraftStoneGear() {
@@ -2160,13 +2158,13 @@ public class GatherMaterialsGoal extends Goal implements GatheringGoal {
             return true;
         }
         if (this.isShovelBlock(state)) {
-            return this.hasTool(ShovelItem.class);
+            return this.hasTool(ItemTags.SHOVELS);
         }
         if (state.is(BlockTags.LOGS)) {
-            return this.hasTool(AxeItem.class) || this.canBootstrapLogByHand();
+            return this.hasTool(ItemTags.AXES) || this.canBootstrapLogByHand();
         }
         if (state.is(BlockTags.MINEABLE_WITH_AXE) || state.is(Blocks.CRAFTING_TABLE)) {
-            return this.hasTool(AxeItem.class);
+            return this.hasTool(ItemTags.AXES);
         }
         if (this.isStoneBlock(state) || this.isCoalOre(state)) {
             return this.hasTool(ItemTags.PICKAXES);
@@ -2175,7 +2173,7 @@ public class GatherMaterialsGoal extends Goal implements GatheringGoal {
     }
 
     private boolean canBootstrapLogByHand() {
-        return !this.hasTool(AxeItem.class) && !this.canCraftStarterGear();
+        return !this.hasTool(ItemTags.AXES) && !this.canCraftStarterGear();
     }
 
     private int getRequiredMineTicks(ServerLevel serverLevel, BlockState state) {
@@ -2205,21 +2203,21 @@ public class GatherMaterialsGoal extends Goal implements GatheringGoal {
 
     private boolean equipToolFor(BlockState state) {
         if (this.targetType == MaterialTarget.DIRT && this.isDirtPillarSupplyBlock(state)) {
-            if (!this.equipTool(ShovelItem.class)) {
+            if (!this.equipTool(ItemTags.SHOVELS)) {
                 this.equipEmptyHandForMining();
             }
             return true;
         }
         if (this.canClearSoftGroundByHand(state)) {
-            if (!this.equipTool(ShovelItem.class)) {
+            if (!this.equipTool(ItemTags.SHOVELS)) {
                 this.equipEmptyHandForMining();
             }
             return true;
         }
         if (this.isShovelBlock(state)) {
-            return this.equipTool(ShovelItem.class);
+            return this.equipTool(ItemTags.SHOVELS);
         } else if (state.is(BlockTags.LOGS) || state.is(BlockTags.MINEABLE_WITH_AXE) || state.is(Blocks.CRAFTING_TABLE)) {
-            if (this.equipTool(AxeItem.class)) {
+            if (this.equipTool(ItemTags.AXES)) {
                 return true;
             }
             if (state.is(BlockTags.LOGS) && this.canBootstrapLogByHand()) {
@@ -2238,7 +2236,7 @@ public class GatherMaterialsGoal extends Goal implements GatheringGoal {
 
     private boolean equipToolForPathObstruction(BlockState state) {
         if (this.canClearSoftGroundByHand(state)) {
-            if (!this.equipTool(ShovelItem.class)) {
+            if (!this.equipTool(ItemTags.SHOVELS)) {
                 this.equipEmptyHandForMining();
             }
             return true;
@@ -2368,7 +2366,7 @@ public class GatherMaterialsGoal extends Goal implements GatheringGoal {
     }
 
     private boolean canCraftAxeNow(ServerLevel serverLevel) {
-        if (this.hasTool(AxeItem.class)) {
+        if (this.hasTool(ItemTags.AXES)) {
             return false;
         }
         if (this.hasNearbyCraftingTable(serverLevel)) {
@@ -2470,7 +2468,7 @@ public class GatherMaterialsGoal extends Goal implements GatheringGoal {
     }
 
     private boolean hasFuel() {
-        return InventoryUtils.hasItem(this.playerNpc, stack -> !stack.isEmpty() && this.playerNpc.level().fuelValues().isFuel(stack));
+        return InventoryUtils.hasItem(this.playerNpc, stack -> !stack.isEmpty() && stack.has(net.minecraft.core.component.DataComponents.COOKING_FUEL));
     }
 
     private boolean hasNearbyCraftingTable(ServerLevel serverLevel) {

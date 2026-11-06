@@ -55,9 +55,9 @@ public class SmartNpcNeoForge {
 
         modEventBus.addListener((net.neoforged.fml.event.config.ModConfigEvent.Loading event) -> SmartNpcNamesConfig.onConfigLoading(event.getConfig()));
         modEventBus.addListener((net.neoforged.fml.event.config.ModConfigEvent.Reloading event) -> SmartNpcNamesConfig.onConfigReloading(event.getConfig()));
-        modContainer.registerConfig(ModConfig.Type.COMMON, SmartNpcConfig.SPEC, "smart_npc-server.toml");
-        modContainer.registerConfig(ModConfig.Type.COMMON, SmartNpcCompatConfig.SPEC, "smart_npc-compat.toml");
-        modContainer.registerConfig(ModConfig.Type.COMMON, SmartNpcNamesConfig.SPEC, "smart_npc-names.toml");
+        modContainer.registerConfig(ModConfig.Type.LOCAL, SmartNpcConfig.SPEC, "smart_npc-server.toml");
+        modContainer.registerConfig(ModConfig.Type.LOCAL, SmartNpcCompatConfig.SPEC, "smart_npc-compat.toml");
+        modContainer.registerConfig(ModConfig.Type.LOCAL, SmartNpcNamesConfig.SPEC, "smart_npc-names.toml");
 
         if (FMLEnvironment.getDist().isClient()) {
             modEventBus.register(SmartNpcModEntityRenderers.class);

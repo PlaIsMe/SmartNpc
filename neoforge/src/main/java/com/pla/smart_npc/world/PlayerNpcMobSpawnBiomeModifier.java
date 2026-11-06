@@ -11,7 +11,7 @@ import net.neoforged.neoforge.common.world.ModifiableBiomeInfo;
 public final class PlayerNpcMobSpawnBiomeModifier implements BiomeModifier {
 
     @Override
-    public void modify(Holder<Biome> biomeHolder, Phase phase, ModifiableBiomeInfo.BiomeInfo.Builder builder) {
+    public void modify(net.minecraft.core.RegistryAccess registries, Holder<Biome> biomeHolder, Phase phase, ModifiableBiomeInfo.BiomeInfo.Builder builder) {
         if (phase != Phase.ADD) {
             return;
         }

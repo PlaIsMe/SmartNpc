@@ -11,13 +11,6 @@ description='''${mod_description}'''
 config="smart_npc.mixins.json"
 
 [[dependencies.${mod_id}]]
-modId="yes_steve_model"
-type="optional"
-versionRange="[0,)"
-ordering="AFTER"
-side="BOTH"
-
-[[dependencies.${mod_id}]]
 modId="neoforge"
 type="required"
 versionRange="[${neo_version},)"
@@ -36,6 +29,6 @@ config="smart_npc.neoforge.mixins.json"
 [[dependencies.smart_npc]]
 modId="architectury"
 type="required"
-versionRange="[20.1.17,)"
+versionRange="[${architectury_version},)"
 ordering="AFTER"
 side="BOTH"

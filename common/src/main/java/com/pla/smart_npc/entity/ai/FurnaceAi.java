@@ -196,7 +196,7 @@ public final class FurnaceAi {
     }
 
     public static boolean isFuel(Level level, ItemStack stack) {
-        return !stack.isEmpty() && level.fuelValues().isFuel(stack);
+        return !stack.isEmpty() && stack.has(net.minecraft.core.component.DataComponents.COOKING_FUEL);
     }
 
     public static boolean isCookableFood(ItemStack stack) {

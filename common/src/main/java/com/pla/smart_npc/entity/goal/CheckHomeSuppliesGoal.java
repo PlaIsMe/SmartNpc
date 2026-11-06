@@ -25,14 +25,12 @@ import net.minecraft.world.InteractionHand;
 import net.minecraft.world.SimpleContainer;
 import net.minecraft.world.entity.ai.goal.Goal;
 import net.minecraft.world.item.ArrowItem;
-import net.minecraft.world.item.AxeItem;
 import net.minecraft.world.item.BowItem;
 import net.minecraft.world.item.CrossbowItem;
 import net.minecraft.world.item.FishingRodItem;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.item.ProjectileWeaponItem;
-import net.minecraft.world.item.ShovelItem;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.entity.AbstractFurnaceBlockEntity;
 import net.minecraft.world.level.block.entity.ChestBlockEntity;
@@ -385,7 +383,7 @@ public class CheckHomeSuppliesGoal extends Goal {
 
             movedAny = true;
             movedStacks++;
-            this.playerNpc.swing(InteractionHand.MAIN_HAND, true);
+            this.playerNpc.swing(InteractionHand.MAIN_HAND, this.playerNpc.getItemInHand(InteractionHand.MAIN_HAND).getInteractAnimation(), true);
             serverLevel.playSound(null, this.targetPos, SoundEvents.ITEM_PICKUP, SoundSource.BLOCKS, 0.4F, 1.0F);
         }
         chest.setChanged();
@@ -418,7 +416,7 @@ public class CheckHomeSuppliesGoal extends Goal {
         if (!this.addToInventory(moved)) {
             this.playerNpc.spawnAtLocation(moved);
         }
-        this.playerNpc.swing(InteractionHand.MAIN_HAND, true);
+        this.playerNpc.swing(InteractionHand.MAIN_HAND, this.playerNpc.getItemInHand(InteractionHand.MAIN_HAND).getInteractAnimation(), true);
         serverLevel.playSound(null, this.targetPos, SoundEvents.ITEM_PICKUP, SoundSource.BLOCKS, 0.4F, 1.0F);
         return true;
     }
@@ -526,31 +524,31 @@ public class CheckHomeSuppliesGoal extends Goal {
     }
 
     private boolean needsMissingTool(SupplyNeedSnapshot need, ItemStack stack) {
-        return need.axe() && stack.getItem() instanceof AxeItem
+        return need.axe() && stack.getItem().builtInRegistryHolder().is(ItemTags.AXES)
                 || need.pickaxe() && stack.is(ItemTags.PICKAXES)
-                || need.shovel() && stack.getItem() instanceof ShovelItem
+                || need.shovel() && stack.getItem().builtInRegistryHolder().is(ItemTags.SHOVELS)
                 || need.sword() && stack.is(ItemTags.SWORDS);
     }
 
     private boolean isToolStack(ItemStack stack) {
         return !stack.isEmpty()
-                && (stack.getItem() instanceof AxeItem
+                && (stack.getItem().builtInRegistryHolder().is(ItemTags.AXES)
                 || stack.is(ItemTags.PICKAXES)
-                || stack.getItem() instanceof ShovelItem
+                || stack.getItem().builtInRegistryHolder().is(ItemTags.SHOVELS)
                 || stack.is(ItemTags.SWORDS)
                 || stack.getItem() instanceof FishingRodItem);
     }
 
     private boolean needsToolSupply() {
-        return this.needsTool(AxeItem.class)
+        return this.needsTool(ItemTags.AXES)
                 || this.needsTool(ItemTags.PICKAXES)
-                || this.needsTool(ShovelItem.class)
+                || this.needsTool(ItemTags.SHOVELS)
                 || this.needsFishingRod()
                 || this.needsFishingString();
     }
 
     private boolean needsToolCraftingMaterials() {
-        return this.needsTool(AxeItem.class) || this.needsTool(ItemTags.PICKAXES);
+        return this.needsTool(ItemTags.AXES) || this.needsTool(ItemTags.PICKAXES);
     }
 
     private boolean needsTool(Object toolClass) {
@@ -603,9 +601,9 @@ public class CheckHomeSuppliesGoal extends Goal {
     }
 
     private SupplyNeedSnapshot createSupplyNeedSnapshot(ServerLevel serverLevel, boolean includeFurnaceOutput) {
-        boolean axe = this.needsTool(AxeItem.class);
+        boolean axe = this.needsTool(ItemTags.AXES);
         boolean pickaxe = this.needsTool(ItemTags.PICKAXES);
-        boolean shovel = this.needsTool(ShovelItem.class);
+        boolean shovel = this.needsTool(ItemTags.SHOVELS);
         boolean sword = this.needsTool(ItemTags.SWORDS);
         boolean fishingRod = this.needsFishingRod();
         boolean fishingString = this.needsFishingString();
@@ -692,7 +690,7 @@ public class CheckHomeSuppliesGoal extends Goal {
     }
 
     private boolean isFuel(ItemStack stack) {
-        return !stack.isEmpty() && this.playerNpc.level().fuelValues().isFuel(stack);
+        return !stack.isEmpty() && stack.has(net.minecraft.core.component.DataComponents.COOKING_FUEL);
     }
 
     private boolean isCurrentBuildSupply(ServerLevel serverLevel, ItemStack stack) {

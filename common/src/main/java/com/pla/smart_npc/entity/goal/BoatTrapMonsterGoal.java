@@ -70,7 +70,7 @@ public class BoatTrapMonsterGoal extends Goal {
             return;
         }
 
-        Boat boat = EntityType.OAK_BOAT.create(serverLevel, EntitySpawnReason.TRIGGERED);
+        Boat boat = net.minecraft.world.entity.EntityTypes.OAK_BOAT.create(serverLevel, EntitySpawnReason.TRIGGERED);
         if (boat == null) {
             InventoryUtils.addItem(this.playerNpc, boatStack);
             this.target = null;
@@ -89,7 +89,7 @@ public class BoatTrapMonsterGoal extends Goal {
         serverLevel.addFreshEntity(boat);
         this.target.startRiding(boat);
         this.playerNpc.getLookControl().setLookAt(this.target, 40.0F, 40.0F);
-        this.playerNpc.swing(InteractionHand.MAIN_HAND, true);
+        this.playerNpc.swing(InteractionHand.MAIN_HAND, this.playerNpc.getItemInHand(InteractionHand.MAIN_HAND).getInteractAnimation(), true);
         this.playerNpc.setCurrentAiState("ai.player_npc.trapping_monster_boat");
         this.playerNpc.setCurrentAiDetail(this.target.getDisplayName().getString());
         serverLevel.playSound(null, this.target.blockPosition(), SoundEvents.WOOD_PLACE, SoundSource.HOSTILE, 0.8F, 1.0F);

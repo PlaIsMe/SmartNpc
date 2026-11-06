@@ -625,7 +625,7 @@ public class ManageHomeBaseGoal extends Goal {
             return false;
         }
 
-        ItemStack bedStack = this.playerNpc.consumeInventoryItem(stack -> stack.getItem() instanceof BedItem, 1)
+        ItemStack bedStack = this.playerNpc.consumeInventoryItem(stack -> stack.getItem().builtInRegistryHolder().is(ItemTags.BEDS), 1)
                 .orElse(ItemStack.EMPTY);
         if (bedStack.isEmpty() || !(bedStack.getItem() instanceof BlockItem blockItem) || !(blockItem.getBlock() instanceof BedBlock bedBlock)) {
             return false;
@@ -783,7 +783,7 @@ public class ManageHomeBaseGoal extends Goal {
         if (moved > 0) {
             this.depositMovedAny = true;
             this.depositDelayTicks = DEPOSIT_INTERVAL_TICKS;
-            this.playerNpc.swing(InteractionHand.MAIN_HAND, true);
+            this.playerNpc.swing(InteractionHand.MAIN_HAND, this.playerNpc.getItemInHand(InteractionHand.MAIN_HAND).getInteractAnimation(), true);
             serverLevel.playSound(null, this.depositChestPos, SoundEvents.ITEM_PICKUP, SoundSource.BLOCKS, 0.4F, 1.0F);
             this.updateDepositDetail();
             return;
@@ -915,7 +915,7 @@ public class ManageHomeBaseGoal extends Goal {
                 || stack.is(Items.BUCKET)
                 || stack.is(Items.CRAFTING_TABLE)
                 || stack.is(Items.CHEST)
-                || stack.getItem() instanceof BedItem;
+                || stack.getItem().builtInRegistryHolder().is(ItemTags.BEDS);
     }
 
     private BlockPos findCraftingTableForHomeUse(ServerLevel serverLevel) {
@@ -1192,7 +1192,7 @@ public class ManageHomeBaseGoal extends Goal {
     }
 
     private boolean hasBedItem() {
-        return InventoryUtils.hasItem(this.playerNpc, stack -> stack.getItem() instanceof BedItem);
+        return InventoryUtils.hasItem(this.playerNpc, stack -> stack.getItem().builtInRegistryHolder().is(ItemTags.BEDS));
     }
 
     private int usedInventorySlots() {

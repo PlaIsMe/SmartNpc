@@ -150,7 +150,7 @@ public final class FarmCropGoal extends Goal {
             return state.getBlock() instanceof CropBlock crop
                     && !crop.isMaxAge(state)
                     && state.getBlock() instanceof BonemealableBlock bonemealable
-                    && bonemealable.isValidBonemealTarget(serverLevel, pos, state);
+                    && bonemealable.isValidBonemealTarget(serverLevel, pos, state, net.minecraft.world.level.block.BonemealSource.INTERACTION);
         });
     }
 
@@ -566,7 +566,7 @@ public final class FarmCropGoal extends Goal {
                 || !(state.getBlock() instanceof BonemealableBlock bonemealable)
                 || !(state.getBlock() instanceof CropBlock crop)
                 || crop.isMaxAge(state)
-                || !bonemealable.isValidBonemealTarget(serverLevel, this.targetPos, state)) {
+                || !bonemealable.isValidBonemealTarget(serverLevel, this.targetPos, state, net.minecraft.world.level.block.BonemealSource.INTERACTION)) {
             return false;
         }
         ItemStack boneMeal = this.playerNpc.consumeInventoryItem(Items.BONE_MEAL, 1).orElse(ItemStack.EMPTY);
@@ -574,7 +574,7 @@ public final class FarmCropGoal extends Goal {
             return false;
         }
         this.showActionItem(boneMeal);
-        bonemealable.performBonemeal(serverLevel, this.playerNpc.getRandom(), this.targetPos, state);
+        bonemealable.performBonemeal(serverLevel, this.playerNpc.getRandom(), this.targetPos, state, net.minecraft.world.level.block.BonemealSource.INTERACTION);
         if (serverLevel.getBlockState(this.targetPos).equals(state)) {
             this.returnStack(boneMeal);
             return false;
@@ -716,7 +716,7 @@ public final class FarmCropGoal extends Goal {
         return state.getBlock() instanceof CropBlock crop
                 && !crop.isMaxAge(state)
                 && state.getBlock() instanceof BonemealableBlock bonemealable
-                && bonemealable.isValidBonemealTarget(serverLevel, pos, state);
+                && bonemealable.isValidBonemealTarget(serverLevel, pos, state, net.minecraft.world.level.block.BonemealSource.INTERACTION);
     }
 
     private PlantingCrop findPlantingCrop() {

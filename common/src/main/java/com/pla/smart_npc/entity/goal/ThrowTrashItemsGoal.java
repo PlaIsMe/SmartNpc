@@ -197,7 +197,7 @@ public final class ThrowTrashItemsGoal extends Goal {
             inventory.setItem(selectedSlot, ItemStack.EMPTY);
             discarded.add(drop);
             npc.suppressItemPickupFor(PICKUP_SUPPRESSION_TICKS);
-            npc.swing(InteractionHand.MAIN_HAND);
+            npc.swing(InteractionHand.MAIN_HAND, npc.getItemInHand(InteractionHand.MAIN_HAND).getInteractAnimation());
             if (!chatEmitted) {
                 ChatUtil.throwTrash(npc);
                 chatEmitted = true;

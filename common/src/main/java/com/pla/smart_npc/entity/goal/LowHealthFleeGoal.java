@@ -17,7 +17,6 @@ import net.minecraft.tags.BlockTags;
 import net.minecraft.tags.ItemTags;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.ai.goal.Goal;
-import net.minecraft.world.item.BedItem;
 import net.minecraft.world.item.BlockItem;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
@@ -348,7 +347,7 @@ public class LowHealthFleeGoal extends Goal {
                 || stack.is(Items.CRAFTING_TABLE)
                 || stack.is(Items.CHEST)
                 || stack.is(Items.FURNACE)
-                || stack.getItem() instanceof BedItem
+                || stack.getItem().builtInRegistryHolder().is(ItemTags.BEDS)
                 || blockItem.getBlock().defaultBlockState().is(Blocks.TORCH)) {
             return false;
         }

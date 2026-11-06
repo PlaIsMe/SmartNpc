@@ -25,7 +25,7 @@ public final class NpcPlatformImpl {
         return new NpcPlatform.TeleportResult(event.isCanceled(), event.getTargetX(), event.getTargetY(), event.getTargetZ());
     }
     public static boolean projectileImpact(net.minecraft.world.entity.projectile.Projectile entity, net.minecraft.world.phys.HitResult hit) { return net.neoforged.neoforge.event.EventHooks.onProjectileImpact(entity, hit); }
-    public static void hurtAndBreak(ItemStack stack, int amount, ServerLevel level, net.minecraft.world.entity.LivingEntity entity, java.util.function.Consumer<net.minecraft.world.item.Item> broken) { stack.hurtAndBreak(amount, level, entity, broken); }
+    public static void hurtAndBreak(ItemStack stack, int amount, ServerLevel level, net.minecraft.world.entity.LivingEntity entity, java.util.function.Consumer<ItemStack> broken) { stack.hurtAndBreak(amount, level, entity, broken); }
     public static net.minecraft.world.entity.EquipmentSlot equipmentSlot(ItemStack stack) { return stack.getEquipmentSlot(); }
     public static net.minecraft.world.InteractionHand bowHand(com.pla.smart_npc.entity.PlayerNpcEntity npc) { return net.minecraft.world.entity.projectile.ProjectileUtil.getWeaponHoldingHand(npc, npc::canFireProjectileWeapon); }
     public static net.minecraft.world.entity.ai.goal.Goal rangedBowGoal(com.pla.smart_npc.entity.PlayerNpcEntity npc, double speed, int interval, float radius) { return new net.minecraft.world.entity.ai.goal.RangedBowAttackGoal<>(npc, speed, interval, radius); }

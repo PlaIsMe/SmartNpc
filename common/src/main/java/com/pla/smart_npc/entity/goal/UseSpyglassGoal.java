@@ -70,7 +70,7 @@ public class UseSpyglassGoal extends Goal {
         this.playerNpc.getNavigation().stop();
         this.playerNpc.setCurrentAiState("ai.player_npc.using_spyglass");
         this.playerNpc.startUsingItem(InteractionHand.MAIN_HAND);
-        this.playerNpc.swing(InteractionHand.MAIN_HAND, true);
+        this.playerNpc.swing(InteractionHand.MAIN_HAND, this.playerNpc.getItemInHand(InteractionHand.MAIN_HAND).getInteractAnimation(), true);
     }
 
     @Override

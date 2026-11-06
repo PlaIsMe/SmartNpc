@@ -33,11 +33,9 @@ import net.minecraft.world.SimpleContainer;
 import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.ai.goal.Goal;
 import net.minecraft.world.entity.LivingEntity;
-import net.minecraft.world.item.AxeItem;
 import net.minecraft.world.item.BlockItem;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
-import net.minecraft.world.item.ShovelItem;
 import net.minecraft.world.level.block.BedBlock;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.CropBlock;
@@ -2935,7 +2933,7 @@ public class EscapeHoleWithBlockGoal extends Goal {
                 motion.y,
                 dz / length * EXPLORATION_CLIMB_STEP_OFF_SPEED
         );
-        this.playerNpc.hurtMarked = true;
+        this.playerNpc.syncVelocity = true;
         this.playerNpc.setCurrentAiDetail("exploration climb forced step off @ "
                 + posText(this.explorationClimbStepOffStartPos)
                 + " -> "
@@ -4623,12 +4621,12 @@ public class EscapeHoleWithBlockGoal extends Goal {
                 || state.is(Blocks.GRASS_BLOCK)
                 || state.is(Blocks.GRAVEL)
                 || state.is(Blocks.SAND)) {
-            if (!this.equipTool(ShovelItem.class)) {
+            if (!this.equipTool(ItemTags.SHOVELS)) {
                 this.equipEmptyHandForMining();
             }
             return true;
         } else if (state.is(BlockTags.MINEABLE_WITH_AXE) || state.is(BlockTags.LOGS) || state.is(Blocks.CRAFTING_TABLE)) {
-            return this.equipTool(AxeItem.class);
+            return this.equipTool(ItemTags.AXES);
         } else if (state.is(BlockTags.MINEABLE_WITH_PICKAXE) || state.requiresCorrectToolForDrops()) {
             return this.equipTool(ItemTags.PICKAXES);
         }

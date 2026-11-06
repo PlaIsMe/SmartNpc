@@ -9,10 +9,8 @@ import com.pla.smart_npc.util.InventoryUtils;
 import net.minecraft.tags.BlockTags;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.entity.EquipmentSlot;
-import net.minecraft.world.item.AxeItem;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
-import net.minecraft.world.item.ShovelItem;
 import net.minecraft.world.level.ItemLike;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
@@ -35,7 +33,7 @@ public final class ToolAi {
         if (this.equipTool(toolClass)) {
             return true;
         }
-        if (toolClass == ShovelItem.class) {
+        if (toolClass == ItemTags.SHOVELS) {
             this.equipEmptyMainHand();
         }
         return false;
@@ -55,14 +53,14 @@ public final class ToolAi {
         if (state.is(BlockTags.LOGS)
                 || state.is(BlockTags.LEAVES)
                 || state.is(BlockTags.MINEABLE_WITH_AXE)) {
-            return AxeItem.class;
+            return ItemTags.AXES;
         }
         if (state.is(BlockTags.MINEABLE_WITH_SHOVEL)
                 || state.is(Blocks.DIRT)
                 || state.is(Blocks.GRASS_BLOCK)
                 || state.is(Blocks.SAND)
                 || state.is(Blocks.RED_SAND)) {
-            return ShovelItem.class;
+            return ItemTags.SHOVELS;
         }
         if (state.is(BlockTags.MINEABLE_WITH_PICKAXE)) {
             return ItemTags.PICKAXES;
