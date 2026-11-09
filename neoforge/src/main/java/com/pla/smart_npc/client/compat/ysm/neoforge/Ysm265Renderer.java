@@ -12,6 +12,7 @@ import com.pla.smart_npc.client.compat.YesSteveModelClientCompat;
 import com.pla.smart_npc.client.compat.YesSteveModelClientCompat.Frame;
 import com.pla.smart_npc.client.renderer.FakePlayerTextureUtils;
 import com.pla.smart_npc.entity.PlayerNpcEntity;
+import com.pla.smart_npc.entity.FishingRodCastState;
 import com.pla.smart_npc.SmartNpc;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.player.RemotePlayer;
@@ -171,6 +172,9 @@ public final class Ysm265Renderer implements YesSteveModelClientCompat.Renderer 
         }
 
         private void copyFrom(PlayerNpcEntity npc) {
+            // The proxy has no vanilla FishingHook; copy visual cast state before item extraction.
+            this.player.mainHandFishingCast = npc.isFishingRodCast(InteractionHand.MAIN_HAND);
+            this.player.offHandFishingCast = npc.isFishingRodCast(InteractionHand.OFF_HAND);
             this.player.setPos(npc.getX(), npc.getY(), npc.getZ());
             this.player.xo = npc.xo;
             this.player.yo = npc.yo;
@@ -219,7 +223,9 @@ public final class Ysm265Renderer implements YesSteveModelClientCompat.Renderer 
         }
     }
 
-    private static final class DisplayPlayer extends RemotePlayer {
+    private static final class DisplayPlayer extends RemotePlayer implements FishingRodCastState {
+        private boolean mainHandFishingCast;
+        private boolean offHandFishingCast;
         private PlayerSkin skin;
         private GameProfile skinProfile;
         private boolean inWater;
@@ -229,6 +235,11 @@ public final class Ysm265Renderer implements YesSteveModelClientCompat.Renderer 
 
         private DisplayPlayer(ClientLevel level, GameProfile profile) {
             super(level, profile);
+        }
+
+        @Override
+        public boolean isFishingRodCast(InteractionHand hand) {
+            return hand == InteractionHand.MAIN_HAND ? this.mainHandFishingCast : this.offHandFishingCast;
         }
 
         @Override

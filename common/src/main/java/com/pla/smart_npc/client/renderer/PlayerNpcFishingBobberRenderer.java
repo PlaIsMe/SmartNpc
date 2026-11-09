@@ -16,6 +16,7 @@ import net.minecraft.client.renderer.state.level.CameraRenderState;
 import net.minecraft.client.renderer.texture.OverlayTexture;
 import net.minecraft.resources.Identifier;
 import net.minecraft.util.Mth;
+import net.minecraft.world.InteractionHand;
 import net.minecraft.world.entity.HumanoidArm;
 import net.minecraft.world.phys.Vec3;
 
@@ -35,6 +36,7 @@ public class PlayerNpcFishingBobberRenderer
         poseStack.pushPose();
         poseStack.pushPose();
         poseStack.scale(0.5F, 0.5F, 0.5F);
+        // Keep the camera-facing quad; the extra 1.20.1 Y rotation would hide it.
         poseStack.mulPose(camera.orientation);
         collector.submitCustomGeometry(poseStack, RENDER_TYPE, (pose, buffer) -> {
             vertex(buffer, pose, state.lightCoords, 0.0F, 0, 0, 1);
@@ -74,13 +76,13 @@ public class PlayerNpcFishingBobberRenderer
             state.lineOriginOffset = Vec3.ZERO;
             return;
         }
-        Vec3 hand = getHandPosition(angler, partialTicks);
+        Vec3 hand = getHandPosition(angler, entity.getCastHand(), partialTicks);
         Vec3 bobber = entity.getPosition(partialTicks).add(0.0D, 0.25D, 0.0D);
         state.lineOriginOffset = hand.subtract(bobber);
     }
 
-    private static Vec3 getHandPosition(PlayerNpcEntity angler, float partialTicks) {
-        int side = getLineHandSide(angler);
+    private static Vec3 getHandPosition(PlayerNpcEntity angler, InteractionHand hand, float partialTicks) {
+        int side = getLineHandSide(angler, hand);
         float yaw = Mth.lerp(partialTicks, angler.yBodyRotO, angler.yBodyRot) * ((float) Math.PI / 180.0F);
         double sin = Mth.sin(yaw);
         double cos = Mth.cos(yaw);
@@ -91,9 +93,9 @@ public class PlayerNpcFishingBobberRenderer
                         -sin * sideOffset + cos * 0.8D);
     }
 
-    private static int getLineHandSide(PlayerNpcEntity angler) {
+    private static int getLineHandSide(PlayerNpcEntity angler, InteractionHand hand) {
         int side = angler.getMainArm() == HumanoidArm.RIGHT ? 1 : -1;
-        return com.pla.smart_npc.platform.NpcPlatform.canPerformAction(angler.getMainHandItem(), "FISHING_ROD_CAST") ? side : -side;
+        return hand == InteractionHand.OFF_HAND ? -side : side;
     }
 
     private static float fraction(int numerator, int denominator) {
