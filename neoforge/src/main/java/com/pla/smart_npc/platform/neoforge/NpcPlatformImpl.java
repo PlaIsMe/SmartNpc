@@ -5,12 +5,23 @@ import net.minecraft.nbt.CompoundTag;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.EntityType;
+import net.minecraft.world.entity.MobCategory;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.core.BlockPos;
 public final class NpcPlatformImpl {
+    public static <T extends Entity> EntityType<T> createEntityType(String id, EntityType.EntityFactory<T> factory,
+            MobCategory category, float width, float height, int trackingRangeChunks, int updateInterval) {
+        return EntityType.Builder.of(factory, category)
+                .sized(width, height)
+                .clientTrackingRange(trackingRangeChunks)
+                .updateInterval(updateInterval)
+                .build(id);
+    }
+
     public static CompoundTag persistentData(Entity entity) { return entity.getPersistentData(); }
     public static CompoundTag persistentData(BlockEntity entity) { return entity.getPersistentData(); }
     public static boolean canPerformAction(ItemStack stack, String action) { return stack.canPerformAction(net.neoforged.neoforge.common.ItemAbility.get(action.toLowerCase(java.util.Locale.ROOT))); }

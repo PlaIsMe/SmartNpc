@@ -13,9 +13,8 @@ import net.minecraft.client.renderer.texture.OverlayTexture;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.util.Mth;
 import net.minecraft.world.entity.HumanoidArm;
-import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.InteractionHand;
 import net.minecraft.world.phys.Vec3;
-import com.pla.smart_npc.platform.NpcPlatform;
 import org.jetbrains.annotations.NotNull;
 
 public class PlayerNpcFishingBobberRenderer extends EntityRenderer<PlayerNpcFishingBobberEntity> {
@@ -46,7 +45,7 @@ public class PlayerNpcFishingBobberRenderer extends EntityRenderer<PlayerNpcFish
         vertex(hookConsumer, pose, packedLight, 0.0F, 1, 0, 0);
         poseStack.popPose();
 
-        Vec3 handPosition = getHandPosition(angler, partialTicks);
+        Vec3 handPosition = getHandPosition(angler, entity.getCastHand(), partialTicks);
         double bobberX = Mth.lerp((double) partialTicks, entity.xo, entity.getX());
         double bobberY = Mth.lerp((double) partialTicks, entity.yo, entity.getY()) + 0.25D;
         double bobberZ = Mth.lerp((double) partialTicks, entity.zo, entity.getZ());
@@ -64,8 +63,8 @@ public class PlayerNpcFishingBobberRenderer extends EntityRenderer<PlayerNpcFish
         super.render(entity, entityYaw, partialTicks, poseStack, buffer, packedLight);
     }
 
-    private static Vec3 getHandPosition(PlayerNpcEntity angler, float partialTicks) {
-        int handSide = getLineHandSide(angler);
+    private static Vec3 getHandPosition(PlayerNpcEntity angler, InteractionHand hand, float partialTicks) {
+        int handSide = getLineHandSide(angler, hand);
         float bodyYaw = Mth.lerp(partialTicks, angler.yBodyRotO, angler.yBodyRot) * ((float) Math.PI / 180F);
         double bodySin = Mth.sin(bodyYaw);
         double bodyCos = Mth.cos(bodyYaw);
@@ -76,10 +75,9 @@ public class PlayerNpcFishingBobberRenderer extends EntityRenderer<PlayerNpcFish
         return new Vec3(x, y, z);
     }
 
-    private static int getLineHandSide(PlayerNpcEntity angler) {
+    private static int getLineHandSide(PlayerNpcEntity angler, InteractionHand hand) {
         int handSide = angler.getMainArm() == HumanoidArm.RIGHT ? 1 : -1;
-        ItemStack mainHand = angler.getMainHandItem();
-        if (!NpcPlatform.canPerformAction(mainHand, "FISHING_ROD_CAST")) {
+        if (hand == InteractionHand.OFF_HAND) {
             handSide = -handSide;
         }
         return handSide;
