@@ -25,6 +25,8 @@ public class RandomCombatJumpGoal extends Goal {
         if (!this.hasCombatTarget()
                 || this.playerNpc.isNoAi()
                 || this.playerNpc.isPassenger()
+                // Shared melee pursuit owns paced sprint-jumps; don't add a second jump source.
+                || this.playerNpc.isSprinting()
                 || this.playerNpc.isInWaterOrBubble()
                 || this.playerNpc.isInLava()
                 || !this.playerNpc.onGround()) {

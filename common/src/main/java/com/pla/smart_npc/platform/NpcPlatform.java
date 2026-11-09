@@ -6,10 +6,16 @@ import net.minecraft.nbt.CompoundTag;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.EntityType;
+import net.minecraft.world.entity.MobCategory;
 import net.minecraft.world.item.ItemStack;
 
 public final class NpcPlatform {
     private NpcPlatform() {}
+    @ExpectPlatform
+    public static <T extends Entity> EntityType<T> createEntityType(String id, EntityType.EntityFactory<T> factory,
+            MobCategory category, float width, float height, int trackingRangeChunks, int updateInterval) { throw new AssertionError(); }
+
     public record TeleportResult(boolean isCanceled, double getTargetX, double getTargetY, double getTargetZ) {}
     @ExpectPlatform
     public static TeleportResult teleportCommand(Entity entity, double x, double y, double z) { throw new AssertionError(); }

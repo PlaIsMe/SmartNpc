@@ -14,7 +14,7 @@ import yesman.epicfight.world.capabilities.entitypatch.MobPatch;
 import java.util.EnumSet;
 import java.util.function.BooleanSupplier;
 
-public final class AdvancedChasingGoal extends Goal {
+public final class AdvancedChasingGoal extends Goal implements CombatMovementAi.PursuitGoal {
     private final MobPatch<? extends Mob> mobPatch;
     private final Mob mob;
     private final double attackRadius;
@@ -44,6 +44,11 @@ public final class AdvancedChasingGoal extends Goal {
 
     @Override
     public boolean canContinueToUse() {
+        return this.canChase(this.mob.getTarget());
+    }
+
+    @Override
+    public boolean canSupportCombatFishing() {
         return this.canChase(this.mob.getTarget());
     }
 

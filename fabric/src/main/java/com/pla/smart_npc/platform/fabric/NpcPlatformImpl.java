@@ -6,11 +6,25 @@ import net.minecraft.nbt.CompoundTag;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.EntityDimensions;
+import net.minecraft.world.entity.EntityType;
+import net.minecraft.world.entity.MobCategory;
+import net.fabricmc.fabric.api.object.builder.v1.entity.FabricEntityTypeBuilder;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.FishingRodItem;
 import net.minecraft.world.item.UseAnim;
 
 public final class NpcPlatformImpl {
+    public static <T extends Entity> EntityType<T> createEntityType(String id, EntityType.EntityFactory<T> factory,
+            MobCategory category, float width, float height, int trackingRangeChunks, int updateInterval) {
+        // Custom entities have no vanilla data fixer; Fabric's builder keeps saving enabled without that lookup.
+        return FabricEntityTypeBuilder.create(category, factory)
+                .dimensions(EntityDimensions.scalable(width, height))
+                .trackRangeChunks(trackingRangeChunks)
+                .trackedUpdateRate(updateInterval)
+                .build();
+    }
+
     public static CompoundTag persistentData(net.minecraft.world.level.block.entity.BlockEntity blockEntity) { return ((PersistentEntityData) blockEntity).smartNpc$persistentData(); }
     public static boolean canDisableShield(ItemStack weapon, ItemStack shield, net.minecraft.world.entity.LivingEntity defender, net.minecraft.world.entity.LivingEntity attacker) { return weapon.getItem() instanceof net.minecraft.world.item.AxeItem; }
     public static net.minecraft.world.entity.projectile.AbstractArrow customArrow(net.minecraft.world.item.BowItem bow, net.minecraft.world.entity.projectile.AbstractArrow arrow, ItemStack ammunition, ItemStack weapon) { return arrow; }
