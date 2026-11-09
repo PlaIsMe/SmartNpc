@@ -13,15 +13,20 @@ import net.minecraft.sounds.SoundEvents;
 import net.minecraft.tags.FluidTags;
 import net.minecraft.util.Mth;
 import net.minecraft.util.RandomSource;
+import net.minecraft.world.InteractionHand;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.ExperienceOrb;
+import net.minecraft.world.entity.HumanoidArm;
+import net.minecraft.world.entity.InterpolationHandler;
+import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.MoverType;
 import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.entity.projectile.Projectile;
 import net.minecraft.world.entity.projectile.ProjectileUtil;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
+import net.minecraft.world.level.ClipContext;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.material.FluidState;
@@ -46,6 +51,7 @@ import java.util.List;
 public class PlayerNpcFishingBobberEntity extends Projectile {
     private static final EntityDataAccessor<Integer> DATA_HOOKED_ENTITY = SynchedEntityData.defineId(PlayerNpcFishingBobberEntity.class, EntityDataSerializers.INT);
     private static final EntityDataAccessor<Boolean> DATA_BITING = SynchedEntityData.defineId(PlayerNpcFishingBobberEntity.class, EntityDataSerializers.BOOLEAN);
+    private static final EntityDataAccessor<Boolean> DATA_COMBAT_CAST = SynchedEntityData.defineId(PlayerNpcFishingBobberEntity.class, EntityDataSerializers.BOOLEAN);
     private static final int MAX_OUT_OF_WATER_TICKS = 10;
     private static final int KEEP_ALIVE_TICKS = 100;
     private static final int XP_PER_CATCH = 2;
@@ -60,6 +66,7 @@ public class PlayerNpcFishingBobberEntity extends Projectile {
     private static final int HOOK_TIME_MAX_TICKS = 20 * 4;
 
     private final RandomSource synchronizedRandom = RandomSource.create();
+    private final InterpolationHandler interpolationHandler = new InterpolationHandler(this);
     @Nullable
     private PlayerNpcEntity angler;
     @Nullable
@@ -76,6 +83,8 @@ public class PlayerNpcFishingBobberEntity extends Projectile {
     private float fishAngle;
     private boolean openWater = true;
     private State currentState = State.FLYING;
+    @Nullable
+    private LivingEntity combatTarget;
 
     public PlayerNpcFishingBobberEntity(EntityType<? extends PlayerNpcFishingBobberEntity> entityType, Level level) {
         super(entityType, level);
@@ -117,10 +126,46 @@ public class PlayerNpcFishingBobberEntity extends Projectile {
         this.xRotO = this.getXRot();
     }
 
+    public void castAtCombatTarget(PlayerNpcEntity angler, LivingEntity target) {
+        this.angler = angler;
+        this.anglerId = angler.getId();
+        this.setOwner(angler);
+        this.combatTarget = target;
+        this.getEntityData().set(DATA_COMBAT_CAST, true);
+        int side = angler.getMainArm() == HumanoidArm.RIGHT ? -1 : 1;
+        float yaw = angler.yBodyRot * Mth.DEG_TO_RAD;
+        Vec3 start = new Vec3(angler.getX() - Mth.cos(yaw) * side * 0.35D,
+                angler.getEyeY() - 0.45D, angler.getZ() - Mth.sin(yaw) * side * 0.35D);
+        Vec3 toTarget = target.position().add(0.0D, target.getBbHeight() * 0.6D, 0.0D).subtract(start);
+        double flightTicks = toTarget.length() / 1.5D;
+        // A ballistic aim, not a homing hook: moving targets can evade the actual projectile.
+        Vec3 aim = toTarget.add(0.0D, 0.015D * flightTicks * flightTicks, 0.0D);
+        this.setPos(start);
+        this.shoot(aim.x, aim.y, aim.z, 1.5F, 0.0F);
+    }
+
+    public InteractionHand getCastHand() {
+        return this.isCombatCast() ? InteractionHand.OFF_HAND : InteractionHand.MAIN_HAND;
+    }
+
+    private boolean isCombatCast() {
+        return this.getEntityData().get(DATA_COMBAT_CAST);
+    }
+
+    public boolean isHookedTo(Entity target) {
+        return this.isCombatCast() && this.hookedIn == target;
+    }
+
+    @Override
+    public InterpolationHandler getInterpolation() {
+        return this.interpolationHandler;
+    }
+
     @Override
     protected void defineSynchedData(SynchedEntityData.Builder builder) {
         builder.define(DATA_HOOKED_ENTITY, 0);
         builder.define(DATA_BITING, false);
+        builder.define(DATA_COMBAT_CAST, false);
     }
 
     @Override
@@ -149,6 +194,7 @@ public class PlayerNpcFishingBobberEntity extends Projectile {
     @Override
     public void tick() {
         this.synchronizedRandom.setSeed(this.getUUID().getLeastSignificantBits() ^ this.level().getGameTime());
+        this.interpolationHandler.interpolate();
         super.tick();
 
         PlayerNpcEntity currentAngler = this.getAngler();
@@ -161,6 +207,10 @@ public class PlayerNpcFishingBobberEntity extends Projectile {
             return;
         }
         if (!this.level().isClientSide() && this.shouldStopFishing(currentAngler)) {
+            return;
+        }
+        if (this.isCombatCast()) {
+            this.tickCombatHook();
             return;
         }
 
@@ -239,9 +289,34 @@ public class PlayerNpcFishingBobberEntity extends Projectile {
         this.reapplyPosition();
     }
 
+    private void tickCombatHook() {
+        int hookedId = this.getEntityData().get(DATA_HOOKED_ENTITY);
+        if (this.hookedIn == null && hookedId > 0) {
+            this.hookedIn = this.level().getEntity(hookedId - 1);
+        }
+        if (this.hookedIn != null) {
+            if (!this.hookedIn.isAlive() || this.hookedIn.isRemoved() || this.hookedIn.level() != this.level()) {
+                this.discard();
+                return;
+            }
+            this.setPos(this.hookedIn.getX(), this.hookedIn.getY(0.6D), this.hookedIn.getZ());
+            this.setDeltaMovement(Vec3.ZERO);
+            return;
+        }
+        if (!this.level().isClientSide()) {
+            this.checkCollision();
+            if (this.isRemoved() || this.hookedIn != null) {
+                return;
+            }
+        }
+        this.move(MoverType.SELF, this.getDeltaMovement());
+        this.updateRotation();
+        this.setDeltaMovement(this.getDeltaMovement().scale(0.99D).add(0.0D, -0.03D, 0.0D));
+        this.reapplyPosition();
+    }
+
     private boolean shouldStopFishing(PlayerNpcEntity currentAngler) {
-        boolean hasRod = NpcPlatform.canPerformAction(currentAngler.getMainHandItem(), "FISHING_ROD_CAST")
-                || NpcPlatform.canPerformAction(currentAngler.getOffhandItem(), "FISHING_ROD_CAST");
+        boolean hasRod = NpcPlatform.canPerformAction(currentAngler.getItemInHand(this.getCastHand()), "FISHING_ROD_CAST");
         if (!currentAngler.isRemoved()
                 && currentAngler.isAlive()
                 && hasRod
@@ -269,13 +344,26 @@ public class PlayerNpcFishingBobberEntity extends Projectile {
     protected void onHitEntity(@NotNull EntityHitResult result) {
         super.onHitEntity(result);
         if (!this.level().isClientSide()) {
+            if (this.isCombatCast() && result.getEntity() != this.combatTarget) {
+                this.discard();
+                return;
+            }
             this.setHookedEntity(result.getEntity());
+            if (this.isCombatCast()) {
+                this.setPos(result.getEntity().getX(), result.getEntity().getY(0.6D), result.getEntity().getZ());
+                this.setDeltaMovement(Vec3.ZERO);
+            }
         }
     }
 
     @Override
     protected void onHitBlock(@NotNull BlockHitResult result) {
         super.onHitBlock(result);
+        if (this.isCombatCast()) {
+            this.setPos(result.getLocation());
+            this.discard();
+            return;
+        }
         this.setDeltaMovement(this.getDeltaMovement().normalize().scale(result.distanceTo(this)));
     }
 
@@ -438,6 +526,10 @@ public class PlayerNpcFishingBobberEntity extends Projectile {
     }
 
     public int retrieve(ItemStack rod) {
+        if (this.isCombatCast()) {
+            this.discard();
+            return 0;
+        }
         PlayerNpcEntity currentAngler = this.getAngler();
         if (this.level().isClientSide() || currentAngler == null || this.shouldStopFishing(currentAngler)) {
             return 0;
@@ -461,14 +553,44 @@ public class PlayerNpcFishingBobberEntity extends Projectile {
         return rodDamage;
     }
 
+    /** A combat catch never enters the fishing loot path and never pulls a missed target. */
+    public int retrieveCombat(LivingEntity target) {
+        PlayerNpcEntity currentAngler = this.getAngler();
+        if (this.level().isClientSide() || !this.isCombatCast()) {
+            return 0;
+        }
+        int damage = 0;
+        if (currentAngler != null && !this.shouldStopFishing(currentAngler)
+                && target == this.combatTarget && this.isHookedTo(target) && target.isAlive()
+                && !target.isRemoved() && target.level() == this.level() && currentAngler.getTarget() == target
+                && currentAngler.distanceToSqr(target) <= 1024.0D
+                && !currentAngler.isNoAi() && !currentAngler.isHealing() && !currentAngler.isUsingItem()
+                && !currentAngler.isAlliedTo(target) && !target.isAlliedTo(currentAngler)
+                && this.level().clip(new ClipContext(currentAngler.getEyePosition(),
+                        target.position().add(0.0D, target.getBbHeight() * 0.6D, 0.0D),
+                        ClipContext.Block.COLLIDER, ClipContext.Fluid.NONE, currentAngler)).getType() == HitResult.Type.MISS) {
+            Vec3 pull = currentAngler.position().subtract(target.position()).normalize().scale(0.48D);
+            Vec3 motion = target.getDeltaMovement();
+            target.setDeltaMovement(motion.x + pull.x, Math.min(motion.y + 0.12D, 0.35D), motion.z + pull.z);
+            target.hurtMarked = true;
+            target.needsSync = true;
+            damage = 5;
+        }
+        this.discard();
+        return damage;
+    }
+
     private void generateFishingLoot(ServerLevel serverLevel, PlayerNpcEntity currentAngler, ItemStack rod) {
-        LootParams lootParams = new LootParams.Builder(serverLevel)
+        LootParams.Builder lootParamsBuilder = new LootParams.Builder(serverLevel)
                 .withParameter(LootContextParams.ORIGIN, this.position())
                 .withParameter(LootContextParams.TOOL, rod)
                 .withParameter(LootContextParams.THIS_ENTITY, this)
-                .withOptionalParameter(LootContextParams.ATTACKING_ENTITY, currentAngler)
-                .withLuck(this.luck)
-                .create(LootContextParamSets.FISHING);
+                .withLuck(this.luck);
+        // Only loader parameter sets that permit the angler may include it.
+        if (LootContextParamSets.FISHING.allowed().contains(LootContextParams.ATTACKING_ENTITY)) {
+            lootParamsBuilder.withParameter(LootContextParams.ATTACKING_ENTITY, currentAngler);
+        }
+        LootParams lootParams = lootParamsBuilder.create(LootContextParamSets.FISHING);
         LootTable lootTable = serverLevel.getServer().reloadableRegistries().getLootTable(BuiltInLootTables.FISHING);
         List<ItemStack> loot = lootTable.getRandomItems(lootParams);
         for (ItemStack stack : loot) {

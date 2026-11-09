@@ -171,7 +171,7 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.function.Predicate;
 
-public class PlayerNpcEntity extends FakePlayer implements RangedAttackMob {
+public class PlayerNpcEntity extends FakePlayer implements RangedAttackMob, FishingRodCastState {
     private static final EntityDataAccessor<Integer> MAIN_HAND_ATTACK_ANIMATION_TICKS = SynchedEntityData.defineId(PlayerNpcEntity.class, EntityDataSerializers.INT);
     private static final EntityDataAccessor<Boolean> SOCIAL_NOTICE_PAUSES_WORK = SynchedEntityData.defineId(PlayerNpcEntity.class, EntityDataSerializers.BOOLEAN);
     private static final EntityDataAccessor<Boolean> HEALING = SynchedEntityData.defineId(PlayerNpcEntity.class, EntityDataSerializers.BOOLEAN);
@@ -181,6 +181,7 @@ public class PlayerNpcEntity extends FakePlayer implements RangedAttackMob {
     private static final EntityDataAccessor<String> AI_DETAIL = SynchedEntityData.defineId(PlayerNpcEntity.class, EntityDataSerializers.STRING);
     private static final EntityDataAccessor<Boolean> DANCING = SynchedEntityData.defineId(PlayerNpcEntity.class, EntityDataSerializers.BOOLEAN);
     private static final EntityDataAccessor<Boolean> SNEAKING_AI_HIDES_DISPLAY_NAME = SynchedEntityData.defineId(PlayerNpcEntity.class, EntityDataSerializers.BOOLEAN);
+    private static final EntityDataAccessor<Byte> FISHING_ROD_CAST_HAND = SynchedEntityData.defineId(PlayerNpcEntity.class, EntityDataSerializers.BYTE);
     private static final int MAIN_HAND_ATTACK_ANIMATION_DURATION = 10;
     private static final int BETTER_COMBAT_ATTACK_ANIMATION_DURATION = 120;
     private static final int MAIN_HAND_USE_ANIMATION_DURATION = 6;
@@ -1725,7 +1726,8 @@ public class PlayerNpcEntity extends FakePlayer implements RangedAttackMob {
 
     public PlayerNpcEntity(EntityType<? extends PlayerNpcEntity> entitytype, Level level) {
         super(entitytype, level);
-        Objects.requireNonNull(this.getAttribute(Attributes.STEP_HEIGHT)).setBaseValue(1.0D);
+        // Match player stepping; vanilla MoveControl jumps up full blocks along the existing path.
+        Objects.requireNonNull(this.getAttribute(Attributes.STEP_HEIGHT)).setBaseValue(0.6D);
         this.xpReward = 50;
         this.setNoAi(false);
         this.setCustomNameVisible(true);
@@ -1768,6 +1770,7 @@ public class PlayerNpcEntity extends FakePlayer implements RangedAttackMob {
         builder.define(AI_DETAIL, "");
         builder.define(DANCING, false);
         builder.define(SNEAKING_AI_HIDES_DISPLAY_NAME, false);
+        builder.define(FISHING_ROD_CAST_HAND, (byte) 0);
     }
 
     @Override
@@ -1880,6 +1883,8 @@ public class PlayerNpcEntity extends FakePlayer implements RangedAttackMob {
     @Override
     protected void readAdditionalSaveData(@NotNull ValueInput tag) {
         super.readAdditionalSaveData(tag);
+        // Older NPC saves contain the previous one-block base step height.
+        Objects.requireNonNull(this.getAttribute(Attributes.STEP_HEIGHT)).setBaseValue(0.6D);
         // Fresh /summon input has no saved UUID; preserve legacy loaded identities.
         this.pendingSpawnInitialization = tag.getBooleanOr(PENDING_SPAWN_INITIALIZATION_TAG, false);
         this.inventory.fromItemList(tag.listOrEmpty("Inventory", ItemStack.CODEC));
@@ -2954,6 +2959,18 @@ public class PlayerNpcEntity extends FakePlayer implements RangedAttackMob {
 
     public String getCurrentAiState() {
         return this.entityData.get(AI_STATE);
+    }
+
+    @Override
+    public boolean isFishingRodCast(InteractionHand hand) {
+        return this.isAlive() && this.entityData.get(FISHING_ROD_CAST_HAND) == (hand == InteractionHand.MAIN_HAND ? 1 : 2);
+    }
+
+    public void setFishingRodCast(InteractionHand hand, boolean cast) {
+        byte handId = (byte) (hand == InteractionHand.MAIN_HAND ? 1 : 2);
+        if (cast || this.entityData.get(FISHING_ROD_CAST_HAND) == handId) {
+            this.entityData.set(FISHING_ROD_CAST_HAND, cast ? handId : (byte) 0);
+        }
     }
 
     public void setCurrentAiState(String state) {
@@ -5128,7 +5145,7 @@ public class PlayerNpcEntity extends FakePlayer implements RangedAttackMob {
         builder = builder.add(Attributes.FOLLOW_RANGE, 48.0D);
         builder = builder.add(Attributes.MINING_EFFICIENCY, 0.0D);
         builder = builder.add(Attributes.SUBMERGED_MINING_SPEED, 0.2D);
-        builder = builder.add(Attributes.STEP_HEIGHT, 1.0D);
+        builder = builder.add(Attributes.STEP_HEIGHT, 0.6D);
         return builder;
     }
 }
