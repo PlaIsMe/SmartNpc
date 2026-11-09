@@ -2,7 +2,6 @@ package com.pla.smart_npc.client.renderer;
 
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexConsumer;
-import com.mojang.math.Axis;
 import com.pla.smart_npc.entity.PlayerNpcEntity;
 import com.pla.smart_npc.entity.PlayerNpcFishingBobberEntity;
 import net.minecraft.client.renderer.MultiBufferSource;
@@ -35,8 +34,8 @@ public class PlayerNpcFishingBobberRenderer extends EntityRenderer<PlayerNpcFish
         poseStack.pushPose();
         poseStack.pushPose();
         poseStack.scale(0.5F, 0.5F, 0.5F);
+        // In 1.21.1 the camera orientation already faces the quad toward the viewer.
         poseStack.mulPose(this.entityRenderDispatcher.cameraOrientation());
-        poseStack.mulPose(Axis.YP.rotationDegrees(180.0F));
         PoseStack.Pose pose = poseStack.last();
         VertexConsumer hookConsumer = buffer.getBuffer(RENDER_TYPE);
         vertex(hookConsumer, pose, packedLight, 0.0F, 0, 0, 1);
