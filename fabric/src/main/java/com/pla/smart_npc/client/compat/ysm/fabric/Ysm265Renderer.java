@@ -8,12 +8,14 @@ import com.mojang.blaze3d.vertex.PoseStack;
 import com.pla.smart_npc.client.compat.YesSteveModelClientCompat;
 import com.pla.smart_npc.client.renderer.FakePlayerTextureUtils;
 import com.pla.smart_npc.entity.PlayerNpcEntity;
+import com.pla.smart_npc.entity.FishingRodCastState;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.player.RemotePlayer;
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.entity.EntityRendererProvider;
 import net.minecraft.core.Direction;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.InteractionHand;
 import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.entity.player.Player;
@@ -97,6 +99,8 @@ public final class Ysm265Renderer implements YesSteveModelClientCompat.Renderer 
         }
 
         private void copyFrom(PlayerNpcEntity npc) {
+            this.player.mainHandRodCast = npc.isFishingRodCast(InteractionHand.MAIN_HAND);
+            this.player.offhandRodCast = npc.isFishingRodCast(InteractionHand.OFF_HAND);
             this.player.setPos(npc.getX(), npc.getY(), npc.getZ());
             this.player.xo = npc.xo;
             this.player.yo = npc.yo;
@@ -154,7 +158,9 @@ public final class Ysm265Renderer implements YesSteveModelClientCompat.Renderer 
         }
     }
 
-    private static final class DisplayPlayer extends RemotePlayer implements OOOOo00O0OOOOooO0o00OooO {
+    private static final class DisplayPlayer extends RemotePlayer implements OOOOo00O0OOOOooO0o00OooO, FishingRodCastState {
+        private boolean mainHandRodCast;
+        private boolean offhandRodCast;
         private ooO0OOoo0o0OoO00oOO0o0o0 animation;
         private GameProfile skinProfile;
         private ResourceLocation skin;
@@ -166,6 +172,11 @@ public final class Ysm265Renderer implements YesSteveModelClientCompat.Renderer 
 
         private DisplayPlayer(ClientLevel level, GameProfile profile) {
             super(level, profile);
+        }
+
+        @Override
+        public boolean isFishingRodCast(InteractionHand hand) {
+            return hand == InteractionHand.MAIN_HAND ? this.mainHandRodCast : this.offhandRodCast;
         }
 
         @Override
