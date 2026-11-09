@@ -14,6 +14,8 @@ import net.minecraft.world.phys.Vec3;
 
 /** Shared, paced melee pursuit; animation and goal owners decide when movement is allowed. */
 public final class CombatMovementAi {
+    private static final double SPRINT_CHASE_SPEED_SCALE = 0.85D;
+
     /** Implemented only by goals that currently own melee pursuit, while movement is allowed. */
     public interface PursuitGoal {
         boolean canSupportCombatFishing();
@@ -57,6 +59,13 @@ public final class CombatMovementAi {
                 && !this.mob.isShiftKeyDown() && !this.mob.isCrouching()
                 && !this.mob.isInWater() && !this.mob.isInLava()
                 && !this.mob.onClimbable());
+        double navigationSpeed = Math.min(1.0D, speed);
+        if (this.mob instanceof PlayerNpcEntity && this.mob.isSprinting()) {
+            // Temper combat sprinting without changing base walking speed or other goals.
+            navigationSpeed *= SPRINT_CHASE_SPEED_SCALE;
+        }
+        // Apply reach/sprint transitions even when reusing a path between path searches.
+        this.mob.getNavigation().setSpeedModifier(navigationSpeed);
         this.trySprintJump();
         if (this.mob instanceof PlayerNpcEntity npc && this.mob.level() instanceof ServerLevel
                 && this.mob.isInWater() && !inReach) {
@@ -89,7 +98,7 @@ public final class CombatMovementAi {
                 && this.lastPathTarget != null && this.lastPathTarget.distSqr(targetPos) <= 1.0D
                 && (!(this.mob instanceof PlayerNpcEntity npc) || PlayerNpcAiWorkBudget.tryAcquireNavigationPathStart(npc))) {
             // An animation pause may resume the existing route without a new path search.
-            this.mob.getNavigation().moveTo(this.retainedPath, Math.min(1.0D, speed));
+            this.mob.getNavigation().moveTo(this.retainedPath, navigationSpeed);
             return;
         }
         // Out-of-range pursuit never depends on a random step or the attack cooldown.
@@ -113,7 +122,7 @@ public final class CombatMovementAi {
         if (path != null) {
             this.retainedPath = path;
             this.lastPathTarget = targetPos.immutable();
-            this.mob.getNavigation().moveTo(path, Math.min(1.0D, speed));
+            this.mob.getNavigation().moveTo(path, navigationSpeed);
         } else {
             this.retainedPath = null;
             this.mob.getNavigation().stop();
