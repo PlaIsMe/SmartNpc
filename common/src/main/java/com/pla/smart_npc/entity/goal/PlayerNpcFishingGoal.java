@@ -15,6 +15,7 @@ import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.tags.FluidTags;
 import net.minecraft.util.Mth;
+import net.minecraft.world.InteractionHand;
 import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.ai.goal.Goal;
 import net.minecraft.world.item.Items;
@@ -149,6 +150,7 @@ public class PlayerNpcFishingGoal extends Goal {
 
     @Override
     public void start() {
+        this.playerNpc.setFishingRodCast(InteractionHand.MAIN_HAND, false);
         if (!(this.playerNpc.level() instanceof ServerLevel serverLevel) || this.fishingSpot == null || !this.equipRodIfNeeded()) {
             this.fishingSpot = null;
             return;
@@ -179,6 +181,7 @@ public class PlayerNpcFishingGoal extends Goal {
         this.lookAtWater();
 
         if (this.bobber == null || !this.bobber.isAlive()) {
+            this.playerNpc.setFishingRodCast(InteractionHand.MAIN_HAND, false);
             this.bobber = null;
             this.stuckTicks = 0;
             this.biteReactionTicks = 0;
@@ -234,6 +237,7 @@ public class PlayerNpcFishingGoal extends Goal {
 
     @Override
     public void stop() {
+        this.playerNpc.setFishingRodCast(InteractionHand.MAIN_HAND, false);
         if (this.bobber != null && this.bobber.isAlive()) {
             this.bobber.discard();
         }
@@ -288,6 +292,7 @@ public class PlayerNpcFishingGoal extends Goal {
         }
 
         this.bobber = nextBobber;
+        this.playerNpc.setFishingRodCast(InteractionHand.MAIN_HAND, true);
         this.bobberWasCast = true;
         this.playerNpc.triggerMainHandUseAnimation();
         serverLevel.playSound(
@@ -312,6 +317,7 @@ public class PlayerNpcFishingGoal extends Goal {
     }
 
     private void retrieveBobber() {
+        this.playerNpc.setFishingRodCast(InteractionHand.MAIN_HAND, false);
         if (this.bobber == null) {
             return;
         }

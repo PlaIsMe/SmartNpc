@@ -1,9 +1,10 @@
 package com.pla.smart_npc.mixin;
 
-import com.pla.smart_npc.entity.PlayerNpcEntity;
+import com.pla.smart_npc.entity.FishingRodCastState;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.renderer.item.properties.conditional.FishingRodCast;
 import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.InteractionHand;
 import net.minecraft.world.item.ItemDisplayContext;
 import net.minecraft.world.item.ItemStack;
 import org.jspecify.annotations.Nullable;
@@ -19,11 +20,12 @@ public abstract class FishingRodCastMixin {
                                         @Nullable LivingEntity owner, int seed,
                                         ItemDisplayContext displayContext,
                                         CallbackInfoReturnable<Boolean> callback) {
-        if (owner instanceof PlayerNpcEntity npc) {
-            boolean held = npc.getMainHandItem() == stack || npc.getOffhandItem() == stack;
-            boolean fishing = "ai.player_npc.fishing".equals(npc.getCurrentAiState())
-                    || "ai.player_npc.combat_fishing".equals(npc.getCurrentAiState());
-            callback.setReturnValue(held && fishing);
+        if (owner instanceof FishingRodCastState castState) {
+            boolean mainHand = owner.getMainHandItem() == stack
+                    && castState.isFishingRodCast(InteractionHand.MAIN_HAND);
+            boolean offHand = owner.getOffhandItem() == stack
+                    && castState.isFishingRodCast(InteractionHand.OFF_HAND);
+            callback.setReturnValue(mainHand || offHand);
         }
     }
 }

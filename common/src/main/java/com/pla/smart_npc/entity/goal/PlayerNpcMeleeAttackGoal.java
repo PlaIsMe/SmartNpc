@@ -13,7 +13,7 @@ import net.minecraft.world.entity.player.Player;
 import java.util.EnumSet;
 
 /** One vanilla attack owner: bounded pursuit, varied swing cadence, and physical jump crits. */
-public final class PlayerNpcMeleeAttackGoal extends Goal {
+public final class PlayerNpcMeleeAttackGoal extends Goal implements CombatMovementAi.PursuitGoal {
     private final PlayerNpcEntity npc;
     private final CombatMovementAi combatMovement;
     private int nextAttackTick;
@@ -43,6 +43,11 @@ public final class PlayerNpcMeleeAttackGoal extends Goal {
     @Override
     public boolean canContinueToUse() {
         return this.canUse();
+    }
+
+    @Override
+    public boolean canSupportCombatFishing() {
+        return this.canUse() && !this.npc.isClearingCombatObstruction();
     }
 
     @Override
@@ -77,7 +82,7 @@ public final class PlayerNpcMeleeAttackGoal extends Goal {
         this.npc.getLookControl().setLookAt(target, 30.0F, 30.0F);
         boolean inReach = this.npc.distanceToSqr(target) <= 9.0D
                 && this.npc.getSensing().hasLineOfSight(target);
-        this.combatMovement.tick(target, 3.0D, 1.0D, true);
+        this.combatMovement.tick(target, 3.0D, 1.0D, true, this.criticalTarget == null);
 
         if (this.criticalTarget != null) {
             if (target == this.criticalTarget && inReach && this.canCritNow()) {

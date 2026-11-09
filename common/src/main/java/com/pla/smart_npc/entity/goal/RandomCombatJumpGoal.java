@@ -23,6 +23,7 @@ public class RandomCombatJumpGoal extends Goal {
     @Override
     public boolean canUse() {
         if (!this.hasCombatTarget()
+                || this.playerNpc.isSprinting()
                 || this.playerNpc.isNoAi()
                 || this.playerNpc.isPassenger()
                 || this.playerNpc.isInWater()
