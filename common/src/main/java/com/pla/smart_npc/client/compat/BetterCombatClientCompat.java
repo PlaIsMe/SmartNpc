@@ -152,19 +152,33 @@ public final class BetterCombatClientCompat {
     }
 
     /**
-     * Applies Player Animation Library's rightItem/leftItem channel at the same point in
-     * the render pipeline as Player Animation Library's HeldItemMixin: after vanilla's
-     * third-person hand transform and immediately before ItemInHandRenderer.
-     *
-     * Better Combat's attack JSONs animate these item channels independently
-     * from the arm. Without this transform the NPC hand moves correctly while
-     * the sword/tool keeps the vanilla grip rotation.
+     * Applies PAL's item rotation and scale after vanilla's hand transform.
+     * Translation is applied separately in arm space, as in PAL's item layer.
      */
     public static boolean applyHeldItemTransform(
             PoseStack poseStack,
             PlayerNpcEntity playerNpc,
             HumanoidArm renderedArm,
             float partialTick
+    ) {
+        return applyHeldItemAnimation(poseStack, playerNpc, renderedArm, partialTick, false);
+    }
+
+    public static boolean applyHeldItemTranslation(
+            PoseStack poseStack,
+            PlayerNpcEntity playerNpc,
+            HumanoidArm renderedArm,
+            float partialTick
+    ) {
+        return applyHeldItemAnimation(poseStack, playerNpc, renderedArm, partialTick, true);
+    }
+
+    private static boolean applyHeldItemAnimation(
+            PoseStack poseStack,
+            PlayerNpcEntity playerNpc,
+            HumanoidArm renderedArm,
+            float partialTick,
+            boolean translation
     ) {
         if (!BetterCombatCompat.isLoaded() || disabled
                 || playerNpc.isUsingItem() && playerNpc.getUseItem().has(DataComponents.BLOCKS_ATTACKS)) {
@@ -178,7 +192,7 @@ public final class BetterCombatClientCompat {
             if (playerNpc.getBetterCombatAttackAnimationTicks() > 0) {
                 SampledAnimation sampled = sampleCurrentAttack(playerNpc, partialTick);
                 if (sampled != null) {
-                    return applyHeldItemSample(poseStack, sampled, renderedArm);
+                    return applyHeldItemSample(poseStack, sampled, renderedArm, translation);
                 }
             }
 
@@ -202,7 +216,7 @@ public final class BetterCombatClientCompat {
             }
 
             SampledAnimation sampled = samplePose(pose, playerNpc, partialTick);
-            return sampled != null && applyHeldItemSample(poseStack, sampled, renderedArm);
+            return sampled != null && applyHeldItemSample(poseStack, sampled, renderedArm, translation);
         } catch (ReflectiveOperationException | LinkageError | RuntimeException exception) {
             disable("apply the NPC held-item animation", exception);
             return false;
@@ -212,10 +226,15 @@ public final class BetterCombatClientCompat {
     private static boolean applyHeldItemSample(
             PoseStack poseStack,
             SampledAnimation sampled,
-            HumanoidArm renderedArm
+            HumanoidArm renderedArm,
+            boolean translation
     ) throws ReflectiveOperationException {
         String itemPart = renderedArm == HumanoidArm.LEFT ? "leftItem" : "rightItem";
-        PlayerAnimationSampler.applyHeldItemTransform(poseStack, sampled.animationApplier(), itemPart);
+        if (translation) {
+            PlayerAnimationSampler.applyHeldItemTranslation(poseStack, sampled.animationApplier(), itemPart);
+        } else {
+            PlayerAnimationSampler.applyHeldItemTransform(poseStack, sampled.animationApplier(), itemPart);
+        }
         return true;
     }
 
@@ -251,18 +270,9 @@ public final class BetterCombatClientCompat {
             return null;
         }
 
-        float animationTime = poseAnimationTime(animation, playerNpc, partialTick);
-        Object animationApplier = PlayerAnimationSampler.sample(animation, animationTime, pose.mirror());
+        Object animationApplier = PlayerAnimationSampler.samplePose(
+                animation, playerNpc.tickCount + partialTick, pose.mirror());
         return new SampledAnimation(animationApplier, null);
-    }
-
-    /**
-     * Sample poses using this version's Player Animation Library loop metadata.
-     * Its Animation objects do not expose the legacy PlayerAnimator tick fields.
-     */
-    private static float poseAnimationTime(Object animation, PlayerNpcEntity playerNpc, float partialTick) {
-        float absoluteTime = Math.max(0.0F, playerNpc.tickCount + partialTick);
-        return PlayerAnimationSampler.loopedTime(animation, absoluteTime);
     }
 
     @Nullable
