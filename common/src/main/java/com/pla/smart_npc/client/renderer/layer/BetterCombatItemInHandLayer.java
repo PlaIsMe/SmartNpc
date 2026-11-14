@@ -30,6 +30,9 @@ public final class BetterCombatItemInHandLayer extends ItemInHandLayer<AvatarRen
 
         poseStack.pushPose();
         this.getParentModel().translateToHand(state, arm, poseStack);
+        if (state instanceof FakePlayerRenderState npcState && npcState.playerNpc != null) {
+            BetterCombatClientCompat.applyHeldItemTranslation(poseStack, npcState.playerNpc, arm, npcState.partialTick);
+        }
         poseStack.mulPose(Axis.XP.rotationDegrees(-90.0F));
         poseStack.mulPose(Axis.YP.rotationDegrees(180.0F));
         boolean leftHand = arm == HumanoidArm.LEFT;

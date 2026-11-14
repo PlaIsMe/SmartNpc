@@ -7,5 +7,16 @@ dependencies {
     compileOnly 'maven.modrinth:player-animation-library:QmAdOGjK'
     compileOnly 'com.electronwill.night-config:core:3.8.3'
     compileOnly 'com.electronwill.night-config:toml:3.8.3'
+    testImplementation 'junit:junit:4.13.2'
+    testImplementation 'maven.modrinth:player-animation-library:QmAdOGjK'
+    testImplementation('com.zigythebird:mochafloats:5.0.0') { transitive = false }
+    testRuntimeOnly 'org.redlance.common-utils:services:1.2.8'
+    testRuntimeOnly 'maven.modrinth:better-combat:1UMcSrDb'
 }
 sourceSets.main.resources.srcDir 'src/generated/resources'
+
+tasks.withType(Test).configureEach {
+    javaLauncher = javaToolchains.launcherFor { languageVersion = JavaLanguageVersion.of(25) }
+    workingDir = layout.buildDirectory.dir('test-work').get().asFile
+    doFirst { workingDir.mkdirs() }
+}

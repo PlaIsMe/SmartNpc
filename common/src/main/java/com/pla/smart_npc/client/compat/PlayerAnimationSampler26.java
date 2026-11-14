@@ -65,6 +65,17 @@ final class PlayerAnimationSampler26 {
     }
 
     static Object sample(Object value, float animationTime, boolean mirrored) {
+        return sample(value, animationTime, mirrored, false);
+    }
+
+    static Object samplePose(Object value, float absoluteTime, boolean mirrored) {
+        Animation animation = asAnimation(value);
+        boolean loopStarted = absoluteTime >= animation.length()
+                && animation.loopType().shouldPlayAgain(null, animation);
+        return sample(animation, loopedTime(animation, absoluteTime), mirrored, loopStarted);
+    }
+
+    private static Object sample(Object value, float animationTime, boolean mirrored, boolean loopStarted) {
         Animation animation = asAnimation(value);
         HumanoidAnimationController controller = newController();
 
@@ -74,8 +85,18 @@ final class PlayerAnimationSampler26 {
             controller.addModifier(mirror, 0);
         }
 
-        controller.triggerAnimation(animation, Math.max(0.0F, animationTime));
-        controller.setupAnim(new AnimationData(0.0F, 0.0F, false));
+        if (loopStarted) {
+            // Seeking directly into a loop leaves PAL's isLoopStarted false,
+            // which blends from the initial pose again on every rendered frame.
+            // Cross one loop boundary before seeking within the established loop.
+            controller.triggerAnimation(animation, animation.length());
+            controller.setupAnim(new AnimationData(0.0F, 0.0F, false));
+            float restart = controller.getAnimationTicks();
+            controller.setupAnim(new AnimationData(0.0F, animationTime - restart, false));
+        } else {
+            controller.triggerAnimation(animation, Math.max(0.0F, animationTime));
+            controller.setupAnim(new AnimationData(0.0F, 0.0F, false));
+        }
         return controller;
     }
 
@@ -120,17 +141,23 @@ final class PlayerAnimationSampler26 {
         RenderUtil.translatePartToBone(part, bone, part.getInitialPose());
     }
 
+    static void applyHeldItemTranslation(PoseStack poseStack, Object sampledAnimation, String legacyPartName) {
+        IAnimation animation = asSampledAnimation(sampledAnimation);
+        PlayerAnimBone bone = new PlayerAnimBone(normalizePartName(legacyPartName));
+        animation.get3DTransform(bone);
+        // PAL 1.2 translates in arm space, before vanilla rotates the item.
+        poseStack.translate(bone.position.x / 16.0F, -bone.position.y / 16.0F, bone.position.z / 16.0F);
+    }
+
     static void applyHeldItemTransform(PoseStack poseStack, Object sampledAnimation, String legacyPartName) {
         IAnimation animation = asSampledAnimation(sampledAnimation);
         PlayerAnimBone bone = new PlayerAnimBone(normalizePartName(legacyPartName));
         animation.get3DTransform(bone);
 
-        Vector3f position = bone.position;
         Vector3f rotation = bone.rotation;
         Vector3f scale = bone.scale;
 
         // Match Player Animation Library 1.2.x's ItemInHandLayer mixin.
-        poseStack.translate(position.x / 16.0F, -position.y / 16.0F, position.z / 16.0F);
         if (rotation.z != 0.0F) {
             poseStack.mulPose(Axis.ZP.rotation(-rotation.y));
         }

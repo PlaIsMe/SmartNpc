@@ -3057,6 +3057,9 @@ public class PlayerNpcEntity extends FakePlayer implements RangedAttackMob, Fish
 
     public void triggerMainHandAttackAnimation() {
         this.entityData.set(MAIN_HAND_ATTACK_ANIMATION_TICKS, MAIN_HAND_ATTACK_ANIMATION_DURATION);
+        // All callers, including those without an explicit swing(), must send
+        // the vanilla animation packet. The activity timer is not a swing clock.
+        this.swing(InteractionHand.MAIN_HAND, true);
     }
 
     private void triggerBetterCombatAttackAnimation() {
