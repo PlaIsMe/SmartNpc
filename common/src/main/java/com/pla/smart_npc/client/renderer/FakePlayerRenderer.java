@@ -128,6 +128,8 @@ public class FakePlayerRenderer<T extends FakePlayer>
     @Override
     public void extractRenderState(T entity, AvatarRenderState state, float partialTick) {
         super.extractRenderState(entity, state, partialTick);
+        // Keep the vanilla interpolated swingAnimation from the superclass. Falling
+        // back to the longer activity timer after a swing ends rewinds the arm.
         if (state instanceof FakePlayerRenderState npcState) npcState.partialTick = partialTick;
         // Gesture goals toggle the synchronized sneak flag without changing the physical pose.
         // Preserve swimming/sleeping poses while restoring the player model's crouch animation.
@@ -162,10 +164,6 @@ public class FakePlayerRenderer<T extends FakePlayer>
                     || entity.isUsingItem() && entity.getUseItem().has(DataComponents.BLOCKS_ATTACKS)
                     || BetterCombatClientCompat.hasActiveAttackAnimation(playerNpc)) {
                 state.swingAnimation = 0.0F;
-            } else if (state.swingAnimation <= 0.0F && playerNpc.getMainHandAttackAnimationTicks() > 0) {
-                state.currentSwing = new net.minecraft.world.entity.LivingEntity.SwingDescription(InteractionHand.MAIN_HAND, playerNpc.getMainHandItem().getInteractAnimation(), playerNpc.getMainHandAttackAnimationDuration());
-                float duration = playerNpc.getMainHandAttackAnimationDuration();
-                state.swingAnimation = Mth.clamp(1.0F - ((float) playerNpc.getMainHandAttackAnimationTicks() - partialTick) / duration, 0.0F, 1.0F);
             }
         }
         extractCapeState(entity, state, partialTick);
