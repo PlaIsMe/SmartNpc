@@ -309,26 +309,9 @@ public final class BetterCombatClientCompat {
      * KeyframeAnimationPlayers. PlayerNpcEntity cannot own that player-only
      * stack, so sample the same looping interval from the NPC's world age.
      */
-    private static float poseAnimationTime(Object animation, PlayerNpcEntity playerNpc, float partialTick) {
-        int beginTick = readIntField(animation, "beginTick", 0);
-        int returnTick = readIntField(animation, "returnTick", beginTick);
-        int stopTick = readIntField(animation, "stopTick", Math.max(returnTick + 1, 20));
-
-        if (stopTick <= returnTick) {
-            return Math.max(0, beginTick);
-        }
-
-        float absoluteTime = Math.max(0.0F, playerNpc.tickCount + partialTick);
-        if (absoluteTime < stopTick) {
-            return absoluteTime;
-        }
-
-        float loopLength = stopTick - returnTick;
-        float loopTime = (absoluteTime - returnTick) % loopLength;
-        if (loopTime < 0.0F) {
-            loopTime += loopLength;
-        }
-        return returnTick + loopTime;
+    private static float poseAnimationTime(Object animation, PlayerNpcEntity playerNpc, float partialTick)
+            throws ReflectiveOperationException {
+        return NpcAnimationTimeline.poseTime(animation, playerNpc.tickCount + partialTick);
     }
 
     @Nullable

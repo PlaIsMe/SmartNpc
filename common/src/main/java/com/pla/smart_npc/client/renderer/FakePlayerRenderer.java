@@ -153,20 +153,11 @@ public class FakePlayerRenderer<T extends FakePlayer> extends HumanoidMobRendere
             return 0.0F;
         }
 
-        float attackAnim = super.getAttackAnim(entity, partialTick);
-        if (attackAnim > 0.0F) {
-            return attackAnim;
-        }
-
-        if (entity instanceof PlayerNpcEntity playerNpc) {
-            int ticks = playerNpc.getMainHandAttackAnimationTicks();
-            if (ticks > 0) {
-                float duration = playerNpc.getMainHandAttackAnimationDuration();
-                return Mth.clamp(1.0F - ((float) ticks - partialTick) / duration, 0.0F, 1.0F);
-            }
-        }
-
-        return 0.0F;
+        // The synchronized activity timer lasts longer than a vanilla swing.
+        // Falling back to it after the swing finishes rewinds the arm and
+        // produces a second upswing. Use one interpolated clock throughout,
+        // including swings shortened by haste or lengthened by mining fatigue.
+        return super.getAttackAnim(entity, partialTick);
     }
 
     @Override

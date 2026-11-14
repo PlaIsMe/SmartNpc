@@ -7,7 +7,6 @@ import com.pla.smart_npc.util.PlayerNpcBlockSoundUtil;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.tags.FluidTags;
-import net.minecraft.world.InteractionHand;
 import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.effect.MobEffects;
 import net.minecraft.world.item.ItemStack;
@@ -333,7 +332,6 @@ public final class BreakingBlockAi {
             return;
         }
 
-        this.playerNpc.swing(InteractionHand.MAIN_HAND, true);
         this.playerNpc.triggerMainHandAttackAnimation();
 
         if (Platform.isModLoaded("epicfight")) {
