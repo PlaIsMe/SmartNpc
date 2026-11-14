@@ -1,9 +1,12 @@
 package com.pla.smart_npc.entity.goal;
 
 import com.pla.smart_npc.clazz.PlayerNpcInterest;
+import com.pla.smart_npc.ai.AiChatService;
 import com.pla.smart_npc.entity.PlayerNpcEntity;
 import com.pla.smart_npc.util.PlayerNpcTeamUpManager;
+import com.pla.smart_npc.util.ChatUtil;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.ai.goal.Goal;
@@ -32,6 +35,8 @@ public final class TeamUpGoal extends Goal {
     private boolean lastResponseCrouching;
     private int responsePresses;
     private boolean responseReady;
+    private boolean aiInvitation;
+    private boolean aiInvitationSpoken;
 
     public TeamUpGoal(PlayerNpcEntity playerNpc) {
         this.playerNpc = playerNpc;
@@ -70,6 +75,10 @@ public final class TeamUpGoal extends Goal {
         this.offerTicks = 40 + this.playerNpc.getRandom().nextInt(21);
         this.offerCrouches = 5 + this.playerNpc.getRandom().nextInt(6);
         this.waitTicks = this.offerTicks + 40 + this.playerNpc.getRandom().nextInt(21);
+        var chat = AiChatService.get(this.playerNpc.getServer());
+        this.aiInvitation = chat != null && chat.enabledIn((ServerLevel) this.playerNpc.level());
+        this.aiInvitationSpoken = false;
+        if (this.aiInvitation) this.waitTicks = Math.max(this.waitTicks, 20 * 60);
         this.swingTick = this.playerNpc.getRandom().nextFloat() < 0.35F ? 8 + this.playerNpc.getRandom().nextInt(this.offerTicks - 16) : -1;
         this.jumpTick = this.playerNpc.getRandom().nextFloat() < 0.20F ? this.offerTicks / 2 : -1;
         this.gestureTicks = 0;
@@ -86,6 +95,7 @@ public final class TeamUpGoal extends Goal {
         this.playerNpc.setShiftKeyDown(true);
         this.playerNpc.setCurrentAiState("ai.player_npc.awaiting_teamup_reply");
         this.updateDetail();
+        if (this.aiInvitation) this.aiInvitationSpoken = chat.teamInvitationStarted(this.playerNpc, this.inviteTarget);
     }
 
     @Override
@@ -96,6 +106,10 @@ public final class TeamUpGoal extends Goal {
         }
         this.waitTicks--;
         this.gestureTicks++;
+        if (this.aiInvitation && !this.aiInvitationSpoken && this.gestureTicks % 20 == 0) {
+            var chat = AiChatService.get(this.playerNpc.getServer());
+            if (chat != null) this.aiInvitationSpoken = chat.teamInvitationStarted(this.playerNpc, this.inviteTarget);
+        }
         this.playerNpc.getNavigation().stop();
         this.playerNpc.getLookControl().setLookAt(this.inviteTarget, 35.0F, 35.0F);
         boolean offering = this.gestureTicks < this.offerTicks;
@@ -117,7 +131,7 @@ public final class TeamUpGoal extends Goal {
             npcTarget.getNavigation().stop();
             npcTarget.getLookControl().setLookAt(this.playerNpc, 35.0F, 35.0F);
             int responseTick = this.gestureTicks - this.offerTicks - 4;
-            npcTarget.setShiftKeyDown(responseTick >= 0 && responseTick < NPC_REPLY_PHASE_TICKS * 4
+            npcTarget.setShiftKeyDown(!this.aiInvitation && responseTick >= 0 && responseTick < NPC_REPLY_PHASE_TICKS * 4
                     && (responseTick / NPC_REPLY_PHASE_TICKS) % 2 == 0);
         }
         this.observeResponseGesture();
@@ -127,6 +141,7 @@ public final class TeamUpGoal extends Goal {
                     : this.inviteTarget instanceof ServerPlayer player
                     && PlayerNpcTeamUpManager.acceptPlayerGesture(this.playerNpc, player);
             if (accepted) {
+                if (this.aiInvitation) ChatUtil.teamUpAcceptance(this.playerNpc);
                 this.waitTicks = 0;
             }
         }

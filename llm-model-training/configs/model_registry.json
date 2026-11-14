@@ -1,0 +1,55 @@
+{
+  "schema": 1,
+  "tiers": [
+    {
+      "tier": "lightweight",
+      "model_id": "qwen2.5-0.5b",
+      "name": "Qwen2.5 0.5B",
+      "base_model": "Qwen/Qwen2.5-0.5B-Instruct",
+      "architecture": "qwen2",
+      "status": "supported",
+      "license": "Apache-2.0; https://huggingface.co/Qwen/Qwen2.5-0.5B-Instruct",
+      "engine_requirement": "llama.cpp with Qwen2 support; startup compatibility probe required",
+      "locales": [
+        "en_us",
+        "zh_cn",
+        "vi_vn"
+      ],
+      "profiles": [
+        "standard",
+        "unfiltered"
+      ],
+      "quantization": "Q4_K_M",
+      "icon": "qwen25",
+      "ram": "≈ 0.5 GB",
+      "revision": null
+    },
+    {
+      "tier": "standard",
+      "model_id": "qwen3.5-0.8b",
+      "name": "Qwen3.5 0.8B",
+      "base_model": "Qwen/Qwen3.5-0.8B",
+      "architecture": "qwen3.5",
+      "status": "candidate",
+      "license": "Apache-2.0; https://huggingface.co/Qwen/Qwen3.5-0.8B",
+      "engine_requirement": "Qwen3.5-capable llama.cpp; startup compatibility probe required",
+      "locales": [
+        "en_us",
+        "zh_cn",
+        "vi_vn"
+      ],
+      "profiles": [
+        "standard",
+        "unfiltered"
+      ],
+      "quantization": "Q4_K_M",
+      "icon": "qwen35",
+      "ram": "≈ 1 GB",
+      "revision": "2fc06364715b967f1860aea9cf38778875588b17"
+    }
+  ],
+  "legacy_model_ids": [
+    "smollm2-360m",
+    "qwen3-0.6b"
+  ]
+}

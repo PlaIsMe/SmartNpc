@@ -1,0 +1,8 @@
+{
+  "base_model": "Qwen/Qwen3.5-0.8B",
+  "architecture": "qwen3.5",
+  "load_in_4bit": false,
+  "max_length": 1024,
+  "minimum_transformers": "5.17.0",
+  "revision": "2fc06364715b967f1860aea9cf38778875588b17"
+}

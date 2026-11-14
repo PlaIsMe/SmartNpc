@@ -1,5 +1,6 @@
 package com.pla.smart_npc.entity.goal;
 
+import com.pla.smart_npc.ai.NpcGoalBridge;
 import com.pla.smart_npc.entity.PlayerNpcEntity;
 import com.pla.smart_npc.util.PlayerNpcAiWorkBudget;
 import com.pla.smart_npc.util.PlayerNpcPerformanceMonitor;
@@ -49,6 +50,7 @@ public final class StartupWorkGatedGoal extends Goal {
 
     @Override
     public boolean canUse() {
+        if (NpcGoalBridge.pausesWork(this.playerNpc)) return false;
         if (this.playerNpc.getSocialNoticeAi().isActive()) {
             return false;
         }
@@ -181,6 +183,7 @@ public final class StartupWorkGatedGoal extends Goal {
     }
 
     private boolean shouldPauseForNotice() {
+        if (NpcGoalBridge.pausesWork(this.playerNpc)) return true;
         Goal goal = this.delegate;
         while (goal instanceof InterestGatedGoal interest) {
             goal = interest.getDelegateGoal();

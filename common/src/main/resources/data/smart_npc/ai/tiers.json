@@ -1,0 +1,16 @@
+[
+  {
+    "family": "qwen2.5-0.5b",
+    "name": "Qwen2.5 0.5B",
+    "tier": "lightweight",
+    "icon": "qwen25",
+    "ram": "\u2248 0.5 GB"
+  },
+  {
+    "family": "qwen3.5-0.8b",
+    "name": "Qwen3.5 0.8B",
+    "tier": "standard",
+    "icon": "qwen35",
+    "ram": "\u2248 1 GB"
+  }
+]

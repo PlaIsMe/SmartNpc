@@ -1,0 +1,11 @@
+{
+  "language": "zh_cn",
+  "english_source_sha256": "f8aaa1c0764a2ec56ee7fbec2f613d0e83fedc1120708aba70ee9ed58ae6e3dd",
+  "translator": "Helsinki-NLP/opus-mt-en-zh",
+  "translator_revision": "408d9bc410a388e1d9aef112a2daba955b945255",
+  "human_review_complete": false,
+  "source_blocks": 721,
+  "translated_blocks": 721,
+  "translated_fragments": 1919,
+  "semantic_postediting": "Chinese action/fact/event reply sets authored to preserve English context, with conversational tone variants; prompt glossary and group/identity/health wording corrected."
+}

@@ -14,6 +14,11 @@ import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayConnectionEvents;
 public final class SmartNpcFabricClient implements ClientModInitializer {
     @Override public void onInitializeClient() {
+        net.fabricmc.fabric.api.client.screen.v1.ScreenEvents.AFTER_INIT.register((client, screen, width, height) -> {
+            if (screen instanceof net.minecraft.client.gui.screens.OptionsScreen || screen instanceof net.minecraft.client.gui.screens.PauseScreen) {
+                net.fabricmc.fabric.api.client.screen.v1.Screens.getButtons(screen).add(net.minecraft.client.gui.components.Button.builder(net.minecraft.network.chat.Component.translatable("smart_npc.ai.settings_short"), button -> client.setScreen(com.pla.smart_npc.client.gui.AiSetupClient.screen(screen))).bounds(width - 108, 7, 100, 20).build());
+            }
+        });
         EntityRendererRegistry.register(SmartNpcModEntities.PLAYER_NPC.get(), FakePlayerRenderer::new);
         EntityRendererRegistry.register(SmartNpcModEntities.PLAYER_NPC_FISHING_BOBBER.get(), PlayerNpcFishingBobberRenderer::new);
         MenuRegistry.registerScreenFactory(SmartNpcModMenus.INVENTORY_VIEWER.get(), InventoryViewerScreen::new);

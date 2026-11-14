@@ -1,5 +1,6 @@
 package com.pla.smart_npc.entity.goal;
 
+import com.pla.smart_npc.ai.NpcGoalBridge;
 import com.pla.smart_npc.clazz.PlayerNpcInterest;
 import com.pla.smart_npc.entity.PlayerNpcEntity;
 import com.pla.smart_npc.entity.ai.BreakingBlockAi;
@@ -397,7 +398,7 @@ public class ExploreCaveOreGoal extends Goal {
         }
 
         BlockState state = serverLevel.getBlockState(this.targetPos);
-        if (!this.isOreBlock(state)) {
+        if (!this.isOreBlock(state) || !NpcGoalBridge.acceptsOre(this.playerNpc, state)) {
             this.playerNpc.clearBlockBreakProgress(this.targetPos);
             this.breakingBlockAi.stop();
             if (!PlayerNpcAiWorkBudget.tryAcquire(serverLevel, this.playerNpc)) {
@@ -750,7 +751,8 @@ public class ExploreCaveOreGoal extends Goal {
     }
 
     private boolean isOreSearchTarget(ServerLevel serverLevel, BlockPos pos, BlockState state) {
-        if (!this.isOreBlock(state) || this.isProtectedHomeBlock(pos)) {
+        if (!this.isOreBlock(state) || this.isProtectedHomeBlock(pos)
+                || !NpcGoalBridge.acceptsOre(this.playerNpc, state)) {
             return false;
         }
 

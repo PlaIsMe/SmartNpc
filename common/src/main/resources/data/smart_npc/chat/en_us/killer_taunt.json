@@ -1,4 +1,10 @@
 [
+  "One less zombie to worry about.|DEFAULT|minecraft:zombie",
+  "Back off, zombie.|DEFAULT|minecraft:zombie",
+  "Got the skeleton. Finally.|DEFAULT|minecraft:skeleton",
+  "Enough arrows from you.|DEFAULT|minecraft:skeleton",
+  "Spider dealt with.|DEFAULT|minecraft:spider",
+  "No explosion today, creeper.|DEFAULT|minecraft:creeper",
   "%s, is that all?",
   "%s, you should have brought better gear.",
   "%s, that fight ended fast.",

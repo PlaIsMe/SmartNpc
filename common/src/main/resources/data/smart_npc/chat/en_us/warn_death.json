@@ -1,7 +1,18 @@
 [
+  "A zombie got me. Don't let it corner you.|DEFAULT|minecraft:zombie",
+  "Watch that zombie, guys.|DEFAULT|minecraft:zombie",
+  "Skeleton got me from a distance.|DEFAULT|minecraft:skeleton",
+  "Careful, there's a skeleton shooting.|DEFAULT|minecraft:skeleton",
+  "That spider finished me off.|DEFAULT|minecraft:spider",
+  "A creeper just blew me up.|DEFAULT|minecraft:creeper",
   "everyone be careful, %s is griefing",
   "watch out for %s, they killed me",
   "%s is dangerous, stay alert",
   "do not trust %s, he is attacking us",
-  "warning, %s is hunting us"
+  "warning, %s is hunting us",
+  "%s got me. Watch your back.",
+  "I've just lost a fight to %s.",
+  "Careful around %s, guys.",
+  "%s hit harder than I expected.",
+  "Yep, %s sent me packing."
 ]

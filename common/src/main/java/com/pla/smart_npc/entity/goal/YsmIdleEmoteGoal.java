@@ -1,6 +1,8 @@
 package com.pla.smart_npc.entity.goal;
 
 import com.pla.smart_npc.compat.YesSteveModelCompat;
+import com.pla.smart_npc.ai.AiChatService;
+import java.util.List;
 import com.pla.smart_npc.entity.PlayerNpcEntity;
 import net.minecraft.world.entity.ai.goal.Goal;
 
@@ -25,6 +27,10 @@ public final class YsmIdleEmoteGoal extends Goal {
     public void start() {
         this.npc.setYsmEmoteCooldown(200 + this.npc.getRandom().nextInt(401));
         this.ownerSequence = YesSteveModelCompat.playRandomEmote(this.npc, 60 + this.npc.getRandom().nextInt(101));
+        if (this.ownerSequence != 0 && !this.npc.getYsmEmote().isEmpty()) {
+            var chat = AiChatService.get(this.npc.getServer());
+            if (chat != null) chat.contextualSpeech(this.npc, "ysm_emote", null, List.of("Your YSM model is active: " + this.npc.getYsmModelId(), "You just started a YSM emote: " + this.npc.getYsmEmote(), "You may ask nearby people what they think. Do not claim their approval."));
+        }
     }
 
     @Override

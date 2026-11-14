@@ -1,5 +1,6 @@
 package com.pla.smart_npc.forge;
-import com.pla.smart_npc.SmartNpc;
+
+import com.pla.smart_npc.ai.AiChatService;import com.pla.smart_npc.SmartNpc;
 import com.pla.smart_npc.platform.event.NpcEvents;
 import com.pla.smart_npc.platform.event.NpcEventHooks;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
@@ -7,6 +8,10 @@ import net.minecraftforge.eventbus.api.EventPriority;
 import net.minecraftforge.fml.common.Mod;
 @Mod.EventBusSubscriber(modid = SmartNpc.MODID)
 public final class ForgeEventAdapter {
+    @SubscribeEvent(priority = EventPriority.LOWEST)
+    public static void onAcceptedChat(net.minecraftforge.event.ServerChatEvent event) {
+        if (!event.isCanceled()) AiChatService.chat(event.getPlayer(), event.getMessage().getString());
+    }
     @SubscribeEvent(priority = EventPriority.HIGHEST)
     public static void onServerAboutToStartEvent(net.minecraftforge.event.server.ServerAboutToStartEvent event) {
         var shared = new NpcEvents.ServerAboutToStartEvent(event.getServer());
@@ -56,9 +61,10 @@ public final class ForgeEventAdapter {
         var shared = new NpcEvents.TickEvent.PlayerTickEvent(event.player, event.phase == net.minecraftforge.event.TickEvent.Phase.END ? NpcEvents.TickEvent.Phase.END : NpcEvents.TickEvent.Phase.START);
         NpcEventHooks.fire(shared);
     }
-    @SubscribeEvent
+    @SubscribeEvent(priority = EventPriority.LOWEST)
     public static void onLivingDeathEvent(net.minecraftforge.event.entity.living.LivingDeathEvent event) {
-        var shared = new NpcEvents.LivingDeathEvent(event.getEntity());
+        if (event.isCanceled()) return;
+        var shared = new NpcEvents.LivingDeathEvent(event.getEntity(), event.getSource());
         NpcEventHooks.fire(shared);
     }
     @SubscribeEvent

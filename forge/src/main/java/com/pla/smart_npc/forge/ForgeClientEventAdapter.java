@@ -6,6 +6,12 @@ import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
 @Mod.EventBusSubscriber(modid = SmartNpc.MODID, value = Dist.CLIENT)
 public final class ForgeClientEventAdapter {
+    @SubscribeEvent public static void configButton(net.minecraftforge.client.event.ScreenEvent.Init.Post event) {
+        var screen = event.getScreen();
+        if (screen instanceof net.minecraft.client.gui.screens.OptionsScreen || screen instanceof net.minecraft.client.gui.screens.PauseScreen) {
+            event.addListener(net.minecraft.client.gui.components.Button.builder(net.minecraft.network.chat.Component.translatable("smart_npc.ai.settings_short"), button -> net.minecraft.client.Minecraft.getInstance().setScreen(com.pla.smart_npc.client.gui.AiSetupClient.screen(screen))).bounds(screen.width - 108, 7, 100, 20).build());
+        }
+    }
     @SubscribeEvent public static void tick(net.minecraftforge.event.TickEvent.ClientTickEvent event) {
         if (event.phase == net.minecraftforge.event.TickEvent.Phase.END) NpcClientEventHooks.fire(new NpcEvents.TickEvent.ClientTickEvent(NpcEvents.TickEvent.Phase.END));
     }

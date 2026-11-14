@@ -1,0 +1,298 @@
+{
+  "date": "2026-11-10",
+  "platform": "Windows x64",
+  "minecraft": "1.20.1",
+  "loader": "Fabric 0.16.14",
+  "mod_version": "1.0.6",
+  "runtime": "llama.cpp b12228 windows CPU x64",
+  "cpu": "Intel Core i5-12450HX",
+  "physical_ram_bytes": 21168513024,
+  "settings": {
+    "context_tokens": 2048,
+    "cpu_threads": 2,
+    "gpu_layers": 0,
+    "max_output_tokens": 160,
+    "temperature": 0.6,
+    "java_heap_max_mib": 2048,
+    "render_distance": 5,
+    "simulation_distance": 5,
+    "max_fps": 30
+  },
+  "method": "Real rendered Minecraft client and integrated server, copied flat world, one named NPC held nearby. Synthetic messages enter AiChatService.chat on the server thread; legacy uses actual event-template speech. Models sequentially reloaded through AiChatService.start, managed llama-server per model. Windows GetProcessMemoryInfo sampled every 500ms; native peak uses the OS lifetime peak for each fresh native process.",
+  "limitations": [
+    "One short run per variant, three direct prompts each plus any automatic events; not a complete gameplay or quality evaluation.",
+    "Measured native resident peak is additional to Minecraft. Java and combined figures include the whole game, world and test driver; they are not the mod-only cost.",
+    "Working set, private committed bytes, Java heap and disk size are different metrics. Exact recorded bytes describe this run only, not a universal RAM requirement.",
+    "Other applications were running; free physical RAM was about 1.2 GiB during the legacy baseline. OS paging/cache and workload change resident usage.",
+    "Profile changes reuse one Minecraft process; Java memory drift and garbage collection prevent attributing total-game differences solely to model choice.",
+    "Scripted chat exercises the mod service but does not simulate keyboard typing, menu clicks, network authentication or multiplayer signing.",
+    "This is the current 1.20.1 workspace, not the separately named CurseForge 1.21.1 instance."
+  ],
+  "results": [
+    {
+      "id": "legacy",
+      "completed": true,
+      "status": "stopped; queued=0/8; busy=false; replies=0; dropped=0; failures=0; meanMs=0; echoes=0; repeats=0; invalid=0; retries=0; suppressed=0; unheard=0; waiting=0",
+      "samples": 48,
+      "duration_seconds": 24.02,
+      "native_peak_working_set_bytes": 0,
+      "native_sampled_peak_private_commit_bytes": 0,
+      "java_sampled_peak_working_set_bytes": 3170611200,
+      "combined_sampled_peak_working_set_bytes": 3170611200,
+      "replies": [
+        {
+          "input": "unsolicited event / startup",
+          "reply": "Two heads, hopefully one good plan."
+        }
+      ],
+      "startup_seconds": null
+    },
+    {
+      "id": "smollm2-360m-en_us",
+      "completed": true,
+      "status": "ready: smollm2-360m-en_us; queued=0/8; busy=false; replies=4; dropped=0; failures=0; meanMs=3995; echoes=0; repeats=0; invalid=0; retries=0; suppressed=0; unheard=0; waiting=0; player_bread=0",
+      "samples": 117,
+      "duration_seconds": 58.66,
+      "native_peak_working_set_bytes": 473780224,
+      "native_sampled_peak_private_commit_bytes": 246411264,
+      "java_sampled_peak_working_set_bytes": 3026411520,
+      "combined_sampled_peak_working_set_bytes": 3500158976,
+      "replies": [
+        {
+          "input": "unsolicited event / startup",
+          "reply": "I can spare 8 bread"
+        },
+        {
+          "input": "Skeppy hey, how are you?",
+          "reply": "8 Bread, you said?"
+        },
+        {
+          "input": "Skeppy what are you doing?",
+          "reply": "Not rn, sorry"
+        },
+        {
+          "input": "Skeppy can I have two bread?",
+          "reply": "Fine, 8 bread please"
+        }
+      ],
+      "startup_seconds": 2.51,
+      "player_bread_count_at_end": 0,
+      "model_sha256": "66654e1fd0516da38053a253db58b814fcde19c775ec37829356e0b2efcfe149",
+      "model_bytes": 270590464
+    },
+    {
+      "id": "qwen2.5-0.5b-en_us",
+      "completed": true,
+      "status": "ready: qwen2.5-0.5b-en_us; queued=0/8; busy=false; replies=3; dropped=0; failures=0; meanMs=3433; echoes=0; repeats=0; invalid=0; retries=0; suppressed=0; unheard=0; waiting=0; player_bread=0",
+      "samples": 117,
+      "duration_seconds": 58.51,
+      "native_peak_working_set_bytes": 586326016,
+      "native_sampled_peak_private_commit_bytes": 221470720,
+      "java_sampled_peak_working_set_bytes": 3037241344,
+      "combined_sampled_peak_working_set_bytes": 3604811776,
+      "replies": [
+        {
+          "input": "Skeppy hey, how are you?",
+          "reply": "No bro"
+        },
+        {
+          "input": "Skeppy what are you doing?",
+          "reply": "Yeah bro :P"
+        },
+        {
+          "input": "Skeppy can I have two bread?",
+          "reply": "2 Bread, here you go"
+        }
+      ],
+      "startup_seconds": 2.36,
+      "player_bread_count_at_end": 0,
+      "model_sha256": "ff8d04916dd3fda38d0fd474c8df2c95c3cdaa11716aa8ae7f64be347374f3c9",
+      "model_bytes": 397807488
+    },
+    {
+      "id": "qwen3-0.6b-en_us",
+      "completed": true,
+      "status": "ready: qwen3-0.6b-en_us; queued=0/8; busy=false; replies=4; dropped=0; failures=0; meanMs=3579; echoes=0; repeats=1; invalid=0; retries=1; suppressed=0; unheard=0; waiting=0; player_bread=0",
+      "samples": 117,
+      "duration_seconds": 58.86,
+      "native_peak_working_set_bytes": 959918080,
+      "native_sampled_peak_private_commit_bytes": 614068224,
+      "java_sampled_peak_working_set_bytes": 3039264768,
+      "combined_sampled_peak_working_set_bytes": 3999182848,
+      "replies": [
+        {
+          "input": "Skeppy hey, how are you?",
+          "reply": "Alright, moving then"
+        },
+        {
+          "input": "Skeppy what are you doing?",
+          "reply": "Nah, not rn"
+        },
+        {
+          "input": "Skeppy can I have two bread?",
+          "reply": "Crouch twice, not rn"
+        }
+      ],
+      "startup_seconds": 2.76,
+      "player_bread_count_at_end": 0,
+      "model_sha256": "2fb5f4ccc3c8901c65d7b164c1d1d72aa0b55c4746d153ef39cb6b8470fbfa6a",
+      "model_bytes": 484219712
+    },
+    {
+      "id": "qwen3.5-0.8b-en_us",
+      "completed": true,
+      "status": "ready: qwen3.5-0.8b-en_us; queued=0/8; busy=false; replies=4; dropped=0; failures=0; meanMs=3974; echoes=0; repeats=0; invalid=0; retries=1; suppressed=0; unheard=0; waiting=0; player_bread=0",
+      "samples": 119,
+      "duration_seconds": 59.41,
+      "native_peak_working_set_bytes": 1145970688,
+      "native_sampled_peak_private_commit_bytes": 1031020544,
+      "java_sampled_peak_working_set_bytes": 3040305152,
+      "combined_sampled_peak_working_set_bytes": 4154302464,
+      "replies": [
+        {
+          "input": "Skeppy hey, how are you?",
+          "reply": "Got 8 bread, what's up?"
+        },
+        {
+          "input": "Skeppy what are you doing?",
+          "reply": "Alright, 8 bread"
+        },
+        {
+          "input": "Skeppy can I have two bread?",
+          "reply": "Not taking that request"
+        }
+      ],
+      "startup_seconds": 3.31,
+      "player_bread_count_at_end": 0,
+      "model_sha256": "19fde0ee0be0612de3304ecbfb5f0332b87752eb5f4e3b607bc9a3837684b515",
+      "model_bytes": 541903392
+    },
+    {
+      "id": "smollm2-360m-en_us-unfiltered",
+      "completed": true,
+      "status": "ready: smollm2-360m-en_us-unfiltered; queued=0/8; busy=false; replies=5; dropped=0; failures=0; meanMs=4236; echoes=0; repeats=0; invalid=0; retries=1; suppressed=1; unheard=0; waiting=0; player_bread=0",
+      "samples": 115,
+      "duration_seconds": 57.91,
+      "native_peak_working_set_bytes": 479723520,
+      "native_sampled_peak_private_commit_bytes": 252207104,
+      "java_sampled_peak_working_set_bytes": 3045031936,
+      "combined_sampled_peak_working_set_bytes": 3524739072,
+      "replies": [
+        {
+          "input": "Skeppy hey, how are you?",
+          "reply": "No bro, thank you"
+        },
+        {
+          "input": "Skeppy what are you doing?",
+          "reply": "Still building bro"
+        },
+        {
+          "input": "Skeppy can I have two bread?",
+          "reply": "Fine, I'll get 2 bread"
+        }
+      ],
+      "startup_seconds": 1.81,
+      "player_bread_count_at_end": 0,
+      "model_sha256": "e1c3a780688a25d2d2055de722fa3a0c35934f8a01888317f6ab0665c007548b",
+      "model_bytes": 270590464
+    },
+    {
+      "id": "qwen2.5-0.5b-en_us-unfiltered",
+      "completed": true,
+      "status": "ready: qwen2.5-0.5b-en_us-unfiltered; queued=0/8; busy=false; replies=5; dropped=0; failures=0; meanMs=4024; echoes=0; repeats=0; invalid=0; retries=1; suppressed=1; unheard=0; waiting=0; player_bread=0",
+      "samples": 117,
+      "duration_seconds": 58.41,
+      "native_peak_working_set_bytes": 572743680,
+      "native_sampled_peak_private_commit_bytes": 223215616,
+      "java_sampled_peak_working_set_bytes": 3045818368,
+      "combined_sampled_peak_working_set_bytes": 3618549760,
+      "replies": [
+        {
+          "input": "unsolicited event / startup",
+          "reply": "I'd take 2 bread"
+        },
+        {
+          "input": "Skeppy hey, how are you?",
+          "reply": "Yeah, gonna pass it over"
+        },
+        {
+          "input": "Skeppy what are you doing?",
+          "reply": "Fuck off, I'm busy"
+        }
+      ],
+      "startup_seconds": 2.31,
+      "player_bread_count_at_end": 0,
+      "model_sha256": "c533f0edaba667e3bac7299ea25a791291820669b01531c36102a0a2c0f3cc6c",
+      "model_bytes": 397807488
+    },
+    {
+      "id": "qwen3-0.6b-en_us-unfiltered",
+      "completed": true,
+      "status": "ready: qwen3-0.6b-en_us-unfiltered; queued=0/8; busy=false; replies=5; dropped=0; failures=0; meanMs=3877; echoes=0; repeats=0; invalid=0; retries=1; suppressed=1; unheard=0; waiting=0; player_bread=0",
+      "samples": 117,
+      "duration_seconds": 58.71,
+      "native_peak_working_set_bytes": 1039368192,
+      "native_sampled_peak_private_commit_bytes": 695021568,
+      "java_sampled_peak_working_set_bytes": 3052965888,
+      "combined_sampled_peak_working_set_bytes": 4092248064,
+      "replies": [
+        {
+          "input": "unsolicited event / startup",
+          "reply": "Yo, 2 bread please"
+        },
+        {
+          "input": "Skeppy hey, how are you?",
+          "reply": "Yo, how's it going?"
+        },
+        {
+          "input": "Skeppy can I have two bread?",
+          "reply": "Alright, don't lose my ass"
+        }
+      ],
+      "startup_seconds": 2.61,
+      "player_bread_count_at_end": 0,
+      "model_sha256": "8102a9aa7adae64ac584dc9f8c8ac96a6cb49ef3a07f8c894c7a5f19eea57156",
+      "model_bytes": 484219712
+    },
+    {
+      "id": "qwen3.5-0.8b-en_us-unfiltered",
+      "completed": true,
+      "status": "ready: qwen3.5-0.8b-en_us-unfiltered; queued=0/8; busy=false; replies=5; dropped=0; failures=0; meanMs=3949; echoes=0; repeats=1; invalid=0; retries=1; suppressed=0; unheard=0; waiting=0; player_bread=2",
+      "samples": 120,
+      "duration_seconds": 59.81,
+      "native_peak_working_set_bytes": 1215668224,
+      "native_sampled_peak_private_commit_bytes": 1100247040,
+      "java_sampled_peak_working_set_bytes": 3051810816,
+      "combined_sampled_peak_working_set_bytes": 4234158080,
+      "replies": [
+        {
+          "input": "unsolicited event / startup",
+          "reply": "I'm keeping it rn"
+        },
+        {
+          "input": "Skeppy hey, how are you?",
+          "reply": "I'll pass bro"
+        },
+        {
+          "input": "Skeppy what are you doing?",
+          "reply": "Okay, I'll look"
+        },
+        {
+          "input": "Skeppy can I have two bread?",
+          "reply": "Fine, I'm getting 2 bread"
+        }
+      ],
+      "startup_seconds": 3.66,
+      "player_bread_count_at_end": 2,
+      "model_sha256": "797766c6e3c771673c8af8a65a834ed63960b5c7f8b481196fd3bce8d80f3335",
+      "model_bytes": 541903392
+    }
+  ],
+  "quality_observations": [
+    "All completed stages must be judged on actual replies, not merely the ready status. Zero inference errors does not prove relevance or action correctness.",
+    "Standard SmolLM2 answered a greeting with \"8 Bread, you said?\"; standard Qwen3 answered a bread request with \"Crouch twice, not rn\". These are off-topic despite valid generated output.",
+    "Qwen2.5 standard said \"2 Bread, here you go\", but the recorded player bread count remained zero. This run did not demonstrate a successful gift transaction; text alone must not be reported as a verified transfer.",
+    "The final Qwen3.5 Unfiltered stage increased the player bread count from zero to two. A two-bread transfer was verified in that stage.",
+    "Only short greeting/work/item scenarios were exercised. Combat, damage, lifecycle replies, chest ownership, language quality and long-session memory behavior were not comprehensively tested."
+  ]
+}

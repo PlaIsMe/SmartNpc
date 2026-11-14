@@ -14,9 +14,11 @@ import java.util.function.Function;
 import java.util.function.Supplier;
 
 public final class SmartNpcNetwork {
-    public static final int PROTOCOL_VERSION = 8;
+    public static final int PROTOCOL_VERSION = 11;
     public static final Channel CHANNEL = new Channel();
     public static void register() {
+        CHANNEL.register(NetworkManager.Side.C2S, AiSetupRequestPacket.class, AiSetupRequestPacket::encode, AiSetupRequestPacket::decode, AiSetupRequestPacket::handle);
+        CHANNEL.register(NetworkManager.Side.S2C, AiSetupStatePacket.class, AiSetupStatePacket::encode, AiSetupStatePacket::decode, AiSetupStatePacket::handle);
         CHANNEL.register(NetworkManager.Side.S2C, PlayerNpcInspectorPacket.class, PlayerNpcInspectorPacket::encode, PlayerNpcInspectorPacket::decode, PlayerNpcInspectorPacket::handle);
         CHANNEL.register(NetworkManager.Side.C2S, PlayerNpcInspectorRequestPacket.class, PlayerNpcInspectorRequestPacket::encode, PlayerNpcInspectorRequestPacket::decode, PlayerNpcInspectorRequestPacket::handle);
         CHANNEL.register(NetworkManager.Side.C2S, PlayerNpcInspectatorModePacket.class, PlayerNpcInspectatorModePacket::encode, PlayerNpcInspectatorModePacket::decode, PlayerNpcInspectatorModePacket::handle);

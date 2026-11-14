@@ -35,6 +35,15 @@ public class PlayerNpcChatTemplateLoader extends SimpleJsonResourceReloadListene
     public static final String DEATH_REACTION = "death_reaction";
     public static final String BURN_ITEM = "burn_item";
     public static final String THROW_TRASH = "throw_trash";
+    public static final String TEAMUP_ACCEPT = "teamup_accept";
+    public static final String JOINED_GAME = "joined_game";
+    public static final String LEAVING_GAME = "leaving_game";
+    public static final String HURT_REACTION = "hurt_reaction";
+    public static final String LOW_HEALTH = "low_health";
+    public static final String CHEST_LOOT = "chest_loot";
+    public static final String CHEST_EMPTY = "chest_empty";
+    public static final String OWNED_CHEST_OPENED = "owned_chest_opened";
+    public static final String OWNED_CHEST_BROKEN = "owned_chest_broken";
 
     private static final String DEFAULT_LOCALE = "en_us";
     private static final String DEFAULT_SELECTOR = "DEFAULT";
@@ -47,7 +56,8 @@ public class PlayerNpcChatTemplateLoader extends SimpleJsonResourceReloadListene
             KILLER_TAUNT,
             DEATH_REACTION,
             BURN_ITEM,
-            THROW_TRASH
+            THROW_TRASH, TEAMUP_ACCEPT, JOINED_GAME, LEAVING_GAME, HURT_REACTION,
+            LOW_HEALTH, CHEST_LOOT, CHEST_EMPTY, OWNED_CHEST_OPENED, OWNED_CHEST_BROKEN
     );
     private static final Gson GSON = new Gson();
     private static volatile Map<String, Map<String, List<ChatEntry>>> entriesByLocale = Map.of();

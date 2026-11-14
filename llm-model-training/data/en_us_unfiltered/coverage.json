@@ -1,0 +1,51 @@
+{
+  "profile": "en_us_unfiltered",
+  "scenarios": 431,
+  "blocks": 1099,
+  "splits": {
+    "train": {
+      "examples": 9830,
+      "rude_or_profane": 3932,
+      "rude_fraction": 0.4,
+      "actions": {
+        "NONE": 8420,
+        "APPROACH_ENTITY": 90,
+        "ASK_PLAYER_FOR_ITEM": 130,
+        "GATHER_ITEM": 120,
+        "RESUME_PREVIOUS_GOAL": 40,
+        "MINE_RESOURCE": 160,
+        "FOLLOW_PLAYER": 80,
+        "GIVE_ITEM": 370,
+        "SOCIAL_LOOK_AT": 80,
+        "REQUEST_HELP": 70,
+        "TROLL_SWING": 70,
+        "STOP_CURRENT_GOAL": 80,
+        "SOCIAL_EMOTE": 70,
+        "ACCEPT_TEAM_INVITE": 30,
+        "DECLINE_TEAM_INVITE": 20
+      }
+    },
+    "validation": {
+      "examples": 1160,
+      "rude_or_profane": 464,
+      "rude_fraction": 0.4,
+      "actions": {
+        "ASK_PLAYER_FOR_ITEM": 20,
+        "NONE": 1070,
+        "MINE_RESOURCE": 40,
+        "REQUEST_HELP": 20,
+        "DECLINE_TEAM_INVITE": 10
+      }
+    },
+    "test": {
+      "examples": 8,
+      "rude_or_profane": 0,
+      "rude_fraction": 0.0,
+      "actions": {
+        "RESUME_PREVIOUS_GOAL": 2,
+        "GATHER_ITEM": 2,
+        "NONE": 4
+      }
+    }
+  }
+}

@@ -1,0 +1,14 @@
+{
+  "language": "vi_vn",
+  "english_source_sha256": "91c6f92bc6e4a9ebdd0a01254a43fb9aa7754299b694b46b408320c4a76704ab",
+  "translator": "Helsinki-NLP/opus-mt-en-vi",
+  "translator_revision": "989c9fb9ec63987901022baf0182dcec3e149be6",
+  "human_review_complete": false,
+  "source_blocks": 860,
+  "translated_blocks": 860,
+  "native_style_blocks": 570,
+  "review_status": "Local translation draft with authored gamer-style reply pools and public-chat post-editing; user language review pending.",
+  "authored_code_switch_blocks": 16,
+  "total_blocks": 876,
+  "semantic_postediting": "Authored informal gamer reply pools and additional chest, weather, item quantity, resource-request and capability edits; common English shorthand has Vietnamese responses. User language review pending."
+}

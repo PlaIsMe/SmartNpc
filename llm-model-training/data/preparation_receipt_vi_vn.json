@@ -1,0 +1,19 @@
+{
+  "language": "vi_vn",
+  "source": "data/my_chats_vi_vn.toml",
+  "source_sha256": "a5e6a2cfb7acf27f968f11faf53aaa618c1538d4dc9b79a32fc1129787f03c5c",
+  "system_prompt_sha256": "838816728e8437d97572487703098d1bf7d450cfe4646008fb006c22dfe5c33d",
+  "counts": {
+    "train": 10462,
+    "validation": 1173,
+    "test": 8
+  },
+  "sha256": {
+    "data/train_vi_vn.jsonl": "d5acedff9b09f605bfef53e7b34b8180d2bc7eb16ee997dd668ed5cd2f203b28",
+    "data/validation_vi_vn.jsonl": "2689306e29e0da6488f6ae4c1c9a8db4af7d11fc8ed7a91eb9b2488f4b89de0f",
+    "data/test_vi_vn.jsonl": "b764b893d8963ac39fcc74d2f15dba189cb6d2cecf1cf3f43e00e3e53f9d1deb",
+    "scripts/event_prompt.py": "2edd2eaa2b470299bd6472798b32ed68162ba3ed3dfbbbce978fc3127a71e10b",
+    "../common/src/main/java/com/pla/smart_npc/ai/AiEventPrompts.java": "b68e1169b4bfe2240904c53ab5dda1ddabe4309fe9c7778c8e3120304d507260"
+  },
+  "model_training_performed_by_preparation": false
+}

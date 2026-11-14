@@ -1,0 +1,31 @@
+{
+  "imported": 112,
+  "skipped": [
+    {
+      "file": "en_us\\teamup_request.json",
+      "index": 0,
+      "reason": "Inactive legacy invitation; ok/okay is not acceptance. Do not train obsolete behavior."
+    },
+    {
+      "file": "en_us\\teamup_request.json",
+      "index": 1,
+      "reason": "Inactive legacy invitation; ok/okay is not acceptance. Do not train obsolete behavior."
+    },
+    {
+      "file": "en_us\\teamup_request.json",
+      "index": 2,
+      "reason": "Inactive legacy invitation; ok/okay is not acceptance. Do not train obsolete behavior."
+    },
+    {
+      "file": "en_us\\teamup_request.json",
+      "index": 3,
+      "reason": "Inactive legacy invitation; ok/okay is not acceptance. Do not train obsolete behavior."
+    },
+    {
+      "file": "en_us\\teamup_request.json",
+      "index": 4,
+      "reason": "Inactive legacy invitation; ok/okay is not acceptance. Do not train obsolete behavior."
+    }
+  ],
+  "note": "Repeated event contexts use one label. Original resource arrays remain the full style reference."
+}

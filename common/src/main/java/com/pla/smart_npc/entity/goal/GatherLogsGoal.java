@@ -1,5 +1,6 @@
 package com.pla.smart_npc.entity.goal;
 
+import com.pla.smart_npc.ai.NpcGoalBridge;
 import com.pla.smart_npc.clazz.PlayerNpcInterest;
 import com.pla.smart_npc.entity.PlayerNpcEntity;
 import com.pla.smart_npc.entity.ai.BreakingBlockAi;
@@ -334,7 +335,8 @@ public class GatherLogsGoal extends Goal implements GatheringGoal {
                 serverLevel,
                 this.logQueueSearchOrigin,
                 this.logQueueSearchRadius,
-                pos -> !this.isProtectedHomeLogTarget(pos) && !this.isIgnoredLogTarget(pos),
+                pos -> !this.isProtectedHomeLogTarget(pos) && !this.isIgnoredLogTarget(pos)
+                        && NpcGoalBridge.acceptsLog(this.playerNpc, serverLevel.getBlockState(pos)),
                 this.logQueueSearchColumnIndex
         );
         this.logQueueSearchColumnIndex = localSlice.nextColumnIndex();
@@ -1049,7 +1051,8 @@ public class GatherLogsGoal extends Goal implements GatheringGoal {
                 serverLevel,
                 this.logQueueSearchOrigin,
                 this.logQueueSearchRadius,
-                pos -> !this.isProtectedHomeLogTarget(pos) && !this.isIgnoredLogTarget(pos),
+                pos -> !this.isProtectedHomeLogTarget(pos) && !this.isIgnoredLogTarget(pos)
+                        && NpcGoalBridge.acceptsLog(this.playerNpc, serverLevel.getBlockState(pos)),
                 this.logQueueSearchColumnIndex
         );
         this.logQueueSearchColumnIndex = treeSlice.nextColumnIndex();
@@ -1856,6 +1859,7 @@ public class GatherLogsGoal extends Goal implements GatheringGoal {
         if (playerNpc == null || serverLevel == null) {
             return false;
         }
+        if (NpcGoalBridge.needsLogs(playerNpc)) return true;
         boolean supplyLogJob = (playerNpc.isDailyJobActive(PlayerNpcInterest.MINING)
                 && !playerNpc.hasInterest(PlayerNpcInterest.BUILDING))
                 || playerNpc.isDailyJobActive(PlayerNpcInterest.FISHING)
@@ -2535,7 +2539,8 @@ public class GatherLogsGoal extends Goal implements GatheringGoal {
         return pos != null
                 && serverLevel.hasChunkAt(pos)
                 && !this.isProtectedHomeLogTarget(pos)
-                && serverLevel.getBlockState(pos).is(BlockTags.LOGS);
+                && serverLevel.getBlockState(pos).is(BlockTags.LOGS)
+                && NpcGoalBridge.acceptsLog(this.playerNpc, serverLevel.getBlockState(pos));
     }
 
     private boolean isProtectedHomeLogTarget(BlockPos pos) {

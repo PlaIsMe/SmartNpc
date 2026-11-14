@@ -32,3 +32,24 @@ Credit to the Player Mob mod for the player skin fetching approach used as a ref
 Custom EpicFight mobpatch that having builder root design. The mod distributed under GPLv3
 - Source code: https://www.curseforge.com/minecraft/mc-mods/combat-evolution
 - Owner: ShelMarow
+
+## llama.cpp
+
+Credit to llama.cpp for the embedded local AI runtime. Distributed under MIT.
+
+- Source code: https://github.com/ggml-org/llama.cpp
+- Owner: Georgi Gerganov and llama.cpp contributors
+
+## Qwen
+
+Smart NPC chat models are fine-tuned from Qwen2.5-0.5B-Instruct and Qwen3.5-0.8B, distributed under Apache License 2.0.
+
+- Qwen2.5: https://huggingface.co/Qwen/Qwen2.5-0.5B-Instruct
+- Qwen3.5: https://huggingface.co/Qwen/Qwen3.5-0.8B
+- Owner: Qwen team, Alibaba Cloud
+
+## llama.jar
+
+Credit to llama.jar for the embedded inference approach used as a reference.
+
+- Mod page: https://modrinth.com/mod/llama.jar

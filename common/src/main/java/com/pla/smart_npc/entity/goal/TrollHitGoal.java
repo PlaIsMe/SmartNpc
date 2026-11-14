@@ -1,6 +1,7 @@
 package com.pla.smart_npc.entity.goal;
 
 import com.pla.smart_npc.entity.PlayerNpcEntity;
+import com.pla.smart_npc.ai.AiChatService;
 import com.pla.smart_npc.entity.ai.PathNavigationAi;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
@@ -17,6 +18,7 @@ import net.minecraft.world.level.pathfinder.Path;
 
 import java.util.Comparator;
 import java.util.EnumSet;
+import java.util.List;
 
 public class TrollHitGoal extends Goal {
     private static final double SEARCH_RADIUS = 12.0D;
@@ -150,7 +152,10 @@ public class TrollHitGoal extends Goal {
             return;
         }
 
-        this.playerNpc.doHurtTarget(this.victim);
+        if (this.playerNpc.doHurtTarget(this.victim)) {
+            var chat = AiChatService.get(this.playerNpc.getServer());
+            if (chat != null) chat.contextualSpeech(this.playerNpc, "troll_hit", this.victim, List.of("You just landed one troll hit on " + this.victim.getName().getString() + ".", "You are trying to run away; escape is not confirmed."));
+        }
         this.hitOnce = true;
         this.runTicks = MIN_RUN_TICKS + this.playerNpc.getRandom().nextInt(MAX_RUN_TICKS - MIN_RUN_TICKS + 1);
         this.playerNpc.setTarget(null);

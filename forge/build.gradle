@@ -35,6 +35,7 @@ jar { archiveClassifier = 'dev' }
 sourcesJar {
     dependsOn ':common:sourcesJar'
     from project(':common').sourceSets.main.allSource
+    exclude 'META-INF/natives/**'
 }
 def npcDataModId = rootProject.mod_id
 def npcGeneratedResources = project(':common').file('src/generated/resources').absolutePath

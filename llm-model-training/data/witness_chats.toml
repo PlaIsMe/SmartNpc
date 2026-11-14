@@ -1,0 +1,93 @@
+# EDIT witnessed-death reactions here. These are speech examples; Java owns avoidance.
+# Keep killer = "unknown" when it was not seen. Do not invent attribution.
+# Add translated replies for languages your server uses. Run python scripts/import_my_chats.py.
+
+[[witness]]
+event = "witness_death_unknown"
+victim = "Steve"
+killer = "unknown"
+observed_kills = 1
+avoidance_requested = false
+en_us = "What the fuck? Steve just died!"
+vi_vn = "Trời ơi! Steve vừa chết!"
+zh_cn = "天啊！Steve 刚刚死了！"
+
+[[witness]]
+event = "witness_death_unknown"
+victim = "Alex"
+killer = "unknown"
+observed_kills = 1
+avoidance_requested = false
+en_us = "Oh my god, that's creepy. What happened to Alex?"
+vi_vn = "Trời ơi, đáng sợ quá. Alex bị làm sao vậy?"
+zh_cn = "太可怕了！Alex 怎么了？"
+
+[[witness]]
+event = "witness_death_unknown"
+victim = "Robin"
+killer = "unknown"
+observed_kills = 1
+avoidance_requested = false
+en_us = "I saw Robin die, but I don't know what killed them."
+vi_vn = "Tôi thấy Robin chết, nhưng không biết do ai hay cái gì."
+zh_cn = "我看到 Robin 死了，但不知道是谁杀的。"
+
+[[witness]]
+event = "witness_killed_by"
+victim = "Steve"
+killer = "Dream"
+observed_kills = 1
+avoidance_requested = true
+en_us = "Oh my god, Steve was killed by Dream!"
+vi_vn = "Trời ơi, Steve đã bị Dream giết!"
+zh_cn = "天啊！Steve 被 Dream 杀了！"
+
+[[witness]]
+event = "witness_killed_by"
+victim = "Alex"
+killer = "Zombie"
+observed_kills = 1
+avoidance_requested = true
+en_us = "That zombie killed Alex! Stay back!"
+vi_vn = "Con Zombie đó đã giết Alex! Lùi lại!"
+zh_cn = "那个僵尸杀了 Alex！快退后！"
+
+[[witness]]
+event = "witness_killed_by"
+victim = "Sam"
+killer = "Skeleton"
+observed_kills = 1
+avoidance_requested = true
+en_us = "Sam just got killed by Skeleton. Be careful!"
+vi_vn = "Sam vừa bị Skeleton giết. Cẩn thận!"
+zh_cn = "Sam 刚被 Skeleton 杀了，小心！"
+
+[[witness]]
+event = "witness_killing_spree"
+victim = "Steve"
+killer = "Dream"
+observed_kills = 2
+avoidance_requested = true
+en_us = "Oh my god, Dream is killing everyone! Run!"
+vi_vn = "Trời ơi, Dream đang giết mọi người! Chạy đi!"
+zh_cn = "天啊！Dream 在杀人！快跑！"
+
+[[witness]]
+event = "witness_killing_spree"
+victim = "Alex"
+killer = "Zombie"
+observed_kills = 3
+avoidance_requested = true
+en_us = "That zombie killed three people. Get away from it!"
+vi_vn = "Con Zombie đó đã giết ba người. Tránh xa nó ra!"
+zh_cn = "那个僵尸杀了三个人，快远离它！"
+
+[[witness]]
+event = "witness_killing_spree"
+victim = "Robin"
+killer = "Skeleton"
+observed_kills = 2
+avoidance_requested = true
+en_us = "Skeleton is slaying us. We need to get away!"
+vi_vn = "Skeleton đang hạ từng người một. Chúng ta phải tránh xa!"
+zh_cn = "Skeleton 正在屠杀我们，快逃！"

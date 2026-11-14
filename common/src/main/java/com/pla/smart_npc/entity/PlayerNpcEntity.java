@@ -1,5 +1,9 @@
 package com.pla.smart_npc.entity;
 
+import com.pla.smart_npc.entity.goal.AISocialInteractionGoal;
+import com.pla.smart_npc.entity.goal.AiObserveEntityGoal;
+import com.pla.smart_npc.ai.NpcGoalBridge;
+import com.pla.smart_npc.ai.AiChatService;
 import com.pla.smart_npc.compat.EpicFightHooks;
 
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
@@ -1421,7 +1425,7 @@ public class PlayerNpcEntity extends FakePlayer implements RangedAttackMob, Fish
     }
 
     public boolean shouldPrioritizeLogGathering() {
-        return ResourceAi.countLogs(this) < this.getLogSupplyGoal();
+        return NpcGoalBridge.needsLogs(this) || ResourceAi.countLogs(this) < this.getLogSupplyGoal();
     }
 
     public boolean shouldPrioritizeCobblestoneGathering() {
@@ -2242,6 +2246,8 @@ public class PlayerNpcEntity extends FakePlayer implements RangedAttackMob, Fish
     }
 
     protected void registerGoals() {
+        this.goalSelector.addGoal(8, new AISocialInteractionGoal(this));
+        this.goalSelector.addGoal(4, new AiObserveEntityGoal(this));
         this.workGoalRegistrationIndex = 0;
         GatherLogsGoal gatherLogsGoal = new GatherLogsGoal(this, 1.0D);
         GatherMissingBuildMaterialGoal gatherMissingBuildMaterialGoal = new GatherMissingBuildMaterialGoal(this, 1.0D);
@@ -2576,6 +2582,8 @@ public class PlayerNpcEntity extends FakePlayer implements RangedAttackMob, Fish
 
     @Override
     public void setTarget(@Nullable LivingEntity target) {
+        AiChatService chat = AiChatService.get(this.getServer());
+        if (chat != null && target != null && chat.interactions().blocksTarget(this, target)) target = null;
         // Cautious avoidance owns threats; target goals must not turn them into retaliation.
         super.setTarget(this.hasInterest(PlayerNpcInterest.CAUTIOUS) ? null : target);
     }
@@ -2584,7 +2592,16 @@ public class PlayerNpcEntity extends FakePlayer implements RangedAttackMob, Fish
         if (this.isTeamAlliedWith(damageSource.getEntity())) {
             return false;
         }
+        float previousHealth = this.getHealth();
         boolean hurt = super.hurt(damageSource, f);
+        if (hurt && !this.level().isClientSide()) {
+            AiChatService service = AiChatService.get(this.getServer());
+            if (service != null) {
+                service.interactions().attacked(this, damageSource.getEntity());
+                service.hurtSpeech(this, damageSource, previousHealth);
+            }
+            ChatUtil.legacyHurtReaction(this, previousHealth);
+        }
         if (hurt && !this.hasInterest(PlayerNpcInterest.CAUTIOUS)
                 && !this.level().isClientSide() && damageSource.getEntity() instanceof LivingEntity attacker
                 && attacker.isAlive()

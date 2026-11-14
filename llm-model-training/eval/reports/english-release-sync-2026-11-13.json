@@ -1,0 +1,60 @@
+{
+  "release": "https://github.com/PlaIsMe/SmartNpc/releases/tag/llm-en-us-v1.0",
+  "catalogRevision": 16,
+  "models": {
+    "qwen2.5-0.5b-en_us": {
+      "file": "en_us_smartnpc-qwen2.5-0.5b-instruct-Q4_K_M.gguf",
+      "url": "https://github.com/PlaIsMe/SmartNpc/releases/download/llm-en-us-v1.0/en_us_smartnpc-qwen2.5-0.5b-instruct-Q4_K_M.gguf",
+      "downloadBytes": 397807488,
+      "sha256": "3c0fde03367c587684f0d8ecaeef73cf2596b74edd82b0204fe479d9f467e331",
+      "ramEstimate": "≈ 0.5 GB",
+      "github_asset_id": 741538695,
+      "github_updated_at": "2026-11-12T23:49:36Z"
+    },
+    "qwen3.5-0.8b-en_us": {
+      "file": "en_us_smartnpc-qwen3.5-0.8b-Q4_K_M.gguf",
+      "url": "https://github.com/PlaIsMe/SmartNpc/releases/download/llm-en-us-v1.0/en_us_smartnpc-qwen3.5-0.8b-Q4_K_M.gguf",
+      "downloadBytes": 541903392,
+      "sha256": "41c986129a11d247dee1e72e9620f9e5bc06760c17ba4c971ee10cfc51449717",
+      "ramEstimate": "≈ 1 GB",
+      "github_asset_id": 741540214,
+      "github_updated_at": "2026-11-12T23:50:21Z"
+    },
+    "qwen3.5-0.8b-en_us-unfiltered": {
+      "file": "en_us_smartnpc-qwen3.5-0.8b-unfiltered-Q4_K_M.gguf",
+      "url": "https://github.com/PlaIsMe/SmartNpc/releases/download/llm-en-us-v1.0/en_us_smartnpc-qwen3.5-0.8b-unfiltered-Q4_K_M.gguf",
+      "downloadBytes": 541903392,
+      "sha256": "a6bc918b49f1fdde6115b3eacc587aac12c5d8cfb053122223b22d9706c0315e",
+      "ramEstimate": "≈ 1 GB",
+      "github_asset_id": 741543541,
+      "github_updated_at": "2026-11-12T23:51:39Z"
+    },
+    "qwen2.5-0.5b-en_us-unfiltered": {
+      "file": "en_us_smartnpc-qwen2.5-0.5b-instruct-unfiltered-Q4_K_M.gguf",
+      "url": "https://github.com/PlaIsMe/SmartNpc/releases/download/llm-en-us-v1.0/en_us_smartnpc-qwen2.5-0.5b-instruct-unfiltered-Q4_K_M.gguf",
+      "downloadBytes": 397807488,
+      "sha256": "ba332f7c72cfbcff106922567c4c7fcafc24856b7aa03d9f4319a1bdb4b219c8",
+      "ramEstimate": "≈ 0.5 GB",
+      "github_asset_id": 741542064,
+      "github_updated_at": "2026-11-12T23:50:56Z"
+    }
+  },
+  "packages": {
+    "fabric": {
+      "file": "C:\\Users\\Admin\\Desktop\\Minecraft\\delivery\\smart_npc\\SmartNPC-fabric-1.20.1-1.0.6.jar",
+      "sha256": "81a48d8ea8721e84851de2ebe6fea96ecdf8ae0236acc3543e27af8837b13388",
+      "catalog_matches_source": true
+    },
+    "forge": {
+      "file": "C:\\Users\\Admin\\Desktop\\Minecraft\\delivery\\smart_npc\\SmartNPC-forge-1.20.1-1.0.6.jar",
+      "sha256": "4c76b34616ebb877278da208cc3933eb908aba33dc2d15d5d29333aea4e04771",
+      "catalog_matches_source": true
+    }
+  },
+  "verification": [
+    "Local GGUF contents match completed export receipts and GitHub SHA-256/size metadata",
+    "Four standard/unfiltered English catalog entries verified",
+    "Older built-in catalog migration and custom URL preservation passed",
+    "Both loader assemble tasks passed; shipped catalogs exactly match verified source"
+  ]
+}

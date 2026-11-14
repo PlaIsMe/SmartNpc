@@ -1,0 +1,174 @@
+{
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "say",
+    "emotion",
+    "action"
+  ],
+  "properties": {
+    "say": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 100
+    },
+    "emotion": {
+      "type": "string",
+      "pattern": "^[a-z_]+$",
+      "maxLength": 24
+    },
+    "action": {
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "type",
+            "target",
+            "item",
+            "count"
+          ],
+          "properties": {
+            "type": {
+              "enum": ["NONE", "ACCEPT_TEAM_INVITE", "DECLINE_TEAM_INVITE"]
+            },
+            "target": {
+              "type": "null"
+            },
+            "item": {
+              "type": "null"
+            },
+            "count": {
+              "const": 0
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "type",
+            "target",
+            "item",
+            "count"
+          ],
+          "properties": {
+            "type": {
+              "const": "GIVE_ITEM"
+            },
+            "target": {
+              "const": "PLAYER"
+            },
+            "item": {
+              "type": "string",
+              "pattern": "^(?:[a-z0-9_.-]+:)?[a-z0-9_./-]+$",
+              "maxLength": 120
+            },
+            "count": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 64
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "type",
+            "target",
+            "item",
+            "count"
+          ],
+          "properties": {
+            "type": {
+              "const": "ASK_PLAYER_FOR_ITEM"
+            },
+            "target": {
+              "const": "PLAYER"
+            },
+            "item": {
+              "type": "string",
+              "pattern": "^[a-z0-9_.-]+:[a-z0-9_./-]+$",
+              "maxLength": 120
+            },
+            "count": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 64
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "type",
+            "target",
+            "item",
+            "count"
+          ],
+          "properties": {
+            "type": {
+              "enum": [
+                "GATHER_ITEM",
+                "MINE_RESOURCE"
+              ]
+            },
+            "target": {
+              "type": "null"
+            },
+            "item": {
+              "type": "string",
+              "pattern": "^[a-z0-9_.-]+:[a-z0-9_./-]+$",
+              "maxLength": 120
+            },
+            "count": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 64
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "type",
+            "target",
+            "item",
+            "count"
+          ],
+          "properties": {
+            "type": {
+              "enum": [
+                "FOLLOW_PLAYER",
+                "STOP_CURRENT_GOAL",
+                "RESUME_PREVIOUS_GOAL",
+                "APPROACH_ENTITY",
+                "SOCIAL_LOOK_AT",
+                "REQUEST_HELP",
+                "SOCIAL_EMOTE",
+                "TROLL_SWING",
+                "START_NPC_CONVERSATION"
+              ]
+            },
+            "target": {
+              "enum": [
+                "PLAYER",
+                "NPC",
+                null
+              ]
+            },
+            "item": {
+              "type": "null"
+            },
+            "count": {
+              "const": 0
+            }
+          }
+        }
+      ]
+    }
+  }
+}

@@ -1,7 +1,12 @@
 [
-  "%s, want to team up? Say ok or okay.",
-  "%s, should we travel together? Reply ok or okay.",
-  "%s, want me on your team? Say ok or okay.",
-  "%s, let us team up. Reply ok or okay.",
-  "%s, need a teammate? Say ok or okay."
+  "%s, want to team up? Face me and crouch twice.",
+  "%s, should we travel together? Face me and crouch twice.",
+  "%s, need a teammate?",
+  "%s, let's stick together.",
+  "%s, room for one more?",
+  "%s, want some company?",
+  "%s, let's make a team.",
+  "%s, don't wander off alone.",
+  "%s, face me and crouch twice if you're in.",
+  "%s, can I tag along?"
 ]

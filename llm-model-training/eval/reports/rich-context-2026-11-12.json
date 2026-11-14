@@ -1,0 +1,200 @@
+{
+  "training_started": false,
+  "profiles": {
+    "en_us": {
+      "new_scenarios": 75,
+      "new_blocks": 111,
+      "new_replies": 1110,
+      "all_short_distinct_ten": true,
+      "counts": {
+        "train": 9849,
+        "validation": 1160,
+        "test": 8
+      },
+      "source_sha256": "ce7dcaccf2533b445b6d387860a2ac888b314e8e7d01bfff10e3d755a3e50e3a",
+      "event_types": [
+        "notice_creative",
+        "notice_creature",
+        "notice_npc",
+        "notice_player",
+        "notice_villager",
+        "ore_discovered",
+        "raid_observed",
+        "sudden_arrival",
+        "troll_hit",
+        "ysm_emote"
+      ],
+      "profane_reply_count": 0
+    },
+    "en_us_unfiltered": {
+      "new_scenarios": 75,
+      "new_blocks": 111,
+      "new_replies": 1110,
+      "all_short_distinct_ten": true,
+      "counts": {
+        "train": 9830,
+        "validation": 1160,
+        "test": 8
+      },
+      "source_sha256": "3d07c56ea773cded1706f8984b255afc97966b8ce3b10e77c3d68151abb2689a",
+      "event_types": [
+        "notice_creative",
+        "notice_creature",
+        "notice_npc",
+        "notice_player",
+        "notice_villager",
+        "ore_discovered",
+        "raid_observed",
+        "sudden_arrival",
+        "troll_hit",
+        "ysm_emote"
+      ],
+      "profane_reply_count": 3912
+    },
+    "zh_cn": {
+      "new_scenarios": 75,
+      "new_blocks": 111,
+      "new_replies": 1110,
+      "all_short_distinct_ten": true,
+      "counts": {
+        "train": 12278,
+        "validation": 1260,
+        "test": 8
+      },
+      "source_sha256": "b6ae235d0fe4a477427aa61f3b7c88cb2a242c7aee6fd1c26017fc78a8ed1976",
+      "event_types": [
+        "notice_creative",
+        "notice_creature",
+        "notice_npc",
+        "notice_player",
+        "notice_villager",
+        "ore_discovered",
+        "raid_observed",
+        "sudden_arrival",
+        "troll_hit",
+        "ysm_emote"
+      ],
+      "profane_reply_count": 0
+    },
+    "vi_vn": {
+      "new_scenarios": 75,
+      "new_blocks": 111,
+      "new_replies": 1110,
+      "all_short_distinct_ten": true,
+      "counts": {
+        "train": 10462,
+        "validation": 1173,
+        "test": 8
+      },
+      "source_sha256": "d312867cc3e7049e3f3ade1eaf6525a024b67fe88a42765e69dedc44b1de0a0b",
+      "event_types": [
+        "notice_creative",
+        "notice_creature",
+        "notice_npc",
+        "notice_player",
+        "notice_villager",
+        "ore_discovered",
+        "raid_observed",
+        "sudden_arrival",
+        "troll_hit",
+        "ysm_emote"
+      ],
+      "profane_reply_count": 0
+    }
+  },
+  "limitations": [
+    "No new weights trained; gameplay hooks compiled, not a live gameplay/quality benchmark.",
+    "YSM player model identities are not exposed by the existing common server adapter; unknown appearances stay unknown."
+  ],
+  "java_python_prompt_parity": 30,
+  "invalid_coordinate_inputs_rejected": true,
+  "token_audit": {
+    "training_started": false,
+    "model_weights_loaded": false,
+    "models": {
+      "qwen2.5-0.5b": {
+        "en_us": {
+          "rows": 11009,
+          "maximum_tokens": 974,
+          "sha256": {
+            "llm-model-training/data/train_en_us.jsonl": "b413a2fe24a76f0f73c82dd969e3ef012b6479b6dfaf140c0a899646cbb37f91",
+            "llm-model-training/data/validation_en_us.jsonl": "10ff12226169095da5f509aa25a8ac35f455c8327c0f54a18ccf5c619bacfb0d"
+          }
+        },
+        "en_us_unfiltered": {
+          "rows": 10990,
+          "maximum_tokens": 982,
+          "sha256": {
+            "llm-model-training/data/en_us_unfiltered/train.jsonl": "959a403bff6056b910bb02fc9d771e17e3d2e478b41f0050bc4823101bcba0f2",
+            "llm-model-training/data/en_us_unfiltered/validation.jsonl": "a1b2b655a80825b5121f25bdbfe95c939ea83b4cf238e5ad9bcdd82507800242"
+          }
+        },
+        "zh_cn": {
+          "rows": 13538,
+          "maximum_tokens": 975,
+          "sha256": {
+            "llm-model-training/data/train_zh_cn.jsonl": "13f80cff980b5106ff14034487e93e8c2fd0a08f3ab65fedfda1f68d3ef94288",
+            "llm-model-training/data/validation_zh_cn.jsonl": "2d1596bc73bb004119039cec9ca580a6b1cfc4bb83ef21f1cddaf245afe2110e"
+          }
+        },
+        "vi_vn": {
+          "rows": 11635,
+          "maximum_tokens": 976,
+          "sha256": {
+            "llm-model-training/data/train_vi_vn.jsonl": "1a3a70e95c8388819f37f461f1348ad14020fc4b6b5bc04e5df422bd80f2e2ce",
+            "llm-model-training/data/validation_vi_vn.jsonl": "4e14485a2d2871a744a6360ba6fc76c0f1668c7dec2fecc488d51c6d4b4c8b7f"
+          }
+        }
+      },
+      "qwen3.5-0.8b": {
+        "en_us": {
+          "rows": 11009,
+          "maximum_tokens": 1010,
+          "sha256": {
+            "llm-model-training/data/train_en_us.jsonl": "b413a2fe24a76f0f73c82dd969e3ef012b6479b6dfaf140c0a899646cbb37f91",
+            "llm-model-training/data/validation_en_us.jsonl": "10ff12226169095da5f509aa25a8ac35f455c8327c0f54a18ccf5c619bacfb0d"
+          }
+        },
+        "en_us_unfiltered": {
+          "rows": 10990,
+          "maximum_tokens": 1018,
+          "sha256": {
+            "llm-model-training/data/en_us_unfiltered/train.jsonl": "959a403bff6056b910bb02fc9d771e17e3d2e478b41f0050bc4823101bcba0f2",
+            "llm-model-training/data/en_us_unfiltered/validation.jsonl": "a1b2b655a80825b5121f25bdbfe95c939ea83b4cf238e5ad9bcdd82507800242"
+          }
+        },
+        "zh_cn": {
+          "rows": 13538,
+          "maximum_tokens": 1010,
+          "sha256": {
+            "llm-model-training/data/train_zh_cn.jsonl": "13f80cff980b5106ff14034487e93e8c2fd0a08f3ab65fedfda1f68d3ef94288",
+            "llm-model-training/data/validation_zh_cn.jsonl": "2d1596bc73bb004119039cec9ca580a6b1cfc4bb83ef21f1cddaf245afe2110e"
+          }
+        },
+        "vi_vn": {
+          "rows": 11635,
+          "maximum_tokens": 1012,
+          "sha256": {
+            "llm-model-training/data/train_vi_vn.jsonl": "1a3a70e95c8388819f37f461f1348ad14020fc4b6b5bc04e5df422bd80f2e2ce",
+            "llm-model-training/data/validation_vi_vn.jsonl": "4e14485a2d2871a744a6360ba6fc76c0f1668c7dec2fecc488d51c6d4b4c8b7f"
+          }
+        }
+      }
+    }
+  },
+  "completed_run_directory": "Cleared by user during this task; user confirmed. Next selected jobs train afresh.",
+  "packaging": {
+    "fabric": {
+      "file": "C:\\Users\\Admin\\Desktop\\Minecraft\\delivery\\smart_npc\\SmartNPC-fabric-1.20.1-1.0.6.jar",
+      "sha256": "936de0ade487bbd04a0c2b08b3fe896224fbc1e4c640a3788560458322003f24",
+      "updated_classes_and_roster_verified": true,
+      "probe_classes_absent": true
+    },
+    "forge": {
+      "file": "C:\\Users\\Admin\\Desktop\\Minecraft\\delivery\\smart_npc\\SmartNPC-forge-1.20.1-1.0.6.jar",
+      "sha256": "6b3e5878aabb3eb856d63551d84499d1080ab35fd1f098969e35d8f72dfc2937",
+      "updated_classes_and_roster_verified": true,
+      "probe_classes_absent": true
+    }
+  }
+}

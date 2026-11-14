@@ -1,0 +1,40 @@
+// Applied to :common. Native compilation runs with resource packaging, never IDE import/configuration.
+def llamaVersion = providers.gradleProperty('llama_version')
+def nativeResources = layout.buildDirectory.dir('generated/llama-resources')
+def nativeWork = rootProject.layout.buildDirectory.dir('native/llama')
+def nativeJdk = javaToolchains.compilerFor { languageVersion = JavaLanguageVersion.of(17) }
+def cmake = providers.gradleProperty('llama_cmake').orElse('')
+def toolchain = providers.gradleProperty('llama_toolchain_bin').orElse('')
+def jobs = providers.gradleProperty('llama_build_jobs').orElse('2')
+
+def buildLlamaNative = tasks.register('buildLlamaNative', Exec) {
+    group = 'build'
+    description = 'Build the selected upstream llama.cpp release and Smart NPC JNI bridge.'
+    inputs.files(rootProject.fileTree('native/llama') { include '*.cpp', 'CMakeLists.txt', '*.ps1', '*.gradle' })
+    inputs.property('llamaVersion', llamaVersion)
+    inputs.property('cmake', cmake)
+    inputs.property('toolchain', toolchain)
+    inputs.property('jobs', jobs)
+    inputs.property('jdk', nativeJdk.map { it.metadata.installationPath.asFile.absolutePath })
+    outputs.dir(nativeResources)
+    doFirst {
+        if (!System.getProperty('os.name').toLowerCase(Locale.ROOT).startsWith('windows')) {
+            throw new GradleException('The bundled runtime currently targets Windows x64. Build distribution jars on Windows with CMake and a MinGW-w64 toolchain.')
+        }
+        def arguments = ['powershell.exe', '-NoProfile', '-NonInteractive', '-ExecutionPolicy', 'Bypass', '-File', rootProject.file('native/llama/build-windows.ps1').absolutePath,
+                         '-Version', llamaVersion.get(), '-WorkDirectory', nativeWork.get().asFile.absolutePath,
+                         '-OutputDirectory', nativeResources.get().asFile.absolutePath,
+                         '-Jdk', nativeJdk.get().metadata.installationPath.asFile.absolutePath, '-Jobs', jobs.get()]
+        if (cmake.get()) arguments.addAll(['-CMake', cmake.get()])
+        if (toolchain.get()) arguments.addAll(['-ToolchainBin', toolchain.get()])
+        if (gradle.startParameter.offline) arguments.add('-Offline')
+        commandLine arguments
+    }
+}
+
+sourceSets.main.resources.srcDir(files(nativeResources).builtBy(buildLlamaNative))
+tasks.named('processResources') { dependsOn(buildLlamaNative) }
+tasks.named('sourcesJar') {
+    dependsOn(buildLlamaNative)
+    exclude 'META-INF/natives/**'
+}

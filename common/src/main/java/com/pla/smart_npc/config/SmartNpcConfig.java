@@ -43,7 +43,7 @@ public class SmartNpcConfig {
                         "Add [NPC] before the existing <name> prefix in Player NPC chat.")
                 .define("showNpcChatPrefix", false);
         NPC_CHAT_LOCALE = BUILDER.comment(
-                        "Datapack locale used for Player NPC event chat, for example en_us.")
+                        "Datapack locale for legacy NPC event chat: en_us, zh_cn or vi_vn. Missing locales fall back to en_us; independent of AI model language.")
                 .define("npcChatLocale", "en_us", value -> value instanceof String locale
                         && locale.matches("[A-Za-z0-9]+(?:[-_][A-Za-z0-9]+)*"));
 
