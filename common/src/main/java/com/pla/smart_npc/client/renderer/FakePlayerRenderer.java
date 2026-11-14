@@ -122,6 +122,8 @@ public class FakePlayerRenderer<T extends FakePlayer>
     @Override
     public void extractRenderState(T entity, AvatarRenderState state, float partialTick) {
         super.extractRenderState(entity, state, partialTick);
+        // Keep the vanilla interpolated attackTime from the superclass. Falling
+        // back to the longer activity timer after a swing ends rewinds the arm.
         if (state instanceof FakePlayerRenderState npcState) npcState.partialTick = partialTick;
         // Gesture goals toggle the synchronized sneak flag without changing the physical pose.
         // Preserve swimming/sleeping poses while restoring the player model's crouch animation.
@@ -156,9 +158,6 @@ public class FakePlayerRenderer<T extends FakePlayer>
                     || entity.isUsingItem() && entity.getUseItem().has(DataComponents.BLOCKS_ATTACKS)
                     || BetterCombatClientCompat.hasActiveAttackAnimation(playerNpc)) {
                 state.attackTime = 0.0F;
-            } else if (state.attackTime <= 0.0F && playerNpc.getMainHandAttackAnimationTicks() > 0) {
-                float duration = playerNpc.getMainHandAttackAnimationDuration();
-                state.attackTime = Mth.clamp(1.0F - ((float) playerNpc.getMainHandAttackAnimationTicks() - partialTick) / duration, 0.0F, 1.0F);
             }
         }
         extractCapeState(entity, state, partialTick);

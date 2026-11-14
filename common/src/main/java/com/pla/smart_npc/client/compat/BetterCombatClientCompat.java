@@ -257,9 +257,8 @@ public final class BetterCombatClientCompat {
     }
 
     /**
-     * Better Combat's pose animations are normally persistent
-     * KeyframeAnimationPlayers. PlayerNpcEntity cannot own that player-only
-     * stack, so sample the same looping interval from the NPC's world age.
+     * Sample poses using this version's Player Animation Library loop metadata.
+     * Its Animation objects do not expose the legacy PlayerAnimator tick fields.
      */
     private static float poseAnimationTime(Object animation, PlayerNpcEntity playerNpc, float partialTick) {
         float absoluteTime = Math.max(0.0F, playerNpc.tickCount + partialTick);
