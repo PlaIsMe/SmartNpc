@@ -1866,13 +1866,15 @@ public class GatherLogsGoal extends Goal implements GatheringGoal {
                     || FarmAi.needsFarmLogs(playerNpc, serverLevel)
                     || CraftBasicGearGoal.needsFishingRodCraftingLogs(playerNpc, serverLevel);
         }
+        if (!playerNpc.isDailyJobActive(PlayerNpcInterest.BUILDING)) {
+            return false;
+        }
         boolean needsCurrentBuildLogs = PlayerNpcBuildMaterialUtil.needsLogsForCurrentBuild(serverLevel, playerNpc);
         boolean unresolvedActiveBuildNeed = isLogGatheringEpisodeActive(playerNpc)
                 && PlayerNpcBuildMaterialUtil.isMissingBuildMaterialSearchPending(playerNpc);
-        return playerNpc.isDailyJobActive(PlayerNpcInterest.BUILDING)
-                && (playerNpc.shouldPrioritizeLogGathering()
+        return playerNpc.shouldPrioritizeLogGathering()
                 || needsCurrentBuildLogs
-                || unresolvedActiveBuildNeed);
+                || unresolvedActiveBuildNeed;
     }
 
     /**

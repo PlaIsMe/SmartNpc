@@ -1,5 +1,7 @@
 package com.pla.smart_npc.util;
 
+import com.google.common.collect.Multimap;
+import com.pla.smart_npc.mixin.RecipeManagerAccessor;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.core.NonNullList;
 import net.minecraft.server.level.ServerLevel;
@@ -11,16 +13,26 @@ import net.minecraft.world.item.Items;
 import net.minecraft.world.item.crafting.CraftingRecipe;
 import net.minecraft.world.item.crafting.CraftingInput;
 import net.minecraft.world.item.crafting.Ingredient;
+import net.minecraft.world.item.crafting.RecipeHolder;
+import net.minecraft.world.item.crafting.RecipeManager;
 import net.minecraft.world.item.crafting.RecipeType;
 import net.minecraft.world.item.crafting.ShapedRecipe;
 import net.minecraft.world.level.ItemLike;
 import net.minecraft.core.registries.BuiltInRegistries;
 
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.IdentityHashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import java.util.WeakHashMap;
 import java.util.function.Predicate;
 
 public final class PlayerNpcCraftingUtil {
+    // Server-thread only. Do not retain a stopped world's recipe manager through the value.
+    private static final Map<RecipeManager, CraftingRecipeIndex> CRAFTING_RECIPE_INDEXES = new WeakHashMap<>();
+
     private PlayerNpcCraftingUtil() {
     }
 
@@ -199,7 +211,36 @@ public final class PlayerNpcCraftingUtil {
 
     private static Optional<CraftingPlan> findCraftingPlan(ServerLevel serverLevel, SimpleContainer inventory, ItemLike result, boolean craftingTable) {
         Item targetItem = result.asItem();
-        return findCraftingPlan(serverLevel, inventory, stack -> stack.is(targetItem), craftingTable);
+        List<CraftingRecipe> candidates = craftingRecipeIndex(serverLevel).byOutput().getOrDefault(targetItem, List.of());
+        return findCraftingPlan(serverLevel, inventory, candidates, stack -> stack.is(targetItem), craftingTable);
+    }
+
+    private static CraftingRecipeIndex craftingRecipeIndex(ServerLevel serverLevel) {
+        RecipeManager manager = serverLevel.getRecipeManager();
+        Multimap<RecipeType<?>, RecipeHolder<?>> recipes =
+                ((RecipeManagerAccessor) manager).smartNpc$getRecipesByType();
+        CraftingRecipeIndex cached = CRAFTING_RECIPE_INDEXES.get(manager);
+        // Both datapack apply and replaceRecipes publish a new multimap, including same-size reloads.
+        // Checking identity avoids copying/scanning every recipe just to validate the index.
+        if (cached != null && cached.recipeSnapshot() == recipes) {
+            return cached;
+        }
+
+        List<CraftingRecipe> craftingRecipes = manager.getAllRecipesFor(RecipeType.CRAFTING).stream()
+                .map(RecipeHolder::value)
+                .toList();
+        Map<Item, List<CraftingRecipe>> byOutput = new IdentityHashMap<>();
+        for (CraftingRecipe recipe : craftingRecipes) {
+            ItemStack result = recipe.getResultItem(serverLevel.registryAccess());
+            if (!result.isEmpty()) {
+                byOutput.computeIfAbsent(result.getItem(), ignored -> new ArrayList<>()).add(recipe);
+            }
+        }
+        // Retain recipe-manager iteration order so alternative recipes keep their precedence.
+        byOutput.replaceAll((item, candidates) -> List.copyOf(candidates));
+        CraftingRecipeIndex index = new CraftingRecipeIndex(recipes, craftingRecipes, byOutput);
+        CRAFTING_RECIPE_INDEXES.put(manager, index);
+        return index;
     }
 
     private static Optional<CraftingPlan> findCraftingPlan(
@@ -208,10 +249,19 @@ public final class PlayerNpcCraftingUtil {
             Predicate<ItemStack> resultMatcher,
             boolean craftingTable
     ) {
+        return findCraftingPlan(serverLevel, inventory, craftingRecipeIndex(serverLevel).recipes(), resultMatcher, craftingTable);
+    }
+
+    private static Optional<CraftingPlan> findCraftingPlan(
+            ServerLevel serverLevel,
+            SimpleContainer inventory,
+            List<CraftingRecipe> candidates,
+            Predicate<ItemStack> resultMatcher,
+            boolean craftingTable
+    ) {
         int width = craftingTable ? 3 : 2;
         int height = craftingTable ? 3 : 2;
-        for (var recipeHolder : serverLevel.getRecipeManager().getAllRecipesFor(RecipeType.CRAFTING)) {
-            CraftingRecipe recipe = recipeHolder.value();
+        for (CraftingRecipe recipe : candidates) {
             ItemStack recipeResult = recipe.getResultItem(serverLevel.registryAccess());
             if (recipeResult.isEmpty()
                     || !resultMatcher.test(recipeResult)
@@ -571,12 +621,15 @@ public final class PlayerNpcCraftingUtil {
     }
 
     public static boolean tryCraftWithLogConversion(ServerLevel serverLevel, SimpleContainer inventory, ItemLike result, boolean craftingTable, int rawLogReserve) {
-        while (!canCraft(serverLevel, inventory, result, craftingTable) && countLogs(inventory) > Math.max(0, rawLogReserve)) {
+        Optional<CraftingPlan> plan = findCraftingPlan(serverLevel, inventory, result, craftingTable);
+        while (plan.isEmpty() && countLogs(inventory) > Math.max(0, rawLogReserve)) {
             if (!convertOneLogToPlanks(inventory, rawLogReserve)) {
                 break;
             }
+            plan = findCraftingPlan(serverLevel, inventory, result, craftingTable);
         }
-        return tryCraft(serverLevel, inventory, result, craftingTable);
+        Optional<ItemStack> crafted = craftItem(serverLevel, inventory, plan);
+        return crafted.isPresent() && InventoryUtils.addItem(inventory, crafted.get());
     }
 
     private static SimpleContainer copyContainer(SimpleContainer inventory) {
@@ -741,6 +794,13 @@ public final class PlayerNpcCraftingUtil {
 
         String bedPath = key.getPath().substring(0, key.getPath().length() - "_wool".length()) + "_bed";
         return BuiltInRegistries.ITEM.get(ResourceLocation.fromNamespaceAndPath(key.getNamespace(), bedPath));
+    }
+
+    private record CraftingRecipeIndex(
+            Multimap<RecipeType<?>, RecipeHolder<?>> recipeSnapshot,
+            List<CraftingRecipe> recipes,
+            Map<Item, List<CraftingRecipe>> byOutput
+    ) {
     }
 
     private record CraftingPlan(CraftingRecipe recipe, CraftingInput grid, int[] inventorySlots) {
