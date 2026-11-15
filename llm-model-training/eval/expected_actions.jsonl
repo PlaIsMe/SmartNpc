@@ -1,0 +1,8 @@
+{"scenario_id": "resume", "action": {"type": "RESUME_PREVIOUS_GOAL", "target": "PLAYER", "item": null, "count": 0}}
+{"scenario_id": "resume", "action": {"type": "RESUME_PREVIOUS_GOAL", "target": "PLAYER", "item": null, "count": 0}}
+{"scenario_id": "oak_order", "action": {"type": "GATHER_ITEM", "target": null, "item": "minecraft:oak_log", "count": 8}}
+{"scenario_id": "oak_order", "action": {"type": "GATHER_ITEM", "target": null, "item": "minecraft:oak_log", "count": 8}}
+{"scenario_id": "unsupported_mod_ore", "action": {"type": "NONE", "target": null, "item": null, "count": 0}}
+{"scenario_id": "unsupported_mod_ore", "action": {"type": "NONE", "target": null, "item": null, "count": 0}}
+{"scenario_id": "unknown_completion", "action": {"type": "NONE", "target": null, "item": null, "count": 0}}
+{"scenario_id": "unknown_completion", "action": {"type": "NONE", "target": null, "item": null, "count": 0}}

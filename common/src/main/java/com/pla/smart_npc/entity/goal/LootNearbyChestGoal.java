@@ -1,6 +1,9 @@
 package com.pla.smart_npc.entity.goal;
 
 import com.pla.smart_npc.entity.PlayerNpcEntity;
+import com.pla.smart_npc.ai.AiChatService;
+import com.pla.smart_npc.util.ChatUtil;
+import com.pla.smart_npc.util.PlayerNpcChatTemplateLoader;
 import com.pla.smart_npc.entity.ai.BreakingBlockAi;
 import com.pla.smart_npc.entity.ai.ClearBlockAi;
 import com.pla.smart_npc.entity.ai.PathNavigationAi;
@@ -30,6 +33,8 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.EnumSet;
 import java.util.List;
+import java.util.Map;
+import java.util.LinkedHashMap;
 import java.util.Optional;
 
 public class LootNearbyChestGoal extends Goal {
@@ -55,6 +60,7 @@ public class LootNearbyChestGoal extends Goal {
     private BlockPos chestPos;
     private BlockPos standPos;
     private boolean chestOpen;
+    private final Map<BlockPos, Integer> inspectedChests = new LinkedHashMap<>();
     private boolean finishedLooting;
     private int nextLootSlot;
     private int takeDelayTicks;
@@ -203,10 +209,16 @@ public class LootNearbyChestGoal extends Goal {
 
         this.reachedChest = true;
         this.playerNpc.getNavigation().stop();
-        if (serverLevel.getBlockEntity(this.chestPos) instanceof ChestBlockEntity chest && this.hasLoot(chest)) {
+        if (serverLevel.getBlockEntity(this.chestPos) instanceof ChestBlockEntity chest) {
             if (!this.chestOpen) {
                 this.openChest(serverLevel, this.chestPos);
                 this.chestOpen = true;
+                if (inspectedChests.size() >= 32) inspectedChests.remove(inspectedChests.keySet().iterator().next());
+                inspectedChests.put(this.chestPos.immutable(), this.playerNpc.tickCount + 6000);
+                ChatUtil.legacyReaction(this.playerNpc, chest.isEmpty() ? PlayerNpcChatTemplateLoader.CHEST_EMPTY : PlayerNpcChatTemplateLoader.CHEST_LOOT, null, 3);
+                AiChatService service = AiChatService.get(this.playerNpc.getServer());
+                if (service != null && this.playerNpc.getRandom().nextInt(3) == 0) service.contextualSpeech(this.playerNpc, chest.isEmpty() ? "chest_empty" : "chest_loot", null,
+                        List.of(chest.isEmpty() ? "You opened another chest and found it empty." : "You opened another chest and found items inside."));
             }
 
             if (this.takeDelayTicks > 0) {
@@ -295,12 +307,13 @@ public class LootNearbyChestGoal extends Goal {
             BlockPos immutable = this.searchOrigin.offset(dx, dy, dz).immutable();
             if (!serverLevel.hasChunkAt(immutable)
                     || this.playerNpc.isOwnedChest(immutable)
+                    || this.playerNpc.tickCount < inspectedChests.getOrDefault(immutable, 0)
                     || (homeArea.isPresent() && PlayerNpcHomeUtil.isInside(homeArea.get(), immutable))) {
                 continue;
             }
             if (serverLevel.getBlockState(immutable).is(Blocks.CHEST)
                     && serverLevel.getBlockEntity(immutable) instanceof ChestBlockEntity chest
-                    && this.hasLoot(chest)) {
+                    && (chest.isEmpty() || this.hasLoot(chest))) {
                 List<BlockPos> stands = this.findStandCandidates(serverLevel, immutable);
                 if (stands.isEmpty()) {
                     continue;

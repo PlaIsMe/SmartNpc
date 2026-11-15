@@ -7,6 +7,7 @@ import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import com.mojang.brigadier.arguments.StringArgumentType;
 import com.pla.smart_npc.SmartNpc;
+import com.pla.smart_npc.ai.AiChatService;
 import com.pla.smart_npc.config.SmartNpcConfig;
 import com.pla.smart_npc.entity.PlayerNpcEntity;
 import com.pla.smart_npc.init.SmartNpcModEntities;
@@ -133,6 +134,8 @@ public final class PlayerNpcCommandEvent {
         }
 
         player.teleportTo(targetLevel, npc.getX(), npc.getY(), npc.getZ(), npc.getYRot(), npc.getXRot());
+        var chat = AiChatService.get(source.getServer());
+        if (chat != null) chat.playerTeleportedTo(npc, player);
         source.sendSuccess(() -> Component.literal("Teleported to player NPC " + npc.getName().getString()), true);
         return 1;
     }

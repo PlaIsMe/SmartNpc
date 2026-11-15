@@ -1,0 +1,34 @@
+Smart NPC local AI attribution
+
+llama.cpp (MIT)
+Copyright (c) Georgi Gerganov and the llama.cpp contributors.
+https://github.com/ggml-org/llama.cpp
+Original license: llama.cpp.txt in this directory.
+
+Smart NPC supplies its own JNI bridge (native/llama in the Smart NPC source).
+The native library is built from the pinned upstream source with CPU support;
+OpenMP, executable tools, server and subprocess support are disabled.
+The upstream release is selected by llama_version in gradle.properties.
+
+Included dependency/runtime notices in this directory:
+- nlohmann JSON by Niels Lohmann: nlohmann-json.txt (MIT)
+- cpp-httplib by Yuji Hirose: cpp-httplib.txt (MIT)
+- xxHash by Yann Collet: xxhash.txt (BSD-2-Clause)
+- SHA-256 / rotate-bits: sha256.txt and rotate-bits.txt
+- MinGW-w64: MinGW-w64-runtime.txt
+- GCC runtime: GCC-GPL-3.0.txt and GCC-Runtime-Exception.txt
+  Compiler distribution: https://github.com/skeeto/w64devkit/releases/tag/v2.11.0
+  GCC source: https://gcc.gnu.org/
+
+Qwen2.5-0.5B-Instruct and Qwen3.5-0.8B (Apache-2.0)
+Created by the Qwen team, Alibaba Cloud.
+https://huggingface.co/Qwen/Qwen2.5-0.5B-Instruct
+https://huggingface.co/Qwen/Qwen3.5-0.8B
+Original licenses: Qwen2.5.txt and Qwen3.5.txt in this directory.
+Smart NPC's separately downloaded model releases are modified derivatives:
+fine-tuned on NPC conversation data and exported/quantized to GGUF.
+They are not official Qwen releases or an endorsement by the Qwen team.
+
+llama.jar was reviewed as an architectural reference for in-process inference:
+https://modrinth.com/mod/llama.jar
+No llama.jar or java-llama.cpp source or binaries are included in Smart NPC.

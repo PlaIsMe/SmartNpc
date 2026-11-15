@@ -1,0 +1,22 @@
+{
+  "language": "en_us",
+  "profile": "unfiltered",
+  "source": "data/my_chats_en_us_unfiltered.toml",
+  "source_sha256": "3d07c56ea773cded1706f8984b255afc97966b8ce3b10e77c3d68151abb2689a",
+  "system_prompt_sha256": "838816728e8437d97572487703098d1bf7d450cfe4646008fb006c22dfe5c33d",
+  "counts": {
+    "train": 9830,
+    "validation": 1160,
+    "test": 8
+  },
+  "sha256": {
+    "data/en_us_unfiltered/train.jsonl": "35c67bc81d1763723c5055a20f914bc74d349cd09308962214c9b3e8fb984edf",
+    "data/en_us_unfiltered/validation.jsonl": "b2736239d1c030c6d62b829a8541b10d1937c086e1c43cea1b059d6999615dd4",
+    "data/en_us_unfiltered/test.jsonl": "cad687de2a343d428832a0de64c56130104af719d6e82f529a9f25f35eee9ca0",
+    "../common/src/main/java/com/pla/smart_npc/ai/AiSpeechStyle.java": "82dd7685a2e6792117be1a84bdf49fe6742a32680863e139cb04df3292288baa",
+    "scripts/event_prompt.py": "2edd2eaa2b470299bd6472798b32ed68162ba3ed3dfbbbce978fc3127a71e10b",
+    "scripts/unfiltered_profile.py": "75beb540f420c52486b1238d7c6f905f8a83948cee1a586678e8c4fcdacd9808",
+    "../common/src/main/java/com/pla/smart_npc/ai/AiEventPrompts.java": "b68e1169b4bfe2240904c53ab5dda1ddabe4309fe9c7778c8e3120304d507260"
+  },
+  "model_training_performed_by_preparation": false
+}

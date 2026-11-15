@@ -166,6 +166,10 @@ public final class SmartNpcNamesConfig {
             if (interestName.isEmpty()) {
                 return Optional.empty();
             }
+            if (interestName.equalsIgnoreCase("AI_CHAT") || interestName.regionMatches(true, 0, "AI_CHAT:", 0, 8)) {
+                // Ignore retired language tokens so old rosters keep their identities and jobs.
+                continue;
+            }
             if (interestName.regionMatches(true, 0, "YSM:", 0, 4)) {
                 if (ysmModelFileName != null) {
                     return Optional.empty();

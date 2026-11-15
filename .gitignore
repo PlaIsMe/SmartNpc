@@ -4,7 +4,7 @@ build
 run
 bin
 libs
-reference
+reference/
 AGENTS.md
 CONTENT_FEATURES.md
 INDEX.md
@@ -12,3 +12,12 @@ INDEX.md
 .vscoderun-data
 .vscode
 .codex
+docs
+llm-model
+__pycache__/
+*.pyc
+/llm-model-training/.venv*/
+/llm-model-training/runs/
+/llm-model-training/exports/
+/llm-model-training/data/archive/
+unsloth_compiled_cache

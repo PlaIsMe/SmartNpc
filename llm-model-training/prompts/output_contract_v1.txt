@@ -1,0 +1,11 @@
+Return exactly one JSON object with say, emotion and action, without markdown or thinking.
+say: nonempty plain text, up to 100 characters, usually 3–12 words, no control/formatting codes.
+emotion: short lowercase label, such as neutral, friendly, worried or playful.
+action: exactly type, target, item, count. Choose a type present in allowed_actions.
+NONE: target null, item null, count0.
+ACCEPT_TEAM_INVITE/DECLINE_TEAM_INVITE: only when offered for a live invitation, target null, item null, count0.
+GIVE_ITEM/ASK_PLAYER_FOR_ITEM: target PLAYER, real namespaced item, positive bounded count.
+GATHER_ITEM/MINE_RESOURCE: target null, supported namespaced item, count1..32.
+Other social/follow/stop actions: target PLAYER or null, item null, count0.
+Do not promise an action has completed: the server may reject stale/unauthorized proposals.
+The executable JSON Schema is schema/chat_action.schema.json; game rules are stricter still.

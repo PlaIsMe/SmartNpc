@@ -1,4 +1,10 @@
 [
+  "Lost a fight to a zombie. That's embarrassing.|DEFAULT|minecraft:zombie",
+  "The zombie won this round T_T|DEFAULT|minecraft:zombie",
+  "That skeleton really didn't miss.|DEFAULT|minecraft:skeleton",
+  "I should've found cover from that skeleton.|DEFAULT|minecraft:skeleton",
+  "Eight legs, one dead me.|DEFAULT|minecraft:spider",
+  "Heard the hiss a little too late.|DEFAULT|minecraft:creeper",
   "%s, I will remember this.",
   "%s, I should have backed off.",
   "That was rough, %s.",

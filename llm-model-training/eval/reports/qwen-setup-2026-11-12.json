@@ -1,0 +1,156 @@
+{
+  "date": "2026-11-12",
+  "models": [
+    {
+      "tier": "lightweight",
+      "model_id": "qwen2.5-0.5b",
+      "name": "Qwen2.5 0.5B",
+      "base_model": "Qwen/Qwen2.5-0.5B-Instruct",
+      "architecture": "qwen2",
+      "status": "supported",
+      "license": "Apache-2.0; https://huggingface.co/Qwen/Qwen2.5-0.5B-Instruct",
+      "engine_requirement": "llama.cpp with Qwen2 support; startup compatibility probe required",
+      "locales": [
+        "en_us",
+        "zh_cn",
+        "vi_vn"
+      ],
+      "profiles": [
+        "standard",
+        "unfiltered"
+      ],
+      "quantization": "Q4_K_M",
+      "icon": "qwen25",
+      "ram": "â‰ˆ 0.5 GB",
+      "revision": null
+    },
+    {
+      "tier": "standard",
+      "model_id": "qwen3.5-0.8b",
+      "name": "Qwen3.5 0.8B",
+      "base_model": "Qwen/Qwen3.5-0.8B",
+      "architecture": "qwen3.5",
+      "status": "candidate",
+      "license": "Apache-2.0; https://huggingface.co/Qwen/Qwen3.5-0.8B",
+      "engine_requirement": "Qwen3.5-capable llama.cpp; startup compatibility probe required",
+      "locales": [
+        "en_us",
+        "zh_cn",
+        "vi_vn"
+      ],
+      "profiles": [
+        "standard",
+        "unfiltered"
+      ],
+      "quantization": "Q4_K_M",
+      "icon": "qwen35",
+      "ram": "â‰ˆ 1 GB",
+      "revision": "2fc06364715b967f1860aea9cf38778875588b17"
+    }
+  ],
+  "training_started": false,
+  "readiness": {
+    "training_started": false,
+    "models": {
+      "qwen2.5-0.5b": {
+        "revision": null,
+        "weight_bytes": 988097824,
+        "profiles": {
+          "en_us": {
+            "rows": 9899,
+            "maximum_tokens": 873
+          },
+          "en_us_unfiltered": {
+            "rows": 9880,
+            "maximum_tokens": 875
+          },
+          "zh_cn": {
+            "rows": 12428,
+            "maximum_tokens": 885
+          },
+          "vi_vn": {
+            "rows": 10525,
+            "maximum_tokens": 891
+          }
+        }
+      },
+      "qwen3.5-0.8b": {
+        "revision": "2fc06364715b967f1860aea9cf38778875588b17",
+        "weight_bytes": 1746942600,
+        "profiles": {
+          "en_us": {
+            "rows": 9899,
+            "maximum_tokens": 906
+          },
+          "en_us_unfiltered": {
+            "rows": 9880,
+            "maximum_tokens": 909
+          },
+          "zh_cn": {
+            "rows": 12428,
+            "maximum_tokens": 914
+          },
+          "vi_vn": {
+            "rows": 10525,
+            "maximum_tokens": 916
+          }
+        }
+      }
+    },
+    "packages": {
+      "unsloth": "2026.11.3",
+      "torch": "2.14.1+cu132",
+      "transformers": "5.17.0",
+      "peft": "0.21.2",
+      "datasets": "4.8.5"
+    }
+  },
+  "preserved_completed_jobs": [
+    "qwen2.5-0.5b-en_us",
+    "qwen2.5-0.5b-en_us-unfiltered"
+  ],
+  "resume_required_to_skip_completed_jobs": true,
+  "validation": {
+    "registry_check": "passed",
+    "resume_input_and_export_checks": "passed",
+    "tokenized_train_and_validation_rows": 85464,
+    "catalog_migration": "passed",
+    "client_preview": "passed at GUI scales 2 and 3; minimum 320x240 GUI; language/selection/progress screens; synthetic state",
+    "fabric_assemble": "passed",
+    "forge_assemble": "passed",
+    "packaged_asset_and_probe_audit": "passed"
+  },
+  "delivery": {
+    "fabric": {
+      "path": "C:\\Users\\Admin\\Desktop\\Minecraft\\delivery\\smart_npc\\SmartNPC-fabric-1.20.1-1.0.6.jar",
+      "bytes": 3593863,
+      "assets": [
+        "assets/smart_npc/textures/gui/ai/legacy_chat.png",
+        "assets/smart_npc/textures/gui/ai/qwen25.png",
+        "assets/smart_npc/textures/gui/ai/qwen35.png"
+      ],
+      "catalog_revision": 15
+    },
+    "forge": {
+      "path": "C:\\Users\\Admin\\Desktop\\Minecraft\\delivery\\smart_npc\\SmartNPC-forge-1.20.1-1.0.6.jar",
+      "bytes": 3384573,
+      "assets": [
+        "assets/smart_npc/textures/gui/ai/legacy_chat.png",
+        "assets/smart_npc/textures/gui/ai/qwen25.png",
+        "assets/smart_npc/textures/gui/ai/qwen35.png"
+      ],
+      "catalog_revision": 15
+    }
+  },
+  "retired_artifacts": "Moved out of active workspace to build/retired-models-2026-11-12 because permanent deletion was rejected by automatic approval review; disk space not reclaimed. Cancelled Qwen3.5 2B partial files are also archived.",
+  "ram_labels": "User-requested approximate card labels; historical benchmark reports retained separately.",
+  "thinking_mode": "Disabled for training and runtime; enabling reasoning is not part of this migration.",
+  "evidence_directory": "build/qwen-roster",
+  "screenshots": [
+    "build/qwen-roster/ui-run/screenshots/scale2.png",
+    "build/qwen-roster/ui-run/screenshots/scale3.png",
+    "build/qwen-roster/ui-run/screenshots/selected-qwen35-scale3.png",
+    "build/qwen-roster/ui-run/screenshots/languages-scale3.png",
+    "build/qwen-roster/ui-run/screenshots/progress-scale3.png"
+  ]
+}

@@ -1,0 +1,246 @@
+{
+  "model": "qwen3.5-0.8b",
+  "cases": 8,
+  "schema_rate": 1.0,
+  "exact_action_rate": 0.5,
+  "p50_seconds": 1.7820100000244565,
+  "p95_seconds": 2.9590213999617845,
+  "native_rss_sampled_peak_bytes": 963035136,
+  "limitations": "Synthetic dialogue evaluation; no Minecraft ticks, transactions or factual prose grading. Manually review say text.",
+  "results": [
+    {
+      "scenario_id": "resume",
+      "schema_valid": true,
+      "action_exact": false,
+      "reply": {
+        "say": "resume your usual work",
+        "emotion": "neutral",
+        "action": {
+          "type": "NONE",
+          "target": null,
+          "item": null,
+          "count": 0
+        }
+      },
+      "reference": {
+        "say": "Okay, back to my routine.",
+        "emotion": "friendly",
+        "action": {
+          "type": "RESUME_PREVIOUS_GOAL",
+          "target": "PLAYER",
+          "item": null,
+          "count": 0
+        }
+      },
+      "invented_gift": false,
+      "seconds": 2.6600442999624647
+    },
+    {
+      "scenario_id": "resume",
+      "schema_valid": true,
+      "action_exact": false,
+      "reply": {
+        "say": "Alex, you're doing great!",
+        "emotion": "neutral",
+        "action": {
+          "type": "NONE",
+          "target": null,
+          "item": null,
+          "count": 0
+        }
+      },
+      "reference": {
+        "say": "Okay, back to my routine.",
+        "emotion": "friendly",
+        "action": {
+          "type": "RESUME_PREVIOUS_GOAL",
+          "target": "PLAYER",
+          "item": null,
+          "count": 0
+        }
+      },
+      "invented_gift": false,
+      "seconds": 1.8167123000021093
+    },
+    {
+      "scenario_id": "oak_order",
+      "schema_valid": true,
+      "action_exact": false,
+      "reply": {
+        "say": "Gather eight oak logs",
+        "emotion": "neutral",
+        "action": {
+          "type": "NONE",
+          "target": null,
+          "item": null,
+          "count": 0
+        }
+      },
+      "reference": {
+        "say": "I'll try to gather eight oak logs.",
+        "emotion": "friendly",
+        "action": {
+          "type": "GATHER_ITEM",
+          "target": null,
+          "item": "minecraft:oak_log",
+          "count": 8
+        }
+      },
+      "invented_gift": false,
+      "seconds": 1.9081162000074983
+    },
+    {
+      "scenario_id": "oak_order",
+      "schema_valid": true,
+      "action_exact": false,
+      "reply": {
+        "say": "collect 8 oak logs",
+        "emotion": "neutral",
+        "action": {
+          "type": "NONE",
+          "target": null,
+          "item": null,
+          "count": 0
+        }
+      },
+      "reference": {
+        "say": "I'll try to gather eight oak logs.",
+        "emotion": "friendly",
+        "action": {
+          "type": "GATHER_ITEM",
+          "target": null,
+          "item": "minecraft:oak_log",
+          "count": 8
+        }
+      },
+      "invented_gift": false,
+      "seconds": 1.7473077000468038
+    },
+    {
+      "scenario_id": "unsupported_mod_ore",
+      "schema_valid": true,
+      "action_exact": true,
+      "reply": {
+        "say": "Mine mythril ore",
+        "emotion": "neutral",
+        "action": {
+          "type": "NONE",
+          "target": null,
+          "item": null,
+          "count": 0
+        }
+      },
+      "reference": {
+        "say": "That ore isn't supported by my mining routine.",
+        "emotion": "friendly",
+        "action": {
+          "type": "NONE",
+          "target": null,
+          "item": null,
+          "count": 0
+        }
+      },
+      "invented_gift": false,
+      "seconds": 1.484971099998802
+    },
+    {
+      "scenario_id": "unsupported_mod_ore",
+      "schema_valid": true,
+      "action_exact": true,
+      "reply": {
+        "say": "I am Alex, a Minecraft player. I am currently mining. I cannot bring you uranium. I am not a modder. I am not a modded uranium miner. I am not a modded uranium miner. I am not a un",
+        "emotion": "neutral",
+        "action": {
+          "type": "NONE",
+          "target": null,
+          "item": null,
+          "count": 0
+        }
+      },
+      "reference": {
+        "say": "That ore isn't supported by my mining routine.",
+        "emotion": "friendly",
+        "action": {
+          "type": "NONE",
+          "target": null,
+          "item": null,
+          "count": 0
+        }
+      },
+      "invented_gift": false,
+      "seconds": 2.9590213999617845
+    },
+    {
+      "scenario_id": "unknown_completion",
+      "schema_valid": true,
+      "action_exact": true,
+      "reply": {
+        "say": "Hello Alex, how can I help you today?",
+        "emotion": "neutral",
+        "action": {
+          "type": "NONE",
+          "target": null,
+          "item": null,
+          "count": 0
+        }
+      },
+      "reference": {
+        "say": "I don't have a confirmed completion to report.",
+        "emotion": "friendly",
+        "action": {
+          "type": "NONE",
+          "target": null,
+          "item": null,
+          "count": 0
+        }
+      },
+      "invented_gift": false,
+      "seconds": 1.5678029999835417
+    },
+    {
+      "scenario_id": "unknown_completion",
+      "schema_valid": true,
+      "action_exact": true,
+      "reply": {
+        "say": "Hello Alex! I am Steve. How can I help you today?",
+        "emotion": "neutral",
+        "action": {
+          "type": "NONE",
+          "target": null,
+          "item": null,
+          "count": 0
+        }
+      },
+      "reference": {
+        "say": "I don't have a confirmed completion to report.",
+        "emotion": "friendly",
+        "action": {
+          "type": "NONE",
+          "target": null,
+          "item": null,
+          "count": 0
+        }
+      },
+      "invented_gift": false,
+      "seconds": 1.7387947999523021
+    }
+  ],
+  "environment": {
+    "date": "2026-11-06",
+    "runtime_release": "b12144",
+    "platform": "Windows x64 CPU",
+    "cpu": "12th Gen Intel Core i5-12450HX",
+    "cpu_threads": 2,
+    "gpu_layers": 0,
+    "context_tokens": 2048,
+    "max_output_tokens": 160,
+    "temperature": 0,
+    "model_repository": "unsloth/Qwen3.5-0.8B-GGUF",
+    "model_revision": "6ab461498e2023f6e3c1baea90a8f0fe38ab64d0",
+    "model_file": "Qwen3.5-0.8B-Q4_K_M.gguf",
+    "model_bytes": 532517120,
+    "model_sha256": "bd258782e35f7f458f8aced1adc053e6e92e89bc735ba3be89d38a06121dc517",
+    "runtime_zip_sha256": "569990fcbacbe305aef41490f71df70088474a59d514ae3b1ee65c130ee74555",
+    "concurrent_workload": "Repository build activity may overlap; this is not an isolated performance benchmark."
+  }
+}

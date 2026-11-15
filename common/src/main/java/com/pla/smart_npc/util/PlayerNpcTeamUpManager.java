@@ -1,5 +1,6 @@
 package com.pla.smart_npc.util;
 
+import com.pla.smart_npc.ai.NpcGoalBridge;
 import com.pla.smart_npc.clazz.PlayerNpcInterest;
 import com.pla.smart_npc.entity.PlayerNpcEntity;
 import net.minecraft.server.MinecraftServer;
@@ -52,7 +53,7 @@ public final class PlayerNpcTeamUpManager {
                 || !isAvailableCandidate(initiator, target)) {
             return false;
         }
-        PendingInvitation invitation = new PendingInvitation(initiator, target, expiresAtTick);
+        PendingInvitation invitation = new PendingInvitation(UUID.randomUUID(), initiator, target, expiresAtTick);
         INVITATIONS.put(initiator.getUUID(), invitation);
         INVITATIONS.put(target.getUUID(), invitation);
         initiator.setTeamUpRequestPending(true);
@@ -258,7 +259,7 @@ public final class PlayerNpcTeamUpManager {
      * is live, in the same dimension, and within the explicit follow range.
      */
     public static boolean shouldSuspendRoutineWork(PlayerNpcEntity follower) {
-        return follower != null && resolveNearbyLeader(follower) != null;
+        return follower != null && !NpcGoalBridge.hasWork(follower) && resolveNearbyLeader(follower) != null;
     }
 
     public static void alertAlliesOfAttack(LivingEntity victim, LivingEntity attacker) {
@@ -426,6 +427,21 @@ public final class PlayerNpcTeamUpManager {
         return null;
     }
 
-    private record PendingInvitation(PlayerNpcEntity initiator, LivingEntity target, long expiresAtTick) {
+    public static PendingInvitation pendingInvitation(LivingEntity participant) { return getInvitation(participant); }
+
+    /** The inference result may only resolve this exact, still-live invitation. */
+    public static boolean respondToInvitation(UUID token, PlayerNpcEntity npc, LivingEntity partner, boolean accept) {
+        PendingInvitation invitation = getInvitation(npc);
+        if (invitation == null || !invitation.token().equals(token)
+                || !(invitation.initiator() == npc && invitation.target() == partner
+                || invitation.target() == npc && invitation.initiator() == partner)
+                || !canContinueInvitation(invitation.initiator(), invitation.target())) return false;
+        if (!accept) { cancelInvitation(invitation.initiator(), invitation.target()); return true; }
+        return invitation.target() instanceof PlayerNpcEntity target
+                ? acceptNpcResponse(invitation.initiator(), target)
+                : invitation.target() instanceof ServerPlayer player && acceptPlayerGesture(invitation.initiator(), player);
+    }
+
+    public record PendingInvitation(UUID token, PlayerNpcEntity initiator, LivingEntity target, long expiresAtTick) {
     }
 }

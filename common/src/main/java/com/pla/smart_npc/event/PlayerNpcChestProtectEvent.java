@@ -3,12 +3,16 @@ package com.pla.smart_npc.event;
 import com.pla.smart_npc.platform.event.NpcEvents.*;
 
 import com.pla.smart_npc.SmartNpc;
+import com.pla.smart_npc.ai.AiChatService;
 import com.pla.smart_npc.clazz.PlayerNpcInterest;
 import com.pla.smart_npc.entity.PlayerNpcEntity;
+import com.pla.smart_npc.util.ChatUtil;
+import com.pla.smart_npc.util.PlayerNpcChatTemplateLoader;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.level.block.Blocks;
+import java.util.List;
 
 /** Server-side reactions to another living entity disturbing an NPC's tracked chest. */
 public final class PlayerNpcChestProtectEvent {
@@ -41,8 +45,13 @@ public final class PlayerNpcChestProtectEvent {
         for (var entity : serverLevel.getAllEntities()) {
             if (!(entity instanceof PlayerNpcEntity owner)
                     || !owner.isAlive()
-                    || owner == offender
-                    || owner.isTeamFollower()
+                    || owner == offender || !owner.isOwnedChest(chestPos)) continue;
+            AiChatService service = AiChatService.get(serverLevel.getServer());
+            if (owner.distanceToSqr(offender) <= 256 && owner.hasLineOfSight(offender))
+                ChatUtil.legacyReaction(owner, action.equals("broke") ? PlayerNpcChatTemplateLoader.OWNED_CHEST_BROKEN : PlayerNpcChatTemplateLoader.OWNED_CHEST_OPENED, offender, 3, offender.getDisplayName());
+            if (service != null && owner.distanceToSqr(offender) <= 256 && owner.hasLineOfSight(offender) && owner.getRandom().nextInt(3) == 0)
+                service.contextualSpeech(owner, action.equals("broke") ? "owned_chest_broken" : "owned_chest_opened", offender, List.of(offender.getName().getString() + " " + action + " your own tracked chest."));
+            if (owner.isTeamFollower()
                     || owner.isTeamAlliedWith(offender)
                     || !owner.hasInterest(PlayerNpcInterest.CHEST_PROTECT)
                     || !owner.isOwnedChest(chestPos)) {

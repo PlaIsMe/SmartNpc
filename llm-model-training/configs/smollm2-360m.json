@@ -1,0 +1,7 @@
+{
+  "base_model": "HuggingFaceTB/SmolLM2-360M-Instruct",
+  "architecture": "llama",
+  "load_in_4bit": false,
+  "max_length": 1024,
+  "revision": null
+}

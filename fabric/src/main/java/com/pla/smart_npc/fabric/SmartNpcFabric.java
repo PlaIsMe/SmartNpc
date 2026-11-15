@@ -1,5 +1,7 @@
 package com.pla.smart_npc.fabric;
 
+import net.fabricmc.fabric.api.message.v1.ServerMessageEvents;
+import com.pla.smart_npc.ai.AiChatService;
 import com.pla.smart_npc.SmartNpc;
 import com.pla.smart_npc.config.*;
 import com.pla.smart_npc.entity.PlayerNpcEntity;
@@ -41,6 +43,9 @@ import java.util.concurrent.Executor;
 public final class SmartNpcFabric implements ModInitializer {
     @Override
     public void onInitialize() {
+        ServerMessageEvents.CHAT_MESSAGE.register((message, sender, parameters) -> {
+            if (message.filterMask().isEmpty()) AiChatService.chat(sender, message.decoratedContent().getString());
+        });
         ModConfigEvents.loading(SmartNpc.MODID).register(SmartNpcNamesConfig::onConfigLoading);
         ModConfigEvents.reloading(SmartNpc.MODID).register(SmartNpcNamesConfig::onConfigReloading);
         SmartNpcCompatConfig.migrateLegacyEpicFightConfig();
@@ -75,7 +80,7 @@ public final class SmartNpcFabric implements ModInitializer {
             NpcEventHooks.fire(event);
             return event.isCanceled() ? EventResult.interruptFalse() : EventResult.pass();
         });
-        EntityEvent.LIVING_DEATH.register((entity, source) -> { NpcEventHooks.fire(new NpcEvents.LivingDeathEvent(entity)); return EventResult.pass(); });
+        EntityEvent.LIVING_DEATH.register((entity, source) -> { NpcEventHooks.fire(new NpcEvents.LivingDeathEvent(entity, source)); return EventResult.pass(); });
         CommandRegistrationCallback.EVENT.register((dispatcher, registry, environment) -> NpcEventHooks.fire(new NpcEvents.RegisterCommandsEvent(dispatcher)));
         PlayerBlockBreakEvents.BEFORE.register((level, player, pos, state, blockEntity) -> {
             var event = new NpcEvents.BlockEvent.BreakEvent(level, pos, state, player);

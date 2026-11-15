@@ -3,6 +3,7 @@ import com.pla.smart_npc.platform.event.NpcClientEvents.*;
 import com.pla.smart_npc.platform.event.NpcEvents.*;
 public final class NpcClientEventHooks {
     public static void fire(ClientPlayerNetworkEvent.LoggingOut event) {
+        com.pla.smart_npc.client.gui.AiSetupClient.reset();
         com.pla.smart_npc.client.compat.YesSteveModelClientCompat.onLogout(event);
     }
     public static void fire(TickEvent.ClientTickEvent event) {

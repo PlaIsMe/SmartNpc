@@ -8,3 +8,4 @@ dependencies {
     modCompileOnly 'dev.kosmx.player-anim:player-animation-lib-fabric:1.0.2+1.19.4'
 }
 sourceSets.main.resources.srcDir 'src/generated/resources'
+apply from: rootProject.file('native/llama/build.gradle')

@@ -1,0 +1,18 @@
+[
+  "被僵尸干掉了，别让它堵住你。|DEFAULT|minecraft:zombie",
+  "大家小心那只僵尸。|DEFAULT|minecraft:zombie",
+  "被骷髅远远射死了。|DEFAULT|minecraft:skeleton",
+  "小心，有骷髅放箭。|DEFAULT|minecraft:skeleton",
+  "那只蜘蛛把我收了。|DEFAULT|minecraft:spider",
+  "刚被苦力怕炸没了。|DEFAULT|minecraft:creeper",
+  "小心%s，我被干掉了。",
+  "%s把我送走了。",
+  "%s挺危险的，留点神。",
+  "刚被%s打死了。",
+  "碰上%s别大意。",
+  "%s这下可够狠的。",
+  "%s把我打趴了。",
+  "大家注意一下%s。",
+  "我栽在%s手里了。",
+  "%s，行，你赢了。"
+]

@@ -1,0 +1,166 @@
+{
+  "date": "2026-11-12",
+  "scope": "English standard releases only; sustained integrated Fabric client observation, sequential switches in one game session",
+  "conditions": {
+    "minecraft": "1.20.1",
+    "mod": "1.0.6",
+    "runtime": "llama.cpp b12228 Windows CPU x64",
+    "context": 2048,
+    "threads": 2,
+    "gpu_layers": 0,
+    "max_output_tokens": 160,
+    "world": "isolated copied fixture world",
+    "controlled_npcs": 3,
+    "prompt_interval_seconds": 12,
+    "phase_seconds": 360,
+    "settle_seconds": 60,
+    "sample_interval_seconds": 1,
+    "return_to_legacy_seconds": 120,
+    "cpu": "Intel Core i5-12450HX",
+    "physical_memory_bytes": 21168513024
+  },
+  "measurement": "Sum of Windows working sets for llama-server.exe descendants of the tested Minecraft JVM. Lifetime PeakWorkingSet also captured. JVM measured separately. Card uses the higher native sampled/lifetime peak, rounded upward to 0.1 GiB.",
+  "limitations": [
+    "One machine and one configuration; no guarantee for other context sizes, runtimes, languages or GPU offload.",
+    "Finite observation, not a long-term leak proof or a comprehensive dialogue-quality grade.",
+    "JVM baseline and later JVM sizes include ordinary game allocation/GC variation; do not treat their difference as native model RAM.",
+    "Unfiltered training and releases were not tested or changed."
+  ],
+  "switch_bug": "MiniCPM5\u2192LFM3 initially exposed reentrant cancellation during AiChatService.disable. Fixed by detaching pending futures before cancelling. Direct/event callback regression passed. Short ordered replay after rebuild verifies switching with in-flight inference. Full LFM3 and return-to-Legacy observations are from the repaired build.",
+  "post_fix_switch_validation": {
+    "legacy": {
+      "samples": 45,
+      "seconds": 40,
+      "stable_native_median_bytes": null,
+      "native_rss_peak_bytes": 0,
+      "native_lifetime_peak_bytes": 0,
+      "private_peak_bytes": 0,
+      "jvm_rss_median_bytes": null,
+      "last_status": "stopped; queued=0/8; busy=false; replies=0; dropped=0; failures=0; meanMs=0; echoes=0; repeats=0; invalid=0; retries=0; suppressed=0; unheard=0; waiting=0",
+      "prompts": 2
+    },
+    "qwen2.5-0.5b-en_us": {
+      "samples": 44,
+      "seconds": 40,
+      "stable_native_median_bytes": null,
+      "native_rss_peak_bytes": 578674688,
+      "native_lifetime_peak_bytes": 578699264,
+      "private_peak_bytes": 230682624,
+      "jvm_rss_median_bytes": null,
+      "last_status": "ready: qwen2.5-0.5b-en_us; queued=0/8; busy=false; replies=5; dropped=0; failures=0; meanMs=3541; echoes=0; repeats=0; invalid=0; retries=0; suppressed=0; unheard=0; waiting=0",
+      "prompts": 2
+    },
+    "minicpm5-1b-en_us": {
+      "samples": 45,
+      "seconds": 40,
+      "stable_native_median_bytes": null,
+      "native_rss_peak_bytes": 1101250560,
+      "native_lifetime_peak_bytes": 1118105600,
+      "private_peak_bytes": 564744192,
+      "jvm_rss_median_bytes": null,
+      "last_status": "ready: minicpm5-1b-en_us; queued=0/8; busy=false; replies=4; dropped=0; failures=0; meanMs=4642; echoes=0; repeats=0; invalid=0; retries=0; suppressed=0; unheard=0; waiting=0",
+      "prompts": 2
+    }
+  },
+  "samples_sha256": {
+    "samples.csv": "de59ed6cb8ea1cd6157826b6781abc5bbb1ae9c23645c58be5bc7bbc055831c4",
+    "samples-before-fix.csv": "81175848a7e4a6519af772fd6d15c68ca0fccfd46d06b8d2a1bcf2db4fca8d27"
+  },
+  "results": [
+    {
+      "phase": "legacy",
+      "samples": 357,
+      "seconds": 350,
+      "stable_native_median_bytes": 0,
+      "native_rss_peak_bytes": 0,
+      "native_lifetime_peak_bytes": 0,
+      "private_peak_bytes": 0,
+      "jvm_rss_median_bytes": 2888204288,
+      "last_status": "stopped; queued=0/8; busy=false; replies=0; dropped=0; failures=0; meanMs=0; echoes=0; repeats=0; invalid=0; retries=0; suppressed=0; unheard=0; waiting=0",
+      "prompts": 25,
+      "native_pids": [],
+      "jvm_peak_bytes": 2894192640,
+      "native_early_median_bytes": 0,
+      "native_final_median_bytes": 0
+    },
+    {
+      "phase": "qwen2.5-0.5b-en_us",
+      "samples": 357,
+      "seconds": 350,
+      "stable_native_median_bytes": 571097088,
+      "native_rss_peak_bytes": 577527808,
+      "native_lifetime_peak_bytes": 595243008,
+      "private_peak_bytes": 228601856,
+      "jvm_rss_median_bytes": 2892455936,
+      "last_status": "ready: qwen2.5-0.5b-en_us; queued=0/8; busy=true; replies=31; dropped=0; failures=0; meanMs=2991; echoes=0; repeats=1; invalid=0; retries=1; suppressed=0; unheard=0; waiting=0",
+      "prompts": 25,
+      "native_pids": [
+        "24336"
+      ],
+      "jvm_peak_bytes": 2898186240,
+      "native_early_median_bytes": 571039744,
+      "native_final_median_bytes": 556154880,
+      "display": "\u2248 0.6 GiB",
+      "model_sha256": "b2010c469bd2c82347846dd2fa4abcbd452bf397c91b5f42ff5cbdf7de58a12c",
+      "model_file": "en_us_smartnpc-qwen2.5-0.5b-instruct-Q4_K_M.gguf"
+    },
+    {
+      "phase": "minicpm5-1b-en_us",
+      "samples": 357,
+      "seconds": 350,
+      "stable_native_median_bytes": 1077469184,
+      "native_rss_peak_bytes": 1089028096,
+      "native_lifetime_peak_bytes": 1105113088,
+      "private_peak_bytes": 554188800,
+      "jvm_rss_median_bytes": 2862399488,
+      "last_status": "ready: minicpm5-1b-en_us; queued=0/8; busy=true; replies=37; dropped=0; failures=0; meanMs=3615; echoes=0; repeats=10; invalid=0; retries=8; suppressed=2; unheard=0; waiting=0",
+      "prompts": 25,
+      "native_pids": [
+        "19024"
+      ],
+      "jvm_peak_bytes": 2871562240,
+      "native_early_median_bytes": 1076609024,
+      "native_final_median_bytes": 1077985280,
+      "display": "\u2248 1.1 GiB",
+      "model_sha256": "ee3d11310b1dc447e5887f16170c93bd3f54caee4e07cd79c721f00ad0070bc4",
+      "model_file": "en_us_smartnpc-minicpm5-1b-Q4_K_M.gguf"
+    },
+    {
+      "phase": "lfm3-1.7b-en_us",
+      "samples": 357,
+      "seconds": 350,
+      "stable_native_median_bytes": 2038108160,
+      "native_rss_peak_bytes": 2053144576,
+      "native_lifetime_peak_bytes": 2053144576,
+      "private_peak_bytes": 1013825536,
+      "jvm_rss_median_bytes": 2919374848,
+      "last_status": "ready: lfm3-1.7b-en_us; queued=1/8; busy=true; replies=21; dropped=15; failures=0; meanMs=13064; echoes=0; repeats=0; invalid=0; retries=0; suppressed=14; unheard=0; waiting=0",
+      "prompts": 25,
+      "native_pids": [
+        "19448"
+      ],
+      "jvm_peak_bytes": 2944901120,
+      "native_early_median_bytes": 2044649472,
+      "native_final_median_bytes": 2033664000,
+      "display": "\u2248 2.0 GiB",
+      "model_sha256": "35b938af3d1d24b9f12c404b835bd9c696ee80cb3f6e2bf6d3599e11ecbea80b",
+      "model_file": "en_us_smartnpc-lfm3-1.7b-Q4_K_M.gguf"
+    },
+    {
+      "phase": "legacy-return",
+      "samples": 120,
+      "seconds": 110,
+      "stable_native_median_bytes": 0,
+      "native_rss_peak_bytes": 0,
+      "native_lifetime_peak_bytes": 0,
+      "private_peak_bytes": 0,
+      "jvm_rss_median_bytes": 2919669760,
+      "last_status": "stopped; queued=0/8; busy=false; replies=0; dropped=0; failures=0; meanMs=0; echoes=0; repeats=0; invalid=0; retries=0; suppressed=0; unheard=0; waiting=0",
+      "prompts": 5,
+      "native_pids": [],
+      "jvm_peak_bytes": 2922606592,
+      "native_early_median_bytes": 0,
+      "native_final_median_bytes": 0
+    }
+  ]
+}

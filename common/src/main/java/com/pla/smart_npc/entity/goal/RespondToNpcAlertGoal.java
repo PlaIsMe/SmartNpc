@@ -1,6 +1,7 @@
 package com.pla.smart_npc.entity.goal;
 
 import com.pla.smart_npc.clazz.PlayerNpcInterest;
+import com.pla.smart_npc.ai.AiChatService;
 import com.pla.smart_npc.entity.PlayerNpcEntity;
 import com.pla.smart_npc.entity.ai.PathNavigationAi;
 import com.pla.smart_npc.util.PlayerNpcAlertManager;
@@ -40,6 +41,7 @@ public class RespondToNpcAlertGoal extends Goal {
     private LivingEntity threat;
     private boolean avoiding;
     private boolean attackResponse;
+    private boolean witnessedAvoidance;
     private Path selectedPath;
     private long avoidUntil;
     private Vec3 avoidanceStart;
@@ -62,7 +64,10 @@ public class RespondToNpcAlertGoal extends Goal {
             return false;
         }
 
-        this.threat = PlayerNpcAlertManager.getNearbyThreat(this.playerNpc, ALERT_RADIUS).orElse(null);
+        AiChatService aiChat = AiChatService.get(this.playerNpc.getServer());
+        LivingEntity witnessed = aiChat == null ? null : aiChat.witnessedThreat(this.playerNpc);
+        this.witnessedAvoidance = witnessed != null;
+        this.threat = witnessed != null ? witnessed : PlayerNpcAlertManager.getNearbyThreat(this.playerNpc, ALERT_RADIUS).orElse(null);
         this.selectedPath = null;
         if (this.threat == null) {
             return false;
@@ -82,7 +87,7 @@ public class RespondToNpcAlertGoal extends Goal {
         }
         // Reconsider immediate safety without rerolling the random attack decision on every
         // failed route or selector restart for this same alert threat.
-        this.attackResponse = this.response.attack && !this.playerNpc.hasInterest(PlayerNpcInterest.CAUTIOUS)
+        this.attackResponse = witnessed == null && this.response.attack && !this.playerNpc.hasInterest(PlayerNpcInterest.CAUTIOUS)
                 && !this.playerNpc.shouldSmartNpcFleeFromTarget(this.threat)
                 && (!this.playerNpc.isSmartNpcCompatHighDangerThreat(this.threat)
                 || this.response.compatibilityRoll <= this.playerNpc.getSmartNpcTargetAttackChance(this.threat, 1.0F))
@@ -104,6 +109,8 @@ public class RespondToNpcAlertGoal extends Goal {
     @Override
     public boolean canContinueToUse() {
         return this.avoiding
+                && (!this.witnessedAvoidance || AiChatService.get(this.playerNpc.getServer()) != null
+                && AiChatService.get(this.playerNpc.getServer()).witnessedThreat(this.playerNpc) == this.threat)
                 && this.playerNpc.level().getGameTime() < this.avoidUntil
                 && this.playerNpc.isAlive() && !this.playerNpc.isNoAi() && !this.playerNpc.isPassenger()
                 && !this.playerNpc.isHealing() && this.playerNpc.getTarget() == null
@@ -168,6 +175,7 @@ public class RespondToNpcAlertGoal extends Goal {
         this.selectedPath = null;
         this.avoidanceStart = null;
         this.response = null;
+        this.witnessedAvoidance = false;
         String state = this.playerNpc.getCurrentAiState();
         if ("ai.player_npc.avoiding_alert".equals(state) || "ai.player_npc.assisting_alert".equals(state)) {
             this.playerNpc.setCurrentAiState(PlayerNpcEntity.AI_IDLE);

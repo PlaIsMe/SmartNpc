@@ -3,5 +3,10 @@
   "someone help, %s is chasing me",
   "I need backup, %s is after me",
   "watch out, %s is trying to kill me",
-  "backup needed, %s is pushing me"
+  "backup needed, %s is pushing me",
+  "%s hits hard. A little help?",
+  "Guys, can someone distract %s?",
+  "Don't just watch, %s is after me!",
+  "Why does %s only chase me T_T",
+  "Anyone want to deal with %s?"
 ]

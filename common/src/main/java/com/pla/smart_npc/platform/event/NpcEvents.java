@@ -23,7 +23,9 @@ public final class NpcEvents {
     public record RegisterCommandsEvent(CommandDispatcher<CommandSourceStack> getDispatcher) {}
     public record EntityJoinLevelEvent(Entity getEntity, Level getLevel) {}
     public record EntityLeaveLevelEvent(Entity getEntity, Level getLevel) {}
-    public record LivingDeathEvent(LivingEntity getEntity) {}
+    public record LivingDeathEvent(LivingEntity getEntity, DamageSource getSource) {
+        public LivingDeathEvent(LivingEntity entity) { this(entity, null); }
+    }
     public static final class LivingAttackEvent extends Cancellable {
         private final LivingEntity entity;
         private final DamageSource source;

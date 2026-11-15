@@ -1,6 +1,55 @@
+Legacy NPC dialogue (independent of LLM training)
+
+Choose Legacy chat in the AI settings, then set npcChatLocale in
+config/smart_npc-server.toml to en_us, zh_cn or vi_vn. This is a server-wide
+dialogue language, independent of the Minecraft client and selected AI model.
+Restart the server after changing config. No model download is needed.
+
+To override dialogue in a datapack, create:
+data/smart_npc/chat/<locale>/<event>.json
+Then run /reload. Each file contains a JSON array, for example:
 [
-  "A message",
+  "%s, want to team up?",
   "Only Ray says this|Ray",
   "Everyone says this to Dream|DEFAULT|Dream",
-  "Herobrine is chasing me!|DEFAULT|annoyingvillagers:herobrine_clone"
+  "A zombie got me.|DEFAULT|minecraft:zombie"
 ]
+
+The format is message|speakerSelector|targetSelector.
+Missing selectors, DEFAULT and all mean any speaker/target. Other selectors
+match an entity name; target selectors can also be namespaced entity IDs.
+The zombie example belongs in warn_death or death_reaction, not teamup_request.
+Do not put a literal pipe inside the message.
+
+Events with one optional %s (or %1$s) argument:
+  call_help: threat name
+  teamup_request: invited entity name (compatibility hook; teams use gestures)
+  warn_death, death_reaction: killer name
+  killer_taunt: victim name
+  broken_bed: breaker name
+  owned_chest_opened, owned_chest_broken: offender name
+  burn_item: item display name
+
+Events without arguments:
+  throw_trash, missing_home_chest, teamup_accept, joined_game, leaving_game,
+  hurt_reaction, low_health, chest_loot, chest_empty
+
+Use %% for a literal percent sign. Names and item arguments keep their
+Minecraft Component formatting/localization. Dialogue itself uses npcChatLocale.
+Lifecycle system notices and vanilla death summaries use the client's language.
+
+An absent locale/event falls back to en_us. An existing empty array, or an
+event whose selectors do not match, is intentionally silent. Death/kill
+banter for non-player mobs requires an explicit target selector. Bundled
+entries cover zombies, skeletons, spiders and creepers; other mob deaths
+keep the vanilla death summary unless a datapack adds matching entries.
+
+New lifecycle/damage/chest remarks are optional: one-in-three chance,
+45 seconds between remarks from the same NPC, and a 10-second server gap.
+Low-health remarks only roll when health crosses down through half health.
+Existing event dialogue also postpones these optional remarks. No backlogs,
+extra world scans, movement goals, item transfers or attacks are created.
+turnOnNpcChat=false silences NPC chat without disabling NPC gameplay.
+
+teamup_request and teamup_accept are retained compatibility hooks. Current
+team recruitment uses facing and crouching; typing ok does not join a team.
