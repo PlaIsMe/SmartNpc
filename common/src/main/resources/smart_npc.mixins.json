@@ -5,6 +5,7 @@
   "mixins": [
     "DistanceManagerAccessor",
     "TicketStorageAccessor",
+    "RecipeManagerAccessor",
     "ServerChunkCacheAccessor",
     "MonsterMixin",
     "BoatMixin",
