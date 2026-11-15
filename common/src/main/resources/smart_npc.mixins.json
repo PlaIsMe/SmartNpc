@@ -4,6 +4,7 @@
   "compatibilityLevel": "JAVA_17",
   "mixins": [
     "DistanceManagerAccessor",
+    "RecipeManagerAccessor",
     "ServerChunkCacheAccessor",
     "MonsterMixin",
     "BoatMixin"
