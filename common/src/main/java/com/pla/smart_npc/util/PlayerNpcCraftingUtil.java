@@ -1,5 +1,6 @@
 package com.pla.smart_npc.util;
 
+import com.pla.smart_npc.mixin.RecipeManagerAccessor;
 import net.minecraft.resources.Identifier;
 import net.minecraft.core.NonNullList;
 import net.minecraft.server.level.ServerLevel;
@@ -11,17 +12,27 @@ import net.minecraft.world.item.Items;
 import net.minecraft.world.item.crafting.CraftingRecipe;
 import net.minecraft.world.item.crafting.CraftingInput;
 import net.minecraft.world.item.crafting.Ingredient;
-import net.minecraft.world.item.crafting.RecipeType;
+import net.minecraft.world.item.crafting.RecipeManager;
+import net.minecraft.world.item.crafting.RecipeMap;
 import net.minecraft.world.item.crafting.ShapedRecipe;
+import net.minecraft.world.item.crafting.ShapelessRecipe;
 import net.minecraft.world.level.ItemLike;
 import net.minecraft.core.registries.BuiltInRegistries;
 
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Comparator;
+import java.util.IdentityHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import java.util.WeakHashMap;
 import java.util.function.Predicate;
 
 public final class PlayerNpcCraftingUtil {
+    // Server-thread only. Do not retain a stopped world's recipe manager through the value.
+    private static final Map<RecipeManager, CraftingRecipeIndex> CRAFTING_RECIPE_INDEXES = new WeakHashMap<>();
+
     private PlayerNpcCraftingUtil() {
     }
 
@@ -197,7 +208,45 @@ public final class PlayerNpcCraftingUtil {
 
     private static Optional<CraftingPlan> findCraftingPlan(ServerLevel serverLevel, SimpleContainer inventory, ItemLike result, boolean craftingTable) {
         Item targetItem = result.asItem();
-        return findCraftingPlan(serverLevel, inventory, stack -> stack.is(targetItem), craftingTable);
+        List<CraftingRecipe> candidates = craftingRecipeIndex(serverLevel).candidatesFor(targetItem);
+        return findCraftingPlan(serverLevel, inventory, candidates, stack -> stack.is(targetItem), craftingTable);
+    }
+
+    private static CraftingRecipeIndex craftingRecipeIndex(ServerLevel serverLevel) {
+        RecipeManager manager = serverLevel.getServer().getRecipeManager();
+        RecipeMap recipes = ((RecipeManagerAccessor) manager).smartNpc$getRecipes();
+        CraftingRecipeIndex cached = CRAFTING_RECIPE_INDEXES.get(manager);
+        // 26.3 reloads create a new RecipeManager with a final RecipeMap, so the manager
+        // key changes even for same-size reloads. Also check snapshot identity without a scan.
+        if (cached != null && cached.recipeSnapshot() == recipes) {
+            return cached;
+        }
+
+        List<CraftingRecipe> craftingRecipes = new ArrayList<>();
+        Map<Item, List<IndexedCraftingRecipe>> byOutput = new IdentityHashMap<>();
+        List<IndexedCraftingRecipe> dynamicRecipes = new ArrayList<>();
+        for (var holder : recipes.values()) {
+            if (!(holder.value() instanceof CraftingRecipe recipe)) {
+                continue;
+            }
+            IndexedCraftingRecipe indexed = new IndexedCraftingRecipe(craftingRecipes.size(), recipe);
+            craftingRecipes.add(recipe);
+            // Only these exact vanilla classes have input-independent assembly. Subclasses and
+            // custom recipes must keep their normal ingredient-dependent matching/assembly path.
+            if (recipe.getClass() == ShapedRecipe.class || recipe.getClass() == ShapelessRecipe.class) {
+                ItemStack result = recipe.assemble(CraftingInput.EMPTY);
+                if (!result.isEmpty()) {
+                    byOutput.computeIfAbsent(result.getItem(), ignored -> new ArrayList<>()).add(indexed);
+                }
+            } else {
+                dynamicRecipes.add(indexed);
+            }
+        }
+        byOutput.replaceAll((item, candidates) -> List.copyOf(candidates));
+        CraftingRecipeIndex index = new CraftingRecipeIndex(
+                recipes, List.copyOf(craftingRecipes), byOutput, List.copyOf(dynamicRecipes), new IdentityHashMap<>());
+        CRAFTING_RECIPE_INDEXES.put(manager, index);
+        return index;
     }
 
     private static Optional<CraftingPlan> findCraftingPlan(
@@ -206,11 +255,20 @@ public final class PlayerNpcCraftingUtil {
             Predicate<ItemStack> resultMatcher,
             boolean craftingTable
     ) {
+        return findCraftingPlan(serverLevel, inventory, craftingRecipeIndex(serverLevel).recipes(), resultMatcher, craftingTable);
+    }
+
+    private static Optional<CraftingPlan> findCraftingPlan(
+            ServerLevel serverLevel,
+            SimpleContainer inventory,
+            List<CraftingRecipe> candidates,
+            Predicate<ItemStack> resultMatcher,
+            boolean craftingTable
+    ) {
         int width = craftingTable ? 3 : 2;
         int height = craftingTable ? 3 : 2;
-        for (var recipeHolder : serverLevel.getServer().getRecipeManager().getRecipes()) {
-            if (!(recipeHolder.value() instanceof CraftingRecipe recipe)
-                    || recipe.placementInfo().isImpossibleToPlace()
+        for (CraftingRecipe recipe : candidates) {
+            if (recipe.placementInfo().isImpossibleToPlace()
                     || recipe.placementInfo().slotsToIngredientIndex().size() > width * height
                     || recipe instanceof ShapedRecipe shaped
                     && (shaped.getWidth() > width || shaped.getHeight() > height)) {
@@ -569,12 +627,15 @@ public final class PlayerNpcCraftingUtil {
     }
 
     public static boolean tryCraftWithLogConversion(ServerLevel serverLevel, SimpleContainer inventory, ItemLike result, boolean craftingTable, int rawLogReserve) {
-        while (!canCraft(serverLevel, inventory, result, craftingTable) && countLogs(inventory) > Math.max(0, rawLogReserve)) {
+        Optional<CraftingPlan> plan = findCraftingPlan(serverLevel, inventory, result, craftingTable);
+        while (plan.isEmpty() && countLogs(inventory) > Math.max(0, rawLogReserve)) {
             if (!convertOneLogToPlanks(inventory, rawLogReserve)) {
                 break;
             }
+            plan = findCraftingPlan(serverLevel, inventory, result, craftingTable);
         }
-        return tryCraft(serverLevel, inventory, result, craftingTable);
+        Optional<ItemStack> crafted = craftItem(serverLevel, inventory, plan);
+        return crafted.isPresent() && InventoryUtils.addItem(inventory, crafted.get());
     }
 
     private static SimpleContainer copyContainer(SimpleContainer inventory) {
@@ -739,6 +800,27 @@ public final class PlayerNpcCraftingUtil {
 
         String bedPath = key.getPath().substring(0, key.getPath().length() - "_wool".length()) + "_bed";
         return BuiltInRegistries.ITEM.getValue(Identifier.fromNamespaceAndPath(key.getNamespace(), bedPath));
+    }
+
+    private record IndexedCraftingRecipe(int order, CraftingRecipe recipe) {
+    }
+
+    private record CraftingRecipeIndex(
+            RecipeMap recipeSnapshot,
+            List<CraftingRecipe> recipes,
+            Map<Item, List<IndexedCraftingRecipe>> byOutput,
+            List<IndexedCraftingRecipe> dynamicRecipes,
+            Map<Item, List<CraftingRecipe>> candidatesByOutput
+    ) {
+        private List<CraftingRecipe> candidatesFor(Item targetItem) {
+            return this.candidatesByOutput.computeIfAbsent(targetItem, item -> {
+                List<IndexedCraftingRecipe> candidates = new ArrayList<>(this.byOutput.getOrDefault(item, List.of()));
+                candidates.addAll(this.dynamicRecipes);
+                // Merge only the relevant bucket and custom recipes, preserving original precedence.
+                candidates.sort(Comparator.comparingInt(IndexedCraftingRecipe::order));
+                return candidates.stream().map(IndexedCraftingRecipe::recipe).toList();
+            });
+        }
     }
 
     private record CraftingPlan(CraftingRecipe recipe, CraftingInput grid, int[] inventorySlots) {
