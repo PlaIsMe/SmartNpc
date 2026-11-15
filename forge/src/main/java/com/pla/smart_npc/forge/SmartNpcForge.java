@@ -61,7 +61,6 @@ public class SmartNpcForge {
         }
 
         if (FMLEnvironment.dist.isClient()) {
-            SmartNpcForgeClientConfig.register(context);
             modEventBus.addListener(this::clientSetup);
         }
         modEventBus.addListener(this::commonSetup);

@@ -1,6 +1,5 @@
 package com.pla.smart_npc.entity.goal;
 
-import com.pla.smart_npc.ai.NpcGoalBridge;
 import com.pla.smart_npc.entity.PlayerNpcEntity;
 import com.pla.smart_npc.entity.ai.PathNavigationAi;
 import com.pla.smart_npc.util.PlayerNpcAiWorkBudget;
@@ -99,8 +98,7 @@ public final class FollowTeamLeaderGoal extends Goal {
     }
 
     private boolean canFollowLeader() {
-        return !NpcGoalBridge.blocksFollowing(this.follower)
-                && this.follower.isTeamFollower()
+        return this.follower.isTeamFollower()
                 && this.leader != null
                 && this.leader.isAlive()
                 && !this.leader.isRemoved()
